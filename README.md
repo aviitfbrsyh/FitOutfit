@@ -1,3 +1,6 @@
+![Logo](assets/logo.png)
+
+
 Deskripsi Singkat:
 FitOutfit adalah aplikasi fashion assistant berbasis AI yang membantu pengguna dalam memilih outfit yang sesuai dengan bentuk tubuh, tone kulit, serta jenis acara atau kegiatan tertentu. Dengan fitur personalisasi seperti virtual try-on, wardrobe assistant, dan rekomendasi fashion berdasarkan personal color, aplikasi ini bertujuan untuk mengedukasi pengguna tentang gaya pribadi mereka sekaligus mencegah impulsive buying. Melalui kerjasama dengan brand lokal. FitOutfit Juga memberikan opsi belanja yang relevan dan efisien, sambil membantu pengguna tampil stylish tanpa harus over budget.
 

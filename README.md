@@ -2,7 +2,7 @@
 <img src="FitOutfit/assets/logo.png" alt="Logo" width="350"/>
 </p>
 
-<h1 align="center">FitOutfit 👗</h1>
+<h1 align="center">👔 FitOutfit 👗</h1>
 <p align="center"><em>AI-powered fashion assistant to help you dress smarter, shop wiser, and express yourself authentically.</em></p>
 
 ---

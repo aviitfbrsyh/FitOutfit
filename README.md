@@ -9,7 +9,7 @@
 
 ## 📱 Tentang FitOutfit
 
-**FitOutfit** adalah aplikasi fashion assistant berbasis **Flutter + AI** yang membantu pengguna memilih outfit paling sesuai berdasarkan **bentuk tubuh**, **warna kulit**, dan **jenis acara**. Dilengkapi fitur **Virtual Try-On**, **Wardrobe Assistant**, dan **Komunitas Fashion**, FitOutfit hadir untuk mendukung gaya hidup stylish tanpa over budget dan tanpa pemborosan pakaian.
+FitOutfit adalah aplikasi fashion assistant berbasis AI yang membantu pengguna dalam memilih outfit yang sesuai dengan bentuk tubuh, tone kulit, serta jenis acara atau kegiatan tertentu. Dengan fitur personalisasi seperti Virtual Try-On, Wardrobe Assistant, dan rekomendasi fashion berdasarkan personal color, aplikasi ini bertujuan untuk mengedukasi pengguna tentang gaya pribadi mereka sekaligus mencegah impulsive buying. Melalui kerjasama dengan brand lokal, FitOutfit juga memberikan opsi belanja yang relevan dan efisien, sambil membantu pengguna tampil stylish tanpa harus over budget.
 
 ---
 
@@ -17,7 +17,7 @@
 
 Membantu pengguna:
 - Menghindari belanja pakaian secara impulsif.
-- Memahami gaya pribadi berdasarkan karakteristik unik.
+- Memahami gaya pribadi berdasarkan karakteristik pribadi.
 - Memaksimalkan koleksi pakaian yang sudah dimiliki.
 
 ---

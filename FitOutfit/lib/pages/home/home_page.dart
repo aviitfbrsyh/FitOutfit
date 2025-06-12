@@ -1,0 +1,1209 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../wardrobe/wardrobe_page.dart';
+import '../virtual_try_on/virtual_try_on_page.dart'; // Pastikan path sesuai struktur project kamu
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  // Consistent FitOutfit brand colors
+  static const Color primaryBlue = Color(0xFF4A90E2);
+  static const Color accentYellow = Color(0xFFF5A623);
+  static const Color accentRed = Color(0xFFD0021B);
+  static const Color darkGray = Color(0xFF2C3E50);
+  static const Color mediumGray = Color(0xFF6B7280);
+  static const Color softCream = Color(0xFFFAF9F7);
+
+  late AnimationController _pulseController;
+  late AnimationController _staggerController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _fadeAnimation;
+
+  int _selectedBottomNavIndex = 0;
+  final int _notificationCount = 3;
+  String _searchQuery = '';
+
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _staggerController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _staggerController, curve: Curves.easeOut),
+    );
+
+    _staggerController.forward();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _staggerController.dispose();
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _getTimeBasedGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Scaffold(
+      backgroundColor: softCream,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: primaryBlue,
+        backgroundColor: Colors.white,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            _buildCustomAppBar(),
+            SliverToBoxAdapter(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    _buildSearchSection(),
+                    const SizedBox(height: 20),
+                    _buildDailyOutfitRecommendations(),
+                    const SizedBox(height: 24),
+                    _buildQuickAccessFeatures(),
+                    const SizedBox(height: 24),
+                    _buildFashionNewsSection(),
+                    const SizedBox(height: 24),
+                    _buildCommunityHighlights(),
+                    const SizedBox(height: 100), // Bottom nav spacing
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: _buildQuickOutfitFAB(),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildCustomAppBar() {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: false,
+      pinned: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final top = constraints.biggest.height;
+          final safeAreaTop = MediaQuery.of(context).padding.top;
+          final minHeight = kToolbarHeight + safeAreaTop;
+          final maxHeight = 120 + safeAreaTop;
+
+          // Calculate progress more smoothly
+          final progress = ((maxHeight - top) / (maxHeight - minHeight)).clamp(
+            0.0,
+            1.0,
+          );
+
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primaryBlue.withValues(alpha: 0.95),
+                  primaryBlue.withValues(alpha: 0.85),
+                  accentYellow.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            child: SafeArea(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: _buildHeaderContent(progress),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderContent(double progress) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
+    // Smooth transitions
+    final expandedOpacity = (1.0 - (progress * 2.0)).clamp(0.0, 1.0);
+    final collapsedOpacity = (progress * 2.0 - 0.5).clamp(0.0, 1.0);
+    final isCollapsed = progress > 0.5;
+
+    return Stack(
+      children: [
+        // Expanded header
+        if (!isCollapsed || expandedOpacity > 0)
+          Positioned.fill(
+            child: Opacity(
+              opacity: expandedOpacity,
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getTimeBasedGreeting(),
+                              style: GoogleFonts.poppins(
+                                fontSize: isSmallScreen ? 16 : 18,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.clip,
+                            ),
+                            Text(
+                              'Sarah! ✨',
+                              style: GoogleFonts.poppins(
+                                fontSize: isSmallScreen ? 22 : 24,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.clip,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildNotificationBell(),
+                          SizedBox(width: isSmallScreen ? 8 : 10),
+                          _buildProfileAvatar(),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // Collapsed header
+        if (isCollapsed || collapsedOpacity > 0)
+          Positioned.fill(
+            child: Opacity(
+              opacity: collapsedOpacity,
+              child: Align(
+                alignment: Alignment.center,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'FitOutfit',
+                        style: GoogleFonts.poppins(
+                          fontSize: isSmallScreen ? 20 : 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
+                      ),
+                    ),
+                    _buildNotificationBell(),
+                    const SizedBox(width: 8),
+                    _buildProfileAvatar(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationBell() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+
+    return GestureDetector(
+      onTap: () => _showNotifications(),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: EdgeInsets.all(isSmallScreen ? 7 : 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.notifications_rounded,
+              color: Colors.white,
+              size: isSmallScreen ? 19 : 20,
+            ),
+          ),
+          if (_notificationCount > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accentRed,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                child: Text(
+                  '$_notificationCount',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileAvatar() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final avatarSize = screenWidth < 360 ? 38.0 : 42.0;
+
+    return GestureDetector(
+      onTap: () => _navigateToProfile(),
+      child: Container(
+        width: avatarSize,
+        height: avatarSize,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(avatarSize / 2),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular((avatarSize - 4) / 2),
+          child: Image.asset(
+            'assets/images/default_avatar.png',
+            fit: BoxFit.cover,
+            errorBuilder:
+                (context, error, stackTrace) => Container(
+                  color: accentYellow,
+                  child: Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: avatarSize * 0.6,
+                  ),
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: primaryBlue.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) => setState(() => _searchQuery = value),
+          decoration: InputDecoration(
+            hintText: 'Search outfits, styles, trends...',
+            hintStyle: GoogleFonts.poppins(color: mediumGray, fontSize: 14),
+            prefixIcon: Icon(Icons.search_rounded, color: primaryBlue),
+            suffixIcon:
+                _searchQuery.isNotEmpty
+                    ? IconButton(
+                      icon: Icon(Icons.clear_rounded, color: mediumGray),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                    : Icon(Icons.tune_rounded, color: primaryBlue),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyOutfitRecommendations() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Today\'s Outfit Picks',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: darkGray,
+                    ),
+                  ),
+                  Text(
+                    'AI-curated just for you',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: mediumGray,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => _navigateToAllRecommendations(),
+                child: Text(
+                  'See All',
+                  style: GoogleFonts.poppins(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 280,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 5,
+            itemBuilder: (context, index) => _buildOutfitCard(index),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOutfitCard(int index) {
+    final outfits = [
+      {
+        'title': 'Casual Chic',
+        'occasion': 'Coffee Date',
+        'weather': '22°C',
+        'image': 'assets/images/outfit_1.png',
+        'colors': [primaryBlue, accentYellow],
+      },
+      {
+        'title': 'Business Ready',
+        'occasion': 'Work Meeting',
+        'weather': '18°C',
+        'image': 'assets/images/outfit_2.png',
+        'colors': [darkGray, primaryBlue],
+      },
+      {
+        'title': 'Weekend Vibes',
+        'occasion': 'Shopping',
+        'weather': '25°C',
+        'image': 'assets/images/outfit_3.png',
+        'colors': [accentRed, accentYellow],
+      },
+      {
+        'title': 'Date Night',
+        'occasion': 'Dinner',
+        'weather': '20°C',
+        'image': 'assets/images/outfit_4.png',
+        'colors': [primaryBlue, accentRed],
+      },
+      {
+        'title': 'Gym Session',
+        'occasion': 'Workout',
+        'weather': '23°C',
+        'image': 'assets/images/outfit_5.png',
+        'colors': [accentYellow, primaryBlue],
+      },
+    ];
+
+    final outfit = outfits[index];
+
+    return Container(
+      width: 200,
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: (outfit['colors'] as List<Color>)[0].withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Background Image
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: outfit['colors'] as List<Color>,
+                ),
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Weather & Occasion
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          outfit['weather'] as String,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: darkGray,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.favorite_border_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Title & Occasion
+                  Text(
+                    outfit['title'] as String,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    outfit['occasion'] as String,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Try On',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: darkGray,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.bookmark_border_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessFeatures() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Access',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: darkGray,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.2,
+            children: [
+              _buildQuickAccessCard(
+                'Virtual Try-On',
+                Icons.camera_alt_rounded,
+                primaryBlue,
+                'See how outfits look on you',
+                () => _navigateToTryOn(),
+              ),
+              _buildQuickAccessCard(
+                'My Wardrobe',
+                Icons.checkroom_rounded,
+                accentYellow,
+                '127 items in your closet',
+                () => _navigateToWardrobe(),
+              ),
+              _buildQuickAccessCard(
+                'Style Quiz',
+                Icons.psychology_rounded,
+                accentRed,
+                'Discover your fashion DNA',
+                () => _navigateToStyleQuiz(),
+              ),
+              _buildQuickAccessCard(
+                'Outfit Planner',
+                Icons.calendar_today_rounded,
+                primaryBlue,
+                'Plan looks for your week',
+                () => _navigateToPlanner(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessCard(
+    String title,
+    IconData icon,
+    Color color,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        color.withValues(alpha: 0.2),
+                        color.withValues(alpha: 0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: darkGray,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: mediumGray,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFashionNewsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Fashion News',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: darkGray,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _navigateToNews(),
+                child: Text(
+                  'Read More',
+                  style: GoogleFonts.poppins(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 160,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 4,
+            itemBuilder: (context, index) => _buildNewsCard(index),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewsCard(int index) {
+    final news = [
+      {
+        'title': 'Spring Fashion Trends 2024',
+        'readTime': '3 min read',
+        'author': 'Fashion Weekly',
+        'image': 'fashion_1.jpg',
+      },
+      {
+        'title': 'Sustainable Fashion Guide',
+        'readTime': '5 min read',
+        'author': 'Eco Style',
+        'image': 'fashion_2.jpg',
+      },
+      {
+        'title': 'Color Palette Tips',
+        'readTime': '2 min read',
+        'author': 'Style Expert',
+        'image': 'fashion_3.jpg',
+      },
+      {
+        'title': 'Minimalist Wardrobe',
+        'readTime': '4 min read',
+        'author': 'Less is More',
+        'image': 'fashion_4.jpg',
+      },
+    ];
+
+    final article = news[index];
+
+    return Container(
+      width: 240,
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image placeholder
+          Container(
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  primaryBlue.withValues(alpha: 0.8),
+                  accentYellow.withValues(alpha: 0.6),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.bookmark_border_rounded,
+                      size: 16,
+                      color: darkGray,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  article['title'] as String,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: darkGray,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      article['readTime'] as String,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: mediumGray,
+                      ),
+                    ),
+                    Text(' • ', style: TextStyle(color: mediumGray)),
+                    Text(
+                      article['author'] as String,
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: mediumGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunityHighlights() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Community',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: darkGray,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _navigateToCommunity(),
+                child: Text(
+                  'Join Now',
+                  style: GoogleFonts.poppins(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  accentYellow.withValues(alpha: 0.1),
+                  primaryBlue.withValues(alpha: 0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accentYellow.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // Avatar stack
+                    SizedBox(
+                      width: 100,
+                      height: 40,
+                      child: Stack(
+                        children: List.generate(4, (index) {
+                          return Positioned(
+                            left: index * 20.0,
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                                color:
+                                    [
+                                      primaryBlue,
+                                      accentYellow,
+                                      accentRed,
+                                      darkGray,
+                                    ][index],
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '2.5K+ Active Members',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: darkGray,
+                            ),
+                          ),
+                          Text(
+                            'Share your style & get inspired',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: mediumGray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: primaryBlue,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Share Your Look',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: primaryBlue),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Browse Styles',
+                          style: GoogleFonts.poppins(
+                            color: primaryBlue,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickOutfitFAB() {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _pulseAnimation.value,
+          child: FloatingActionButton.extended(
+            onPressed: () => _navigateToQuickOutfit(),
+            backgroundColor: accentRed,
+            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+            label: Text(
+              'Quick Outfit',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _selectedBottomNavIndex,
+        onTap: (index) => setState(() => _selectedBottomNavIndex = index),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedItemColor: primaryBlue,
+        unselectedItemColor: mediumGray,
+        selectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.checkroom_rounded),
+            label: 'Wardrobe',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt_rounded),
+            label: 'Try-On',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_rounded),
+            label: 'Community',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Navigation methods
+  void _navigateToProfile() {
+    HapticFeedback.mediumImpact();
+    // Navigate to profile page
+  }
+
+  void _navigateToAllRecommendations() {
+    // Navigate to all recommendations
+  }
+
+  void _navigateToTryOn() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const VirtualTryOnPage(),
+      ),
+    );
+  }
+
+  void _navigateToWardrobe() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
+  }
+
+  void _navigateToStyleQuiz() {
+    // Navigate to style quiz
+  }
+
+  void _navigateToPlanner() {
+    // Navigate to outfit planner
+  }
+
+  void _navigateToNews() {
+    // Navigate to fashion news
+  }
+
+  void _navigateToCommunity() {
+    // Navigate to community
+  }
+
+  void _navigateToQuickOutfit() {
+    // Navigate to quick outfit creation
+  }
+
+  void _showNotifications() {
+    // Show notifications bottom sheet
+  }
+
+  Future<void> _handleRefresh() async {
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 2));
+  }
+}

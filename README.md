@@ -28,7 +28,7 @@ Membantu pengguna:
 Coba outfit secara virtual berdasarkan bentuk tubuh, skin tone, personal color, dan preferensi acara.
 
 ### 🧥 Wardrobe Assistant  
-Unggah pakaian maksimal 3 item dan dapatkan ide mix & match otomatis untuk tampil maksimal dari isi lemari kamu.
+Unggah pakaian dan dapatkan ide mix & match otomatis untuk tampil maksimal dari isi lemari kamu.
 
 ### 🌍 Komunitas  
 Bagikan style kamu, cari inspirasi outfit dari pengguna lain, dan jadi bagian dari komunitas fashion yang inklusif.

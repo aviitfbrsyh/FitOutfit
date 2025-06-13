@@ -9,6 +9,7 @@ import '../../utils/validators.dart';
 import 'register_page.dart';
 import '../welcome/welcome_page.dart';
 import '../home/home_page.dart';
+import '../admin/home_page_admin.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -31,6 +32,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+
+  // Tambahkan kredensial admin
+  static const String _adminEmail = 'admin@fitoutfit.com';
+  static const String _adminPassword = 'bismillahexpo';
 
   @override
   void initState() {
@@ -83,6 +88,18 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
+    // Deteksi admin login
+    if (_emailController.text.trim() == _adminEmail &&
+        _passwordController.text == _adminPassword) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AdminHomePage()),
+        );
+      }
+      return;
+    }
 
     final result = await AuthService.signInWithEmailPassword(
       email: _emailController.text,
@@ -291,6 +308,37 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 32),
               _buildSignUpLink(),
+              const SizedBox(height: 16),
+              // Quick Test Button untuk AdminHomePage
+              Container(
+                width: double.infinity,
+                height: 50,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const AdminHomePage(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A90E2),
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Quick Test - Go to Admin',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
               // Quick Test Button untuk HomePage
               Container(

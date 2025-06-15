@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PersonalizationData {
   // Step 1: Gender Selection
@@ -161,4 +163,15 @@ class PersonalizationData {
 
     return summary.join('\n');
   }
+}
+
+Future<void> savePersonalizationData(PersonalizationData data) async {
+  final user = FirebaseAuth.instance.currentUser; // <-- di sini
+  final uid = user?.uid;                          // <-- di sini
+  if (uid == null) return;
+
+  await FirebaseFirestore.instance
+      .collection('personalisasi')
+      .doc(uid)
+      .set(data.toJson());
 }

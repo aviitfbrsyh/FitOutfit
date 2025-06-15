@@ -5,7 +5,7 @@ import '../../widgets/auth/auth_button.dart';
 import '../../widgets/auth/social_login_button.dart';
 import '../../services/auth_service.dart';
 import '../../utils/validators.dart';
-import '../onboarding_page.dart';
+import 'login_page.dart'; 
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -149,7 +149,7 @@ class _RegisterPageState extends State<RegisterPage>
       setState(() => _isGoogleLoading = false);
 
       if (result.success) {
-        _navigateToHome();
+        _navigateToLogin(); // Ubah dari _navigateToHome() ke _navigateToLogin()
       } else {
         _showErrorSnackBar(result.error!);
       }
@@ -196,7 +196,7 @@ class _RegisterPageState extends State<RegisterPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Welcome to FitOutfit!',
+                    'Please sign in to continue',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -210,18 +210,19 @@ class _RegisterPageState extends State<RegisterPage>
 
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        Navigator.pop(context);
-        _navigateToHome();
+        Navigator.pop(context); // Tutup dialog
+        _navigateToLogin(); // Navigasi ke login page
       }
     });
   }
 
-  void _navigateToHome() {
+  // Ganti fungsi _navigateToHome() dengan _navigateToLogin()
+  void _navigateToLogin() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder:
             (context, animation, secondaryAnimation) =>
-                const PlaceholderHomePage(),
+                const LoginPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

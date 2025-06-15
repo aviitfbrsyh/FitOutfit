@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'models/personalization_data.dart';
 import 'steps/step_1_gender_selection.dart';
 import 'steps/step_2_photo_upload.dart';
@@ -399,18 +401,23 @@ class _PersonalizationPageState extends State<PersonalizationPage>
     return _data.canProceedFromStep(currentStep);
   }
 
-  void _completePersonalization() {
+  void _completePersonalization() async {
     HapticFeedback.heavyImpact();
 
-    // Save data to preferences/database here
-    // await _savePersonalizationData();
+    // Simpan data ke Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('personalisasi')
+          .doc(user.uid)
+          .set(_data.toJson());
+    }
 
-    // Navigate to HomePage immediately with smooth fade transition
+    // Navigate to HomePage
     Navigator.pushAndRemoveUntil(
       context,
       PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => const HomePage(),
+        pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

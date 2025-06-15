@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../wardrobe/wardrobe_page.dart';
-import '../virtual_try_on/virtual_try_on_page.dart'; // Pastikan path sesuai struktur project kamu
+import '../virtual_try_on/virtual_try_on_page.dart';
+import '../favorites/all_favorites_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -84,35 +85,39 @@ class _HomePageState extends State<HomePage>
     super.build(context);
     return Scaffold(
       backgroundColor: softCream,
-      body: RefreshIndicator(
-        onRefresh: _handleRefresh,
-        color: primaryBlue,
-        backgroundColor: Colors.white,
-        child: CustomScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            _buildCustomAppBar(),
-            SliverToBoxAdapter(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  children: [
-                    _buildSearchSection(),
-                    const SizedBox(height: 20),
-                    _buildDailyOutfitRecommendations(),
-                    const SizedBox(height: 24),
-                    _buildQuickAccessFeatures(),
-                    const SizedBox(height: 24),
-                    _buildFashionNewsSection(),
-                    const SizedBox(height: 24),
-                    _buildCommunityHighlights(),
-                    const SizedBox(height: 100), // Bottom nav spacing
-                  ],
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          color: primaryBlue,
+          backgroundColor: Colors.white,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              _buildCustomAppBar(),
+              SliverToBoxAdapter(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    children: [
+                      _buildSearchSection(),
+                      SizedBox(height: _getResponsiveHeight(20)),
+                      _buildDailyOutfitRecommendations(),
+                      SizedBox(height: _getResponsiveHeight(24)),
+                      _buildQuickAccessFeatures(),
+                      SizedBox(height: _getResponsiveHeight(24)),
+                      _buildFashionNewsSection(),
+                      SizedBox(height: _getResponsiveHeight(24)),
+                      _buildMyFavoritesSection(),
+                      SizedBox(height: _getResponsiveHeight(24)),
+                      _buildCommunityHighlights(),
+                      SizedBox(height: _getResponsiveHeight(100)), // Bottom nav spacing
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: _buildQuickOutfitFAB(),
@@ -120,9 +125,36 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  // Helper methods for responsive design
+  double _getScreenWidth() => MediaQuery.of(context).size.width;
+  double _getScreenHeight() => MediaQuery.of(context).size.height;
+  
+  bool _isSmallScreen() => _getScreenWidth() < 360;
+  bool _isMediumScreen() => _getScreenWidth() >= 360 && _getScreenWidth() < 400;
+  bool _isLargeScreen() => _getScreenWidth() >= 400;
+
+  double _getHorizontalPadding() {
+    if (_isSmallScreen()) return 16;
+    if (_isMediumScreen()) return 20;
+    return 24;
+  }
+
+  double _getResponsiveHeight(double baseHeight) {
+    final screenHeight = _getScreenHeight();
+    if (screenHeight < 700) return baseHeight * 0.8;
+    if (screenHeight > 900) return baseHeight * 1.1;
+    return baseHeight;
+  }
+
+  double _getResponsiveFontSize(double baseSize) {
+    if (_isSmallScreen()) return baseSize * 0.9;
+    if (_isLargeScreen()) return baseSize * 1.05;
+    return baseSize;
+  }
+
   Widget _buildCustomAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: _getResponsiveHeight(120),
       floating: false,
       pinned: true,
       backgroundColor: Colors.transparent,
@@ -132,13 +164,9 @@ class _HomePageState extends State<HomePage>
           final top = constraints.biggest.height;
           final safeAreaTop = MediaQuery.of(context).padding.top;
           final minHeight = kToolbarHeight + safeAreaTop;
-          final maxHeight = 120 + safeAreaTop;
+          final maxHeight = _getResponsiveHeight(120) + safeAreaTop;
 
-          // Calculate progress more smoothly
-          final progress = ((maxHeight - top) / (maxHeight - minHeight)).clamp(
-            0.0,
-            1.0,
-          );
+          final progress = ((maxHeight - top) / (maxHeight - minHeight)).clamp(0.0, 1.0);
 
           return Container(
             decoration: BoxDecoration(
@@ -151,14 +179,14 @@ class _HomePageState extends State<HomePage>
                   accentYellow.withValues(alpha: 0.1),
                 ],
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(_getResponsiveHeight(30)),
+                bottomRight: Radius.circular(_getResponsiveHeight(30)),
               ),
             ),
             child: SafeArea(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
                 child: _buildHeaderContent(progress),
               ),
             ),
@@ -169,10 +197,6 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildHeaderContent(double progress) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 360;
-
-    // Smooth transitions
     final expandedOpacity = (1.0 - (progress * 2.0)).clamp(0.0, 1.0);
     final collapsedOpacity = (progress * 2.0 - 0.5).clamp(0.0, 1.0);
     final isCollapsed = progress > 0.5;
@@ -187,7 +211,7 @@ class _HomePageState extends State<HomePage>
               child: Align(
                 alignment: Alignment.bottomLeft,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: EdgeInsets.only(bottom: _getResponsiveHeight(10)),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -199,22 +223,22 @@ class _HomePageState extends State<HomePage>
                             Text(
                               _getTimeBasedGreeting(),
                               style: GoogleFonts.poppins(
-                                fontSize: isSmallScreen ? 16 : 18,
+                                fontSize: _getResponsiveFontSize(16),
                                 fontWeight: FontWeight.w500,
                                 color: Colors.white.withValues(alpha: 0.9),
                               ),
                               maxLines: 1,
-                              overflow: TextOverflow.clip,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               'Sarah! ✨',
                               style: GoogleFonts.poppins(
-                                fontSize: isSmallScreen ? 22 : 24,
+                                fontSize: _getResponsiveFontSize(22),
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
                               maxLines: 1,
-                              overflow: TextOverflow.clip,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -223,7 +247,7 @@ class _HomePageState extends State<HomePage>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildNotificationBell(),
-                          SizedBox(width: isSmallScreen ? 8 : 10),
+                          SizedBox(width: _isSmallScreen() ? 8 : 10),
                           _buildProfileAvatar(),
                         ],
                       ),
@@ -247,12 +271,12 @@ class _HomePageState extends State<HomePage>
                       child: Text(
                         'FitOutfit',
                         style: GoogleFonts.poppins(
-                          fontSize: isSmallScreen ? 20 : 22,
+                          fontSize: _getResponsiveFontSize(20),
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                         maxLines: 1,
-                        overflow: TextOverflow.clip,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     _buildNotificationBell(),
@@ -268,16 +292,13 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildNotificationBell() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 360;
-
     return GestureDetector(
       onTap: () => _showNotifications(),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            padding: EdgeInsets.all(isSmallScreen ? 7 : 8),
+            padding: EdgeInsets.all(_isSmallScreen() ? 7 : 8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
@@ -285,7 +306,7 @@ class _HomePageState extends State<HomePage>
             child: Icon(
               Icons.notifications_rounded,
               color: Colors.white,
-              size: isSmallScreen ? 19 : 20,
+              size: _isSmallScreen() ? 19 : 20,
             ),
           ),
           if (_notificationCount > 0)
@@ -316,8 +337,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildProfileAvatar() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final avatarSize = screenWidth < 360 ? 38.0 : 42.0;
+    final avatarSize = _isSmallScreen() ? 36.0 : 40.0;
 
     return GestureDetector(
       onTap: () => _navigateToProfile(),
@@ -340,15 +360,14 @@ class _HomePageState extends State<HomePage>
           child: Image.asset(
             'assets/images/default_avatar.png',
             fit: BoxFit.cover,
-            errorBuilder:
-                (context, error, stackTrace) => Container(
-                  color: accentYellow,
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: avatarSize * 0.6,
-                  ),
-                ),
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: accentYellow,
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+                size: avatarSize * 0.6,
+              ),
+            ),
           ),
         ),
       ),
@@ -357,7 +376,10 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildSearchSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: _getHorizontalPadding(),
+        vertical: _getResponsiveHeight(16),
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -375,22 +397,24 @@ class _HomePageState extends State<HomePage>
           onChanged: (value) => setState(() => _searchQuery = value),
           decoration: InputDecoration(
             hintText: 'Search outfits, styles, trends...',
-            hintStyle: GoogleFonts.poppins(color: mediumGray, fontSize: 14),
+            hintStyle: GoogleFonts.poppins(
+              color: mediumGray,
+              fontSize: _getResponsiveFontSize(14),
+            ),
             prefixIcon: Icon(Icons.search_rounded, color: primaryBlue),
-            suffixIcon:
-                _searchQuery.isNotEmpty
-                    ? IconButton(
-                      icon: Icon(Icons.clear_rounded, color: mediumGray),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                    : Icon(Icons.tune_rounded, color: primaryBlue),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear_rounded, color: mediumGray),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : Icon(Icons.tune_rounded, color: primaryBlue),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: _getHorizontalPadding(),
+              vertical: _getResponsiveHeight(16),
             ),
           ),
         ),
@@ -403,30 +427,32 @@ class _HomePageState extends State<HomePage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Today\'s Outfit Picks',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: darkGray,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Today\'s Outfit Picks',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(20),
+                        fontWeight: FontWeight.w700,
+                        color: darkGray,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'AI-curated just for you',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: mediumGray,
-                      fontWeight: FontWeight.w500,
+                    Text(
+                      'AI-curated just for you',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(12),
+                        color: mediumGray,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               TextButton(
                 onPressed: () => _navigateToAllRecommendations(),
@@ -435,18 +461,19 @@ class _HomePageState extends State<HomePage>
                   style: GoogleFonts.poppins(
                     color: primaryBlue,
                     fontWeight: FontWeight.w600,
+                    fontSize: _getResponsiveFontSize(14),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: _getResponsiveHeight(16)),
         SizedBox(
-          height: 280,
+          height: _getResponsiveHeight(280),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
             itemCount: 5,
             itemBuilder: (context, index) => _buildOutfitCard(index),
           ),
@@ -495,10 +522,11 @@ class _HomePageState extends State<HomePage>
     ];
 
     final outfit = outfits[index];
+    final cardWidth = _isSmallScreen() ? 180.0 : 200.0;
 
     return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 16),
+      width: cardWidth,
+      margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -513,7 +541,6 @@ class _HomePageState extends State<HomePage>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Background Image
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -523,31 +550,31 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
             ),
-            // Content
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(_getHorizontalPadding() * 0.8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Weather & Occasion
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          outfit['weather'] as String,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: darkGray,
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            outfit['weather'] as String,
+                            style: GoogleFonts.poppins(
+                              fontSize: _getResponsiveFontSize(10),
+                              fontWeight: FontWeight.w600,
+                              color: darkGray,
+                            ),
                           ),
                         ),
                       ),
@@ -560,36 +587,40 @@ class _HomePageState extends State<HomePage>
                         child: Icon(
                           Icons.favorite_border_rounded,
                           color: Colors.white,
-                          size: 18,
+                          size: _isSmallScreen() ? 16 : 18,
                         ),
                       ),
                     ],
                   ),
                   const Spacer(),
-                  // Title & Occasion
                   Text(
                     outfit['title'] as String,
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: _getResponsiveFontSize(16),
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     outfit['occasion'] as String,
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
+                      fontSize: _getResponsiveFontSize(12),
                       color: Colors.white.withValues(alpha: 0.9),
                       fontWeight: FontWeight.w500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 12),
-                  // Action Buttons
+                  SizedBox(height: _getResponsiveHeight(12)),
                   Row(
                     children: [
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            vertical: _getResponsiveHeight(8),
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(12),
@@ -597,7 +628,7 @@ class _HomePageState extends State<HomePage>
                           child: Text(
                             'Try On',
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
+                              fontSize: _getResponsiveFontSize(12),
                               fontWeight: FontWeight.w600,
                               color: darkGray,
                             ),
@@ -615,7 +646,7 @@ class _HomePageState extends State<HomePage>
                         child: Icon(
                           Icons.bookmark_border_rounded,
                           color: Colors.white,
-                          size: 16,
+                          size: _isSmallScreen() ? 14 : 16,
                         ),
                       ),
                     ],
@@ -631,56 +662,64 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildQuickAccessFeatures() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Quick Access',
             style: GoogleFonts.poppins(
-              fontSize: 20,
+              fontSize: _getResponsiveFontSize(20),
               fontWeight: FontWeight.w700,
               color: darkGray,
             ),
           ),
-          const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.2,
-            children: [
-              _buildQuickAccessCard(
-                'Virtual Try-On',
-                Icons.camera_alt_rounded,
-                primaryBlue,
-                'See how outfits look on you',
-                () => _navigateToTryOn(),
-              ),
-              _buildQuickAccessCard(
-                'My Wardrobe',
-                Icons.checkroom_rounded,
-                accentYellow,
-                '127 items in your closet',
-                () => _navigateToWardrobe(),
-              ),
-              _buildQuickAccessCard(
-                'Style Quiz',
-                Icons.psychology_rounded,
-                accentRed,
-                'Discover your fashion DNA',
-                () => _navigateToStyleQuiz(),
-              ),
-              _buildQuickAccessCard(
-                'Outfit Planner',
-                Icons.calendar_today_rounded,
-                primaryBlue,
-                'Plan looks for your week',
-                () => _navigateToPlanner(),
-              ),
-            ],
+          SizedBox(height: _getResponsiveHeight(16)),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final crossAxisCount = availableWidth > 400 ? 2 : 2; // Keep 2 columns for consistency
+              final childAspectRatio = _isSmallScreen() ? 1.1 : 1.2;
+              
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: _getHorizontalPadding() * 0.8,
+                mainAxisSpacing: _getResponsiveHeight(16),
+                childAspectRatio: childAspectRatio,
+                children: [
+                  _buildQuickAccessCard(
+                    'Virtual Try-On',
+                    Icons.camera_alt_rounded,
+                    primaryBlue,
+                    'See how outfits look on you',
+                    () => _navigateToTryOn(),
+                  ),
+                  _buildQuickAccessCard(
+                    'My Wardrobe',
+                    Icons.checkroom_rounded,
+                    accentYellow,
+                    '127 items in your closet',
+                    () => _navigateToWardrobe(),
+                  ),
+                  _buildQuickAccessCard(
+                    'Style Quiz',
+                    Icons.psychology_rounded,
+                    accentRed,
+                    'Discover your fashion DNA',
+                    () => _navigateToStyleQuiz(),
+                  ),
+                  _buildQuickAccessCard(
+                    'Outfit Planner',
+                    Icons.calendar_today_rounded,
+                    primaryBlue,
+                    'Plan looks for your week',
+                    () => _navigateToPlanner(),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -703,7 +742,7 @@ class _HomePageState extends State<HomePage>
         animation: _pulseAnimation,
         builder: (context, child) {
           return Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(_getHorizontalPadding()),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -729,24 +768,34 @@ class _HomePageState extends State<HomePage>
                     ),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: _isSmallScreen() ? 20 : 24,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: _getResponsiveHeight(12)),
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: _getResponsiveFontSize(14),
                     fontWeight: FontWeight.w700,
                     color: darkGray,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: mediumGray,
-                    fontWeight: FontWeight.w500,
+                SizedBox(height: _getResponsiveHeight(4)),
+                Expanded(
+                  child: Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(11),
+                      color: mediumGray,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -762,14 +811,14 @@ class _HomePageState extends State<HomePage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Fashion News',
                 style: GoogleFonts.poppins(
-                  fontSize: 20,
+                  fontSize: _getResponsiveFontSize(20),
                   fontWeight: FontWeight.w700,
                   color: darkGray,
                 ),
@@ -781,18 +830,19 @@ class _HomePageState extends State<HomePage>
                   style: GoogleFonts.poppins(
                     color: primaryBlue,
                     fontWeight: FontWeight.w600,
+                    fontSize: _getResponsiveFontSize(14),
                   ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: _getResponsiveHeight(16)),
         SizedBox(
-          height: 160,
+          height: _getResponsiveHeight(160),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
             itemCount: 4,
             itemBuilder: (context, index) => _buildNewsCard(index),
           ),
@@ -830,10 +880,11 @@ class _HomePageState extends State<HomePage>
     ];
 
     final article = news[index];
+    final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
 
     return Container(
-      width: 240,
-      margin: const EdgeInsets.only(right: 16),
+      width: cardWidth,
+      margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -848,9 +899,8 @@ class _HomePageState extends State<HomePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image placeholder
           Container(
-            height: 80,
+            height: _getResponsiveHeight(80),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -876,7 +926,7 @@ class _HomePageState extends State<HomePage>
                     ),
                     child: Icon(
                       Icons.bookmark_border_rounded,
-                      size: 16,
+                      size: _isSmallScreen() ? 14 : 16,
                       color: darkGray,
                     ),
                   ),
@@ -884,148 +934,501 @@ class _HomePageState extends State<HomePage>
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  article['title'] as String,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: darkGray,
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      article['title'] as String,
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(13),
+                        fontWeight: FontWeight.w600,
+                        color: darkGray,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      article['readTime'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: mediumGray,
+                  SizedBox(height: _getResponsiveHeight(8)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          article['readTime'] as String,
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(10),
+                            color: mediumGray,
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(' • ', style: TextStyle(color: mediumGray)),
-                    Text(
-                      article['author'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: mediumGray,
+                      Text(
+                        ' • ',
+                        style: TextStyle(
+                          color: mediumGray,
+                          fontSize: _getResponsiveFontSize(10),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Expanded(
+                        child: Text(
+                          article['author'] as String,
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(10),
+                            color: mediumGray,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildCommunityHighlights() {
+  Widget _buildMyFavoritesSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Community',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: darkGray,
+          // Simplified Header tanpa tombol Explore All
+          _buildSimplifiedFavoritesHeader(),
+          SizedBox(height: _getResponsiveHeight(20)),
+          // Content Grid
+          _buildFavoritesContent(),
+        ],
+      ),
+    );
+  }
+Widget _buildSimplifiedFavoritesHeader() {
+  return Container(
+    padding: EdgeInsets.all(_getHorizontalPadding()),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Colors.white, primaryBlue.withValues(alpha: 0.02)],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
+    ),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(_isSmallScreen() ? 12 : 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accentRed, accentRed.withValues(alpha: 0.8)],
                 ),
-              ),
-              TextButton(
-                onPressed: () => _navigateToCommunity(),
-                child: Text(
-                  'Join Now',
-                  style: GoogleFonts.poppins(
-                    color: primaryBlue,
-                    fontWeight: FontWeight.w600,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentRed.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(20),
+              child: Icon(
+                Icons.favorite_rounded,
+                color: Colors.white,
+                size: _isSmallScreen() ? 24 : 28,
+              ),
+            ),
+            SizedBox(width: _getHorizontalPadding() * 0.8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'My Favorites',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(18),
+                            fontWeight: FontWeight.w800,
+                            color: darkGray,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentYellow,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '247',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(11),
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: _getResponsiveHeight(4)),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.trending_up_rounded,
+                        color: primaryBlue,
+                        size: _isSmallScreen() ? 14 : 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Your curated style collection',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(12),
+                            color: mediumGray,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        // See More Button
+        SizedBox(height: _getResponsiveHeight(16)),
+        GestureDetector(
+          onTap: () => _navigateToAllFavorites(),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              vertical: _getResponsiveHeight(12),
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  accentYellow.withValues(alpha: 0.1),
-                  primaryBlue.withValues(alpha: 0.05),
+                  primaryBlue,
+                  primaryBlue.withValues(alpha: 0.8),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: accentYellow.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryBlue.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
+                Icon(
+                  Icons.visibility_rounded,
+                  color: Colors.white,
+                  size: _isSmallScreen() ? 14 : 16,
+                ),
+                SizedBox(width: _getHorizontalPadding() * 0.4),
+                Text(
+                  'See More',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: _getResponsiveFontSize(14),
+                  ),
+                ),
+                SizedBox(width: _getHorizontalPadding() * 0.4),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white,
+                  size: _isSmallScreen() ? 12 : 14,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildFavoritesContent() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final isVeryNarrow = availableWidth < 300;
+        final isNarrow = availableWidth < 350;
+        
+        return Column(
+          children: [
+            // Top Section - Featured Outfit & Wardrobe Items
+            if (isVeryNarrow) ...[
+              // Stack everything vertically on very narrow screens
+              _buildFeaturedOutfitCard(),
+              SizedBox(height: _getResponsiveHeight(12)),
+              _buildWardrobeItemsColumn(),
+            ] else if (isNarrow) ...[
+              // Stack vertically on narrow screens  
+              _buildFeaturedOutfitCard(),
+              SizedBox(height: _getResponsiveHeight(12)),
+              _buildWardrobeItemsRow(),
+            ] else ...[
+              // Side by side on wider screens
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Avatar stack
-                    SizedBox(
-                      width: 100,
-                      height: 40,
-                      child: Stack(
-                        children: List.generate(4, (index) {
-                          return Positioned(
-                            left: index * 20.0,
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                                color:
-                                    [
-                                      primaryBlue,
-                                      accentYellow,
-                                      accentRed,
-                                      darkGray,
-                                    ][index],
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '2.5K+ Active Members',
+                      flex: 3,
+                      child: _buildFeaturedOutfitCard(),
+                    ),
+                    SizedBox(width: _getHorizontalPadding() * 0.8),
+                    Expanded(
+                      flex: 2,
+                      child: _buildWardrobeItemsColumn(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            SizedBox(height: _getResponsiveHeight(12)),
+
+            // Bottom Section - Articles & Community
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: _buildFashionArticleCard()),
+                  SizedBox(width: _getHorizontalPadding() * 0.8),
+                  Expanded(child: _buildCommunityCard()),
+                ],
+              ),
+            ),
+
+            SizedBox(height: _getResponsiveHeight(12)),
+
+            // Simplified Quick Actions - hanya tombol New Collection
+            _buildSimplifiedQuickActionsRow(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFeaturedOutfitCard() {
+    return GestureDetector(
+      onTap: () => _openFavoriteDetail('outfit', 'autumn-cozy-vibes'),
+      child: Container(
+        height: _getResponsiveHeight(180),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF667eea).withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Background Gradient
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF667eea),
+                      Color(0xFF764ba2),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Decorative Elements
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                ),
+              ),
+              
+              // Interactive Elements
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.favorite_rounded,
+                    color: accentRed,
+                    size: _isSmallScreen() ? 16 : 18,
+                  ),
+                ),
+              ),
+              
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentYellow,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentYellow.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.trending_up_rounded,
+                        color: Colors.white,
+                        size: _isSmallScreen() ? 10 : 12,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'TRENDING',
+                        style: GoogleFonts.poppins(
+                          fontSize: _getResponsiveFontSize(8),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Content
+              Positioned(
+                left: 16,
+                bottom: 16,
+                right: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Autumn Cozy Vibes',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(16),
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: _getResponsiveHeight(4)),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Coffee Date',
                             style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: darkGray,
+                              fontSize: _getResponsiveFontSize(9),
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.favorite_rounded,
+                          color: accentRed,
+                          size: _isSmallScreen() ? 10 : 12,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '2.3K',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(10),
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: _getResponsiveHeight(6)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            color: primaryBlue,
+                            size: _isSmallScreen() ? 12 : 14,
+                          ),
+                          const SizedBox(width: 3),
                           Text(
-                            'Share your style & get inspired',
+                            'Try This Look',
                             style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              color: mediumGray,
+                              fontSize: _getResponsiveFontSize(10),
+                              fontWeight: FontWeight.w700,
+                              color: primaryBlue,
                             ),
                           ),
                         ],
@@ -1033,52 +1436,514 @@ class _HomePageState extends State<HomePage>
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: primaryBlue,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Share Your Look',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: primaryBlue),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Browse Styles',
-                          style: GoogleFonts.poppins(
-                            color: primaryBlue,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWardrobeItemsColumn() {
+    return Column(
+      children: [
+        _buildWardrobeItem(
+          'Vintage Leather',
+          'Brown Jacket',
+          'Zara • Size M',
+          const Color(0xFFa8edea),
+          const Color(0xFFfed6e3),
+          const Color(0xFF20B2AA),
+          Icons.checkroom_rounded,
+          () => _openFavoriteDetail('wardrobe', 'vintage-leather-jacket'),
+        ),
+        SizedBox(height: _getResponsiveHeight(8)),
+        _buildWardrobeItem(
+          'Silk Midi Dress',
+          'Elegant Navy',
+          'H&M • \$89.99',
+          const Color(0xFFffecd2),
+          const Color(0xFFfcb69f),
+          const Color(0xFFfcb69f),
+          Icons.local_mall_rounded,
+          () => _openFavoriteDetail('wardrobe', 'silk-midi-dress'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWardrobeItemsRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildWardrobeItem(
+            'Vintage Leather',
+            'Brown Jacket',
+            'Zara • M',
+            const Color(0xFFa8edea),
+            const Color(0xFFfed6e3),
+            const Color(0xFF20B2AA),
+            Icons.checkroom_rounded,
+            () => _openFavoriteDetail('wardrobe', 'vintage-leather-jacket'),
+          ),
+        ),
+        SizedBox(width: _getHorizontalPadding() * 0.6),
+        Expanded(
+          child: _buildWardrobeItem(
+            'Silk Midi Dress',
+            'Elegant Navy',
+            'H&M • \$89.99',
+            const Color(0xFFffecd2),
+            const Color(0xFFfcb69f),
+            const Color(0xFFfcb69f),
+            Icons.local_mall_rounded,
+            () => _openFavoriteDetail('wardrobe', 'silk-midi-dress'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWardrobeItem(
+    String title,
+    String subtitle,
+    String description,
+    Color gradientStart,
+    Color gradientEnd,
+    Color iconColor,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: _getResponsiveHeight(80),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [gradientStart, gradientEnd],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: gradientStart.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Favorite Icon
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
                     ),
                   ],
                 ),
-              ],
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: accentRed,
+                  size: _isSmallScreen() ? 10 : 12,
+                ),
+              ),
             ),
+            
+            // Content
+            Positioned(
+              left: 12,
+              top: 8,
+              bottom: 8,
+              right: 40,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: iconColor,
+                      size: _isSmallScreen() ? 14 : 16,
+                    ),
+                  ),
+                  SizedBox(width: _getHorizontalPadding() * 0.4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(11),
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2F4F4F),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(10),
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF2F4F4F).withValues(alpha: 0.8),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          description,
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(8),
+                            color: const Color(0xFF2F4F4F).withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFashionArticleCard() {
+    return GestureDetector(
+      onTap: () => _openFavoriteDetail('article', 'spring-trends-2024'),
+      child: Container(
+        height: _getResponsiveHeight(110),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFfad0c4),
+              Color(0xFFffd1ff),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFfad0c4).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Favorite Icon
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: accentRed,
+                  size: _isSmallScreen() ? 10 : 12,
+                ),
+              ),
+            ),
+            
+            // Category Badge
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: primaryBlue,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'ARTICLE',
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(7),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+            
+            // Content
+            Positioned(
+              left: 12,
+              bottom: 12,
+              right: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Spring Fashion Trends 2024',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(12),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF8B4513),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: _getResponsiveHeight(3)),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.auto_stories_rounded,
+                        color: const Color(0xFFDB7093),
+                        size: _isSmallScreen() ? 8 : 10,
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          'Fashion Weekly • 5 min read',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(9),
+                            color: const Color(0xFF8B4513).withValues(alpha: 0.8),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommunityCard() {
+    return GestureDetector(
+      onTap: () => _openFavoriteDetail('community', 'minimalist-capsule-wardrobe'),
+      child: Container(
+        height: _getResponsiveHeight(110),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFa8edea),
+              Color(0xFFfed6e3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFa8edea).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Favorite Icon
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: accentRed,
+                  size: _isSmallScreen() ? 10 : 12,
+                ),
+              ),
+            ),
+            
+            // Category Badge
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: accentYellow,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'COMMUNITY',
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(7),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+            
+            // Content
+            Positioned(
+              left: 12,
+              bottom: 12,
+              right: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Minimalist Capsule Wardrobe',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(12),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF2F4F4F),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: _getResponsiveHeight(3)),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: _isSmallScreen() ? 5 : 6,
+                        backgroundColor: primaryBlue,
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: _isSmallScreen() ? 6 : 8,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '@sarah_minimal • 1.2K',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(9),
+                            color: const Color(0xFF2F4F4F).withValues(alpha: 0.8),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(
+                        Icons.favorite_rounded,
+                        color: accentRed,
+                        size: _isSmallScreen() ? 8 : 10,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Simplified Quick Actions - hanya tombol New Collection
+  Widget _buildSimplifiedQuickActionsRow() {
+    return Container(
+      padding: EdgeInsets.all(_getHorizontalPadding() * 0.8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryBlue.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: GestureDetector(
+        onTap: () => _createCollection(),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            vertical: _getResponsiveHeight(12),
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                accentYellow,
+                accentYellow.withValues(alpha: 0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: accentYellow.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.collections_bookmark_rounded,
+                color: Colors.white,
+                size: _isSmallScreen() ? 14 : 16,
+              ),
+              SizedBox(width: _getHorizontalPadding() * 0.4),
+              Text(
+                'Create New Collection',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: _getResponsiveFontSize(12),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1092,12 +1957,17 @@ class _HomePageState extends State<HomePage>
           child: FloatingActionButton.extended(
             onPressed: () => _navigateToQuickOutfit(),
             backgroundColor: accentRed,
-            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+            icon: Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: _isSmallScreen() ? 20 : 24,
+            ),
             label: Text(
               'Quick Outfit',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
+                fontSize: _getResponsiveFontSize(14),
               ),
             ),
           ),
@@ -1118,36 +1988,272 @@ class _HomePageState extends State<HomePage>
           ),
         ],
       ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedBottomNavIndex,
-        onTap: (index) => setState(() => _selectedBottomNavIndex = index),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        selectedItemColor: primaryBlue,
-        unselectedItemColor: mediumGray,
-        selectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Home',
+      child: SafeArea(
+        child: BottomNavigationBar(
+          currentIndex: _selectedBottomNavIndex,
+          onTap: (index) => setState(() => _selectedBottomNavIndex = index),
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: primaryBlue,
+          unselectedItemColor: mediumGray,
+          selectedLabelStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: _getResponsiveFontSize(12),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checkroom_rounded),
-            label: 'Wardrobe',
+          unselectedLabelStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w500,
+            fontSize: _getResponsiveFontSize(12),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt_rounded),
-            label: 'Try-On',
+          iconSize: _isSmallScreen() ? 20 : 24,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.checkroom_rounded),
+              label: 'Wardrobe',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.camera_alt_rounded),
+              label: 'Try-On',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_rounded),
+              label: 'Community',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommunityHighlights() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Community',
+                style: GoogleFonts.poppins(
+                  fontSize: _getResponsiveFontSize(20),
+                  fontWeight: FontWeight.w700,
+                  color: darkGray,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _navigateToJoinCommunity(),
+                child: Text(
+                  'Join Now',
+                  style: GoogleFonts.poppins(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.w600,
+                    fontSize: _getResponsiveFontSize(14),
+                  ),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_rounded),
-            label: 'Community',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
+          SizedBox(height: _getResponsiveHeight(16)),
+          Container(
+            padding: EdgeInsets.all(_getHorizontalPadding()),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  accentYellow.withValues(alpha: 0.1),
+                  primaryBlue.withValues(alpha: 0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accentYellow.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availableWidth = constraints.maxWidth;
+                    final isNarrow = availableWidth < 300;
+
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            // Avatar stack
+                            SizedBox(
+                              width: _isSmallScreen() ? 80 : 100,
+                              height: _getResponsiveHeight(40),
+                              child: Stack(
+                                children: List.generate(4, (index) {
+                                  return Positioned(
+                                    left: index * (_isSmallScreen() ? 16.0 : 20.0),
+                                    child: Container(
+                                      width: _isSmallScreen() ? 32 : 40,
+                                      height: _isSmallScreen() ? 32 : 40,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          _isSmallScreen() ? 16 : 20,
+                                        ),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
+                                        color: [
+                                          primaryBlue,
+                                          accentYellow,
+                                          accentRed,
+                                          darkGray,
+                                        ][index],
+                                      ),
+                                      child: Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: _isSmallScreen() ? 16 : 20,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                            SizedBox(width: _getHorizontalPadding()),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '2.5K+ Active Members',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: _getResponsiveFontSize(14),
+                                      fontWeight: FontWeight.w700,
+                                      color: darkGray,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Share your style & get inspired',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: _getResponsiveFontSize(11),
+                                      color: mediumGray,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: _getResponsiveHeight(16)),
+                        if (isNarrow) ...[
+                          // Stack buttons vertically on narrow screens
+                          Column(
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: _getResponsiveHeight(12),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: primaryBlue,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Share Your Look',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: _getResponsiveFontSize(12),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: _getResponsiveHeight(8)),
+                              SizedBox(
+                                width: double.infinity,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: _getResponsiveHeight(12),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: primaryBlue),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Browse Styles',
+                                    style: GoogleFonts.poppins(
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: _getResponsiveFontSize(12),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          // Side by side buttons on wider screens
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: _getResponsiveHeight(12),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: primaryBlue,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Share Your Look',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: _getResponsiveFontSize(12),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: _getHorizontalPadding() * 0.6),
+                              Expanded(
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: _getResponsiveHeight(12),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: primaryBlue),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    'Browse Styles',
+                                    style: GoogleFonts.poppins(
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: _getResponsiveFontSize(12),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1164,18 +2270,23 @@ class _HomePageState extends State<HomePage>
     // Navigate to all recommendations
   }
 
+void _navigateToAllFavorites() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const AllFavoritesPage()),
+  );
+}
+
   void _navigateToTryOn() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const VirtualTryOnPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const VirtualTryOnPage()),
     );
   }
 
   void _navigateToWardrobe() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const WardrobePage()),
+    );
   }
 
   void _navigateToStyleQuiz() {
@@ -1190,8 +2301,8 @@ class _HomePageState extends State<HomePage>
     // Navigate to fashion news
   }
 
-  void _navigateToCommunity() {
-    // Navigate to community
+  void _navigateToJoinCommunity() {
+    // Navigate to join community
   }
 
   void _navigateToQuickOutfit() {
@@ -1205,5 +2316,165 @@ class _HomePageState extends State<HomePage>
   Future<void> _handleRefresh() async {
     // Simulate network delay
     await Future.delayed(const Duration(seconds: 2));
+  }
+
+
+
+  void _openFavoriteDetail(String type, String id) {
+    switch (type) {
+      case 'wardrobe':
+        _navigateToFavoriteWardrobe(id);
+        break;
+      case 'outfit':
+        _navigateToFavoriteOutfit(id);
+        break;
+      case 'article':
+        _navigateToFavoriteArticle(id);
+        break;
+      case 'tryon':
+        _navigateToFavoriteTryOn(id);
+        break;
+      case 'community':
+        _navigateToFavoriteCommunity(id);
+        break;
+      case 'shopping':
+        _navigateToFavoriteShopping(id);
+        break;
+    }
+  }
+
+  void _navigateToFavoriteWardrobe(String id) {
+    // Navigate to specific wardrobe item
+  }
+
+  void _navigateToFavoriteOutfit(String id) {
+    // Navigate to specific outfit recommendation
+  }
+
+  void _navigateToFavoriteArticle(String id) {
+    // Navigate to specific article
+  }
+
+  void _navigateToFavoriteTryOn(String id) {
+    // Navigate to specific try-on result
+  }
+
+  void _navigateToFavoriteCommunity(String id) {
+    // Navigate to specific community post
+  }
+
+  void _navigateToFavoriteShopping(String id) {
+    // Navigate to specific shopping recommendation
+  }
+
+  void _createCollection() {
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          'Create New Collection',
+          style: GoogleFonts.poppins(
+            fontSize: _getResponsiveFontSize(18),
+            fontWeight: FontWeight.w700,
+            color: darkGray,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Collection name',
+                hintStyle: GoogleFonts.poppins(
+                  color: mediumGray,
+                  fontSize: _getResponsiveFontSize(14),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: primaryBlue.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: primaryBlue),
+                ),
+              ),
+            ),
+            SizedBox(height: _getResponsiveHeight(16)),
+            TextField(
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Description (optional)',
+                hintStyle: GoogleFonts.poppins(
+                  color: mediumGray,
+                  fontSize: _getResponsiveFontSize(14),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: primaryBlue.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: primaryBlue),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(
+                color: mediumGray,
+                fontSize: _getResponsiveFontSize(14),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Collection created successfully!',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(14),
+                    ),
+                  ),
+                  backgroundColor: primaryBlue,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryBlue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Create',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: _getResponsiveFontSize(14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

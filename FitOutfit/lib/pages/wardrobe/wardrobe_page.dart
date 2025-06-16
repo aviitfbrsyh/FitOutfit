@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import './outfit_result_page.dart';
-import '../home/home_page.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -209,160 +208,149 @@ class _WardrobePageState extends State<WardrobePage>
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
-
-  Widget _buildEnhancedSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 120,
-      collapsedHeight: 80, // Set a specific collapsed height
-      pinned: true,
-      floating: false,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        child: Material(
-          color: pureWhite.withValues(alpha: 0.95),
+Widget _buildEnhancedSliverAppBar() {
+  return SliverAppBar(
+    expandedHeight: 140,
+    collapsedHeight: 90,
+    pinned: true,
+    floating: false,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    centerTitle: false, // DISABLE CENTER TITLE
+    leading: Container(
+      margin: const EdgeInsets.all(8),
+      child: Material(
+        color: pureWhite.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const HomePage()),
-                (route) => false,
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: shadowColor,
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: darkGray,
-                size: 20,
-              ),
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: darkGray,
+              size: 20,
             ),
           ),
         ),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          child: Material(
-            color: pureWhite.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {},
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: shadowColor,
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.more_vert_rounded, color: darkGray, size: 20),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-      ],
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final top = constraints.biggest.height;
-          final isCollapsed = top <= 100; // Adjusted collapse threshold
+    ),
+    // HILANGKAN ACTIONS (TITIK 3)
+    actions: const [],
+    // HILANGKAN TITLE COMPLETELY
+    title: null,
+    flexibleSpace: LayoutBuilder(
+      builder: (context, constraints) {
+        final top = constraints.biggest.height;
+        final isCollapsed = top <= 110;
+        final screenWidth = MediaQuery.of(context).size.width;
 
-          return FlexibleSpaceBar(
-            background: AnimatedBuilder(
-              animation: _headerAnimation,
-              builder:
-                  (context, child) => Transform.scale(
-                    scale: 0.95 + (0.05 * _headerAnimation.value),
-                    child: Opacity(
-                      opacity: _headerAnimation.value,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              primaryBlue,
-                              secondaryBlue,
-                              primaryBlue.withValues(alpha: 0.8),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(isCollapsed ? 20 : 28),
-                            bottomRight: Radius.circular(isCollapsed ? 20 : 28),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryBlue.withValues(
-                                alpha: isCollapsed ? 0.15 : 0.3,
-                              ),
-                              blurRadius: isCollapsed ? 10 : 20,
-                              offset: Offset(0, isCollapsed ? 5 : 10),
-                            ),
-                            BoxShadow(
-                              color: shadowColor.withValues(
-                                alpha: isCollapsed ? 0.1 : 0.2,
-                              ),
-                              blurRadius: isCollapsed ? 8 : 15,
-                              offset: Offset(0, isCollapsed ? 3 : 5),
-                            ),
-                          ],
+        return FlexibleSpaceBar(
+          // NO TITLE - EMPTY
+          title: const SizedBox.shrink(),
+          background: AnimatedBuilder(
+            animation: _headerAnimation,
+            builder: (context, child) => Transform.scale(
+              scale: 0.95 + (0.05 * _headerAnimation.value),
+              child: Opacity(
+                opacity: _headerAnimation.value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        primaryBlue,
+                        primaryBlue.withValues(alpha: 0.95),
+                        primaryBlue.withValues(alpha: 0.9),
+                        Color(0xFF5BA3F5).withValues(alpha: 0.8),
+                        Color(0xFF6BB6FF).withValues(alpha: 0.7),
+                        accentYellow.withValues(alpha: 0.4),
+                        accentRed.withValues(alpha: 0.2),
+                        primaryBlue.withValues(alpha: 0.85),
+                      ],
+                      stops: const [0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(isCollapsed ? 35 : 45),
+                      bottomRight: Radius.circular(isCollapsed ? 35 : 45),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryBlue.withValues(
+                          alpha: isCollapsed ? 0.15 : 0.25,
                         ),
-                        child: SafeArea(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              24,
-                              20,
-                              24,
-                              isCollapsed ? 12 : 24,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Always show the header content, but adjust size when collapsed
-                                Row(
+                        blurRadius: isCollapsed ? 15 : 25,
+                        offset: Offset(0, isCollapsed ? 8 : 12),
+                      ),
+                      BoxShadow(
+                        color: shadowColor.withValues(
+                          alpha: isCollapsed ? 0.1 : 0.15,
+                        ),
+                        blurRadius: isCollapsed ? 10 : 18,
+                        offset: Offset(0, isCollapsed ? 4 : 6),
+                      ),
+                      BoxShadow(
+                        color: primaryBlue.withValues(alpha: 0.08),
+                        blurRadius: isCollapsed ? 20 : 35,
+                        offset: Offset(0, isCollapsed ? 12 : 18),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Container(
+                      // RESPONSIVE PADDING BASED ON SCREEN WIDTH
+                      padding: EdgeInsets.fromLTRB(
+                        screenWidth > 400 ? 32 : 24, // RESPONSIVE LEFT PADDING
+                        25,
+                        screenWidth > 400 ? 24 : 16, // RESPONSIVE RIGHT PADDING
+                        isCollapsed ? 20 : 32,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // RESPONSIVE CONTENT
+                          AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            opacity: isCollapsed ? 0.0 : 1.0,
+                            child: LayoutBuilder(
+                              builder: (context, boxConstraints) {
+                                final availableWidth = boxConstraints.maxWidth;
+                                
+                                return Row(
                                   children: [
+                                    // RESPONSIVE ICON CONTAINER
                                     Container(
                                       padding: EdgeInsets.all(
-                                        isCollapsed ? 8 : 12,
+                                        screenWidth > 400 
+                                          ? (isCollapsed ? 12 : 16)
+                                          : (isCollapsed ? 10 : 12),
                                       ),
                                       decoration: BoxDecoration(
-                                        color: pureWhite.withValues(
-                                          alpha: 0.25,
-                                        ),
+                                        color: pureWhite.withValues(alpha: 0.25),
                                         borderRadius: BorderRadius.circular(
-                                          isCollapsed ? 12 : 16,
+                                          screenWidth > 400 
+                                            ? (isCollapsed ? 16 : 20)
+                                            : (isCollapsed ? 14 : 16),
                                         ),
                                         border: Border.all(
-                                          color: pureWhite.withValues(
-                                            alpha: 0.4,
-                                          ),
+                                          color: pureWhite.withValues(alpha: 0.4),
                                           width: 1.5,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: pureWhite.withValues(
-                                              alpha: 0.1,
-                                            ),
+                                            color: pureWhite.withValues(alpha: 0.1),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),
@@ -371,73 +359,78 @@ class _WardrobePageState extends State<WardrobePage>
                                       child: Icon(
                                         Icons.checkroom_rounded,
                                         color: pureWhite,
-                                        size: isCollapsed ? 20 : 24,
+                                        size: screenWidth > 400 
+                                          ? (isCollapsed ? 24 : 28)
+                                          : (isCollapsed ? 20 : 24),
                                       ),
                                     ),
-                                    const SizedBox(width: 16),
+                                    SizedBox(width: screenWidth > 400 ? 18 : 12),
+                                    // RESPONSIVE TEXT CONTENT
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            'My Wardrobe',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: isCollapsed ? 20 : 28,
-                                              fontWeight: FontWeight.w800,
-                                              color: pureWhite,
-                                              letterSpacing: -0.8,
-                                              height: 1.0,
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              'My Wardrobe',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: screenWidth > 400 
+                                                  ? (isCollapsed ? 22 : 30)
+                                                  : (isCollapsed ? 18 : 24),
+                                                fontWeight: FontWeight.w800,
+                                                color: pureWhite,
+                                                letterSpacing: -0.8,
+                                                height: 1.0,
+                                              ),
                                             ),
                                           ),
                                           if (!isCollapsed) ...[
-                                            const SizedBox(height: 4),
-                                            Row(
+                                            SizedBox(height: screenWidth > 400 ? 8 : 6),
+                                            // RESPONSIVE BOTTOM INFO
+                                            Wrap(
+                                              spacing: screenWidth > 400 ? 12 : 8,
+                                              crossAxisAlignment: WrapCrossAlignment.center,
                                               children: [
                                                 Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 3,
-                                                      ),
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth > 400 ? 12 : 8,
+                                                    vertical: screenWidth > 400 ? 5 : 3,
+                                                  ),
                                                   decoration: BoxDecoration(
-                                                    color: pureWhite.withValues(
-                                                      alpha: 0.2,
+                                                    color: pureWhite.withValues(alpha: 0.25),
+                                                    borderRadius: BorderRadius.circular(
+                                                      screenWidth > 400 ? 12 : 8,
                                                     ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
                                                   ),
                                                   child: Text(
                                                     '${_wardrobeItems.length} items',
                                                     style: GoogleFonts.poppins(
-                                                      fontSize: 11,
+                                                      fontSize: screenWidth > 400 ? 13 : 11,
                                                       color: pureWhite,
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                      fontWeight: FontWeight.w600,
                                                     ),
                                                   ),
                                                 ),
-                                                const SizedBox(width: 8),
-                                                Icon(
-                                                  Icons.fiber_manual_record,
-                                                  size: 4,
-                                                  color: pureWhite.withValues(
-                                                    alpha: 0.7,
+                                                if (availableWidth > 200) ...[
+                                                  Icon(
+                                                    Icons.fiber_manual_record,
+                                                    size: screenWidth > 400 ? 6 : 4,
+                                                    color: pureWhite.withValues(alpha: 0.7),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  'Updated today',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 12,
-                                                    color: pureWhite.withValues(
-                                                      alpha: 0.9,
+                                                  Flexible(
+                                                    child: Text(
+                                                      'Updated 2025-06-13 19:29',
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: screenWidth > 400 ? 14 : 12,
+                                                        color: pureWhite.withValues(alpha: 0.9),
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    fontWeight: FontWeight.w500,
                                                   ),
-                                                ),
+                                                ],
                                               ],
                                             ),
                                           ],
@@ -445,21 +438,23 @@ class _WardrobePageState extends State<WardrobePage>
                                       ),
                                     ),
                                   ],
-                                ),
-                              ],
+                                );
+                              },
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
+                ),
+              ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
+          ),
+        );
+      },
+    ),
+  );
+}
   Widget _buildEnhancedTabBar() {
     return Container(
       margin: const EdgeInsets.fromLTRB(
@@ -546,125 +541,796 @@ class _WardrobePageState extends State<WardrobePage>
     );
   }
 
-  Widget _buildSearchAndActions() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
-        20,
-        8,
-        20,
-        12,
-      ), // Reduced top margin since tab bar has margin now
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: pureWhite,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: shadowColor,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search wardrobe...',
-                  hintStyle: GoogleFonts.poppins(
-                    color: mediumGray.withValues(alpha: 0.6),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: mediumGray,
-                    size: 18,
-                  ),
-                  suffixIcon:
-                      _searchQuery.isNotEmpty
-                          ? IconButton(
-                            icon: Icon(
-                              Icons.clear_rounded,
-                              color: mediumGray,
-                              size: 16,
-                            ),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                          : Container(
-                            margin: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [primaryBlue, secondaryBlue],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.tune_rounded,
-                              color: pureWhite,
-                              size: 14,
-                            ),
-                          ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: darkGray,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
+Widget _buildSearchAndActions() {
+  return Container(
+    margin: const EdgeInsets.fromLTRB(
+      20,
+      8,
+      20,
+      12,
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Container(
             height: 44,
-            width: 44,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [accentYellow, accentYellow.withValues(alpha: 0.8)],
-              ),
+              color: pureWhite,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: accentYellow.withValues(alpha: 0.3),
+                  color: shadowColor,
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {},
-                child: Icon(
-                  Icons.grid_view_rounded,
-                  color: pureWhite,
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search wardrobe...',
+                hintStyle: GoogleFonts.poppins(
+                  color: mediumGray.withValues(alpha: 0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: mediumGray,
                   size: 18,
                 ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: mediumGray,
+                          size: 16,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: darkGray,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // CATEGORIES BUTTON - FUNGSIONAL
+        Container(
+          height: 44,
+          width: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryBlue, secondaryBlue],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: primaryBlue.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showCategoriesBottomSheet(),
+              child: Icon(
+                Icons.category_rounded,
+                color: pureWhite,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // FILTER BUTTON - FUNGSIONAL
+        Container(
+          height: 44,
+          width: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [accentYellow, accentYellow.withValues(alpha: 0.8)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: accentYellow.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showFilterBottomSheet(),
+              child: Icon(
+                Icons.tune_rounded,
+                color: pureWhite,
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// CATEGORIES BOTTOM SHEET
+void _showCategoriesBottomSheet() {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) => Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      decoration: BoxDecoration(
+        color: pureWhite,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // HANDLE BAR
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: lightGray,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // HEADER
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [primaryBlue, secondaryBlue],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.category_rounded,
+                    color: pureWhite,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Select Category',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: darkGray,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // CATEGORIES LIST
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                final isSelected = _selectedCategory == category;
+                final itemCount = category == 'All'
+                    ? _wardrobeItems.length
+                    : _wardrobeItems
+                        .where((item) => item['category'] == category)
+                        .length;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = category;
+                        });
+                        Navigator.pop(context);
+                        // HAPTIC FEEDBACK
+                        HapticFeedback.lightImpact();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isSelected ? primaryBlue.withValues(alpha: 0.1) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? primaryBlue : lightGray,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isSelected 
+                                    ? primaryBlue 
+                                    : lightGray,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _getCategoryIcon(category),
+                                color: isSelected ? pureWhite : mediumGray,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                category,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                  color: isSelected ? primaryBlue : darkGray,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected 
+                                    ? primaryBlue.withValues(alpha: 0.2)
+                                    : lightGray,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '$itemCount',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected ? primaryBlue : mediumGray,
+                                ),
+                              ),
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: primaryBlue,
+                                size: 20,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
       ),
-    );
+    ),
+  );
+}
+
+// FILTER BOTTOM SHEET - BERDASARKAN TAGS
+void _showFilterBottomSheet() {
+  // COLLECT ALL UNIQUE TAGS FROM WARDROBE ITEMS
+  Set<String> allTags = {};
+  for (var item in _wardrobeItems) {
+    if (item['tags'] != null) {
+      allTags.addAll((item['tags'] as List<dynamic>).cast<String>());
+    }
   }
+  
+  List<String> sortedTags = allTags.toList()..sort();
+  
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setModalState) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: pureWhite,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // HANDLE BAR
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: lightGray,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // HEADER
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [accentYellow, accentYellow.withValues(alpha: 0.8)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.local_offer_rounded, // TAG ICON
+                      color: pureWhite,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Filter by Tags',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: darkGray,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  // CLEAR ALL BUTTON
+                  if (_selectedTags.isNotEmpty)
+                    TextButton(
+                      onPressed: () {
+                        setModalState(() {
+                          _selectedTags.clear();
+                        });
+                        HapticFeedback.lightImpact();
+                      },
+                      child: Text(
+                        'Clear All',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: accentRed,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            
+            // SELECTED TAGS PREVIEW
+            if (_selectedTags.isNotEmpty) ...[
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: primaryBlue.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: primaryBlue.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.filter_alt_rounded,
+                          color: primaryBlue,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Active Filters (${_selectedTags.length})',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: primaryBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: _selectedTags.map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primaryBlue,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          tag,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: pureWhite,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // AVAILABLE TAGS
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Available Tags (${sortedTags.length})',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: darkGray,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    if (sortedTags.isEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.local_offer_outlined,
+                              color: mediumGray,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No tags available',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: mediumGray,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Add items with tags to filter',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: mediumGray.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: sortedTags.map((tag) {
+                          final isSelected = _selectedTags.contains(tag);
+                          final itemCount = _wardrobeItems.where((item) => 
+                            (item['tags'] as List).contains(tag)
+                          ).length;
+                          
+                          return Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () {
+                                setModalState(() {
+                                  if (isSelected) {
+                                    _selectedTags.remove(tag);
+                                  } else {
+                                    _selectedTags.add(tag);
+                                  }
+                                });
+                                HapticFeedback.selectionClick();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? primaryBlue : pureWhite,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected ? primaryBlue : lightGray,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  boxShadow: isSelected ? [
+                                    BoxShadow(
+                                      color: primaryBlue.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ] : null,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.local_offer_rounded,
+                                      size: 14,
+                                      color: isSelected ? pureWhite : mediumGray,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      tag,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected ? pureWhite : darkGray,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected 
+                                            ? pureWhite.withValues(alpha: 0.2)
+                                            : lightGray,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '$itemCount',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: isSelected 
+                                              ? pureWhite.withValues(alpha: 0.9)
+                                              : mediumGray,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+            
+            // APPLY BUTTON
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: pureWhite,
+                border: Border(
+                  top: BorderSide(
+                    color: lightGray,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // RESULTS COUNT
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_getFilteredItemsCount()} items found',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: darkGray,
+                          ),
+                        ),
+                        if (_selectedTags.isNotEmpty)
+                          Text(
+                            'with selected tags',
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: mediumGray,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // APPLY BUTTON
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          // APPLY FILTER AKAN UPDATE STATE
+                        });
+                        Navigator.pop(context);
+                        HapticFeedback.mediumImpact();
+                        
+                        // SHOW SNACKBAR
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _selectedTags.isEmpty 
+                                  ? 'All filters cleared!'
+                                  : 'Filtered by ${_selectedTags.length} tag${_selectedTags.length > 1 ? 's' : ''}',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            backgroundColor: primaryBlue,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        foregroundColor: pureWhite,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                      ),
+                      child: Text(
+                        'Apply Filters',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// ADD THIS TO CLASS VARIABLES
+final Set<String> _selectedTags = {};
+
+// HELPER FUNCTION UNTUK COUNT FILTERED ITEMS
+int _getFilteredItemsCount() {
+  if (_selectedTags.isEmpty) return _wardrobeItems.length;
+  
+  return _wardrobeItems.where((item) {
+    final itemTags = (item['tags'] as List<dynamic>).cast<String>();
+    return _selectedTags.every((selectedTag) => itemTags.contains(selectedTag));
+  }).length;
+}
+
+Widget _buildEnhancedWardrobeGrid() {
+  List<Map<String, dynamic>> filteredItems = _wardrobeItems;
+
+  // Filter by category
+  if (_selectedCategory != 'All') {
+    filteredItems = filteredItems
+        .where((item) => item['category'] == _selectedCategory)
+        .toList();
+  }
+
+  // Filter by selected tags
+  if (_selectedTags.isNotEmpty) {
+    filteredItems = filteredItems.where((item) {
+      final itemTags = (item['tags'] as List<dynamic>).cast<String>();
+      return _selectedTags.every((selectedTag) => itemTags.contains(selectedTag));
+    }).toList();
+  }
+
+  // Filter by search query
+  if (_searchQuery.isNotEmpty) {
+    filteredItems = filteredItems.where((item) {
+      final name = item['name'].toString().toLowerCase();
+      final brand = (item['brand'] ?? '').toString().toLowerCase();
+      final category = item['category'].toString().toLowerCase();
+      final color = item['color'].toString().toLowerCase();
+      final description = item['description'].toString().toLowerCase();
+      final tags = (item['tags'] as List).join(' ').toLowerCase();
+
+      return name.contains(_searchQuery) ||
+          brand.contains(_searchQuery) ||
+          category.contains(_searchQuery) ||
+          color.contains(_searchQuery) ||
+          description.contains(_searchQuery) ||
+          tags.contains(_searchQuery);
+    }).toList();
+  }
+
+  if (filteredItems.isEmpty) {
+    return _buildEnhancedEmptyState();
+  }
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: filteredItems.length,
+      itemBuilder: (context, index) => _buildEnhancedWardrobeItem(filteredItems[index]),
+    ),
+  );
+}
+
+
 
   Widget _buildEnhancedStatsCards() {
     return Container(
@@ -893,59 +1559,6 @@ class _WardrobePageState extends State<WardrobePage>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEnhancedWardrobeGrid() {
-    List<Map<String, dynamic>> filteredItems = _wardrobeItems;
-
-    // Filter by category
-    if (_selectedCategory != 'All') {
-      filteredItems =
-          filteredItems
-              .where((item) => item['category'] == _selectedCategory)
-              .toList();
-    }
-
-    // Filter by search query
-    if (_searchQuery.isNotEmpty) {
-      filteredItems =
-          filteredItems.where((item) {
-            final name = item['name'].toString().toLowerCase();
-            final brand = (item['brand'] ?? '').toString().toLowerCase();
-            final category = item['category'].toString().toLowerCase();
-            final color = item['color'].toString().toLowerCase();
-            final description = item['description'].toString().toLowerCase();
-            final tags = (item['tags'] as List).join(' ').toLowerCase();
-
-            return name.contains(_searchQuery) ||
-                brand.contains(_searchQuery) ||
-                category.contains(_searchQuery) ||
-                color.contains(_searchQuery) ||
-                description.contains(_searchQuery) ||
-                tags.contains(_searchQuery);
-          }).toList();
-    }
-
-    if (filteredItems.isEmpty) {
-      return _buildEnhancedEmptyState();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.builder(
-        physics: const BouncingScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
-        ),
-        itemCount: filteredItems.length,
-        itemBuilder:
-            (context, index) =>
-                _buildEnhancedWardrobeItem(filteredItems[index]),
       ),
     );
   }
@@ -2058,7 +2671,7 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.95,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(32),
@@ -2729,7 +3342,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(32),

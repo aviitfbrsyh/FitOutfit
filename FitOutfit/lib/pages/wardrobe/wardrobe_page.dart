@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import './outfit_result_page.dart';
+import '../home/home_page.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -224,7 +225,12 @@ class _WardrobePageState extends State<WardrobePage>
           borderRadius: BorderRadius.circular(16),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const HomePage()),
+                (route) => false,
+              );
+            },
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),

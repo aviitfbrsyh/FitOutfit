@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../home/home_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -58,8 +59,17 @@ class _VirtualTryOnPageState extends State<VirtualTryOnPage> {
             borderRadius: BorderRadius.circular(16),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => Navigator.pop(context),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, color: darkGray, size: 20),
+              onTap: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                  (route) => false,
+                );
+              },
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.black,
+                size: 20,
+              ),
             ),
           ),
         ),

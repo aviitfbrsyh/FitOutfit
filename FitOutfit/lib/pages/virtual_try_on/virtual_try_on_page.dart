@@ -30,7 +30,17 @@ class _VirtualTryOnPageState extends State<VirtualTryOnPage> {
     'Travel',
   ];
 
+  // Tambahkan list cuaca seperti di wardrobe
+  final List<String> _weatherOptions = [
+    'Sunny & Warm',
+    'Rainy & Cool',
+    'Cold & Windy',
+    'Hot & Humid',
+    'Mild & Pleasant',
+  ];
+
   String _selectedDestination = '';
+  String _selectedWeather = ''; // Tambahkan variabel untuk cuaca
   bool _loading = false;
   String? _outfitResult;
 
@@ -72,6 +82,8 @@ class _VirtualTryOnPageState extends State<VirtualTryOnPage> {
             _buildHeader(),
             const SizedBox(height: 28),
             _buildDestinationSelector(),
+            const SizedBox(height: 24),
+            _buildWeatherSelector(), // Tambahkan widget cuaca
             const SizedBox(height: 36),
             _buildGenerateButton(),
             if (_loading) ...[
@@ -322,8 +334,121 @@ class _VirtualTryOnPageState extends State<VirtualTryOnPage> {
     );
   }
 
+  Widget _buildWeatherSelector() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            accentYellow.withOpacity(0.08),
+            accentYellow.withOpacity(0.05),
+            Colors.white,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: accentYellow.withOpacity(0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accentYellow.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      accentYellow.withOpacity(0.15),
+                      accentYellow.withOpacity(0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: accentYellow.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(Icons.wb_sunny_rounded, color: accentYellow, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Pilih Cuaca',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: darkGray,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _weatherOptions.map((weather) {
+              final isSelected = _selectedWeather == weather;
+              return Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => setState(() => _selectedWeather = weather),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? LinearGradient(
+                              colors: [accentYellow, accentYellow.withOpacity(0.8)],
+                            )
+                          : null,
+                      color: isSelected ? null : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? Colors.transparent : lightGray,
+                        width: isSelected ? 0 : 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSelected
+                              ? accentYellow.withOpacity(0.2)
+                              : darkGray.withOpacity(0.04),
+                          blurRadius: isSelected ? 16 : 8,
+                          offset: Offset(0, isSelected ? 6 : 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      weather,
+                      style: GoogleFonts.poppins(
+                        color: isSelected ? Colors.white : darkGray,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGenerateButton() {
-    final canGenerate = _selectedDestination.isNotEmpty;
+    final canGenerate = _selectedDestination.isNotEmpty && _selectedWeather.isNotEmpty; // Update: harus pilih cuaca juga
     return Container(
       width: double.infinity,
       height: 64,
@@ -446,10 +571,8 @@ class _VirtualTryOnPageState extends State<VirtualTryOnPage> {
       _outfitResult = null;
     });
 
-    // --- GANTI DENGAN LOGIKA PEMANGGILAN API CHATGPT ---
-    // Contoh: panggil API kamu di sini, misal pakai http package
-    // Prompt bisa kamu custom sesuai kebutuhan
-    final prompt = "Buatkan rekomendasi outfit untuk pergi ke $_selectedDestination. "
+    // Tambahkan info cuaca ke prompt
+    final prompt = "Buatkan rekomendasi outfit untuk pergi ke $_selectedDestination dengan cuaca $_selectedWeather. "
         "Tampilkan detail item (atasan, bawahan, sepatu, aksesoris) dan alasan pemilihannya, "
         "gunakan bahasa Indonesia yang ramah dan singkat.";
 

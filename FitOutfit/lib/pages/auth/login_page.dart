@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/auth/custom_text_field.dart';
 import '../../widgets/auth/auth_button.dart';
 import '../../widgets/auth/social_login_button.dart';
@@ -10,6 +12,7 @@ import 'register_page.dart';
 import '../welcome/welcome_page.dart';
 import '../home/home_page.dart';
 import '../admin/home_page_admin.dart';
+import '../personalization/personalization_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -89,7 +92,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
     setState(() => _isLoading = true);
 
-    // Deteksi admin login
     if (_emailController.text.trim() == _adminEmail &&
         _passwordController.text == _adminPassword) {
       setState(() => _isLoading = false);
@@ -109,7 +111,23 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     setState(() => _isLoading = false);
 
     if (result.success && mounted) {
-      _navigateToHome();
+      final user = AuthService.currentUser ?? FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('personalisasi')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const PersonalizationPage()),
+          );
+        }
+      }
     } else if (mounted) {
       _showErrorSnackBar(result.error!);
     }

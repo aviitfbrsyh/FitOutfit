@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../favorites/all_favorites_page.dart';
@@ -230,8 +231,9 @@ class _HomePageState extends State<HomePage>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            // ...existing code...
                             Text(
-                              'Sarah! ✨',
+                              '${_userDisplayName}! ✨',
                               style: GoogleFonts.poppins(
                                 fontSize: _getResponsiveFontSize(22),
                                 fontWeight: FontWeight.w700,
@@ -240,6 +242,7 @@ class _HomePageState extends State<HomePage>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+// ...existing code...
                           ],
                         ),
                       ),
@@ -2477,4 +2480,9 @@ void _navigateToAllFavorites() {
       ),
     );
   }
+
+  String get _userDisplayName {
+  final user = FirebaseAuth.instance.currentUser;
+  return user?.displayName ?? 'User';
+}
 }

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../favorites/all_favorites_page.dart';
+import '../community/community_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -2001,10 +2002,9 @@ class _HomePageState extends State<HomePage>
                 ),
               );
             } else if (index == 3) {
-              // Ganti dengan CommunityPage jika ada
-              // Navigator.of(context).push(
-              //   MaterialPageRoute(builder: (context) => const CommunityPage()),
-              // );
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const CommunityPage()),
+              );
             } else if (index == 4) {
               // Ganti dengan ProfilePage jika ada
               // Navigator.of(context).push(

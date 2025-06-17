@@ -6,6 +6,8 @@ import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../favorites/all_favorites_page.dart';
 import '../community/community_page.dart';
+import '../style_quiz/style_quiz_page.dart';
+import '../outfit_planner/outfit_planner_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -2312,13 +2314,17 @@ class _HomePageState extends State<HomePage>
     ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
   }
 
-  void _navigateToStyleQuiz() {
-    // Navigate to style quiz
-  }
+void _navigateToStyleQuiz() {
+  Navigator.of(context).push(
+    MaterialPageRoute(builder: (context) => const StyleQuizPage()),
+  );
+}
 
-  void _navigateToPlanner() {
-    // Navigate to outfit planner
-  }
+void _navigateToPlanner() {
+  Navigator.of(context).push(
+    MaterialPageRoute(builder: (context) => const OutfitPlannerPage()),
+  );
+}
 
   void _navigateToNews() {
     // Navigate to fashion news

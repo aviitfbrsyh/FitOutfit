@@ -113,10 +113,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     if (result.success && mounted) {
       final user = AuthService.currentUser ?? FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('personalisasi')
-            .doc(user.uid)
-            .get();
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('personalisasi')
+                .doc(user.uid)
+                .get();
 
         if (doc.exists) {
           Navigator.of(context).pushReplacement(
@@ -124,7 +125,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           );
         } else {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const PersonalizationPage()),
+            MaterialPageRoute(
+              builder: (context) => const PersonalizationPage(),
+            ),
           );
         }
       }

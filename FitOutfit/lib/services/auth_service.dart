@@ -87,18 +87,12 @@ class AuthService {
   // Password Reset
   static Future<AuthResult> resetPassword(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
-      return AuthResult(
-        success: true,
-        message: 'Password reset email sent successfully',
-      );
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      return AuthResult(success: true, message: "Password reset email sent. Please check your inbox.");
     } on FirebaseAuthException catch (e) {
-      return AuthResult(success: false, error: _getAuthErrorMessage(e.code));
+      return AuthResult(success: false, error: e.message ?? "Failed to send reset email.");
     } catch (e) {
-      return AuthResult(
-        success: false,
-        error: 'Failed to send reset email. Please try again.',
-      );
+      return AuthResult(success: false, error: "An error occurred.");
     }
   }
 

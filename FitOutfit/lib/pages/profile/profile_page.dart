@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
-import '../pages/splash_screen_page.dart';
+import '../splash_screen_page.dart';
 import 'edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {

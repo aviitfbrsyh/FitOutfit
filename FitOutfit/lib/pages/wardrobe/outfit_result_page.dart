@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class OutfitResultPage extends StatefulWidget {
-  final Map<String, dynamic> outfitData;
+  final Map<String, dynamic> result;
   final String occasion;
   final String weather;
   final String style;
 
   const OutfitResultPage({
     super.key,
-    required this.outfitData,
+    required this.result,
     required this.occasion,
     required this.weather,
     required this.style,
@@ -63,26 +63,6 @@ class _OutfitResultPageState extends State<OutfitResultPage>
   int _currentSwipeIndex = 0;
   late PageController _pageController;
 
-  final List<Map<String, dynamic>> _alternatives = [
-    {
-      'name': 'Casual Chic',
-      'rating': 4.7,
-      'items': ['White Tee', 'Blue Jeans', 'Sneakers'],
-      'style': 'Relaxed',
-    },
-    {
-      'name': 'Elegant Edge',
-      'rating': 4.8,
-      'items': ['Silk Blouse', 'Dress Pants', 'Heels'],
-      'style': 'Sophisticated',
-    },
-    {
-      'name': 'Smart Casual',
-      'rating': 4.6,
-      'items': ['Polo Shirt', 'Chinos', 'Loafers'],
-      'style': 'Versatile',
-    },
-  ];
 
   @override
   void initState() {
@@ -481,7 +461,7 @@ class _OutfitResultPageState extends State<OutfitResultPage>
                                   children: [
                                     // Title
                                     Text(
-                                      widget.outfitData['name'] ??
+                                      widget.result['name'] ??
                                           'Perfect AI Match',
                                       style: GoogleFonts.poppins(
                                         fontSize:
@@ -506,7 +486,7 @@ class _OutfitResultPageState extends State<OutfitResultPage>
                                           children: [
                                             _buildCompactStat(
                                               Icons.star_rounded,
-                                              '${widget.outfitData['rating'] ?? 4.9}',
+                                              '${widget.result['rating'] ?? 4.9}',
                                               colors['accentYellow']!,
                                               isSmallScreen,
                                             ),
@@ -521,7 +501,7 @@ class _OutfitResultPageState extends State<OutfitResultPage>
                                                     child,
                                                   ) => _buildCompactStat(
                                                     Icons.verified_rounded,
-                                                    '${((widget.outfitData['matchScore'] ?? 95) * _animations['match']!.value).round()}%',
+                                                    '${((widget.result['matchScore'] ?? 95) * _animations['match']!.value).round()}%',
                                                     colors['neonGreen']!,
                                                     isSmallScreen,
                                                   ),
@@ -732,7 +712,7 @@ class _OutfitResultPageState extends State<OutfitResultPage>
                         Row(
                           children: [
                             Text(
-                              '${((widget.outfitData['matchScore'] ?? 95) * _animations['match']!.value).round()}%',
+                              '${((widget.result['matchScore'] ?? 95) * _animations['match']!.value).round()}%',
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
@@ -909,179 +889,151 @@ class _OutfitResultPageState extends State<OutfitResultPage>
     );
   }
 
-  Widget _buildAIAnalysisContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.psychology_rounded,
-                color: colors['vibrantPurple'],
-                size: 20,
-              ),
-              SizedBox(width: 8),
-              Text(
-                'AI Deep Analysis',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: colors['darkGray'],
-                ),
-              ),
-              Spacer(),
-              _buildLiveBadge(),
-            ],
-          ),
-          SizedBox(height: 16),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 1000),
-            child:
-                _showAIAnalysis
-                    ? Column(
-                      children: [
-                        _buildCompactAnalysisItem(
-                          'Neural Style Recognition',
-                          '98% style coherence detected',
-                          Icons.visibility_rounded,
-                          98,
-                          colors['vibrantPurple']!,
-                        ),
-                        SizedBox(height: 12),
-                        _buildCompactAnalysisItem(
-                          'Color Harmony AI',
-                          'Perfect balance achieved',
-                          Icons.palette_rounded,
-                          95,
-                          colors['sunsetOrange']!,
-                        ),
-                        SizedBox(height: 12),
-                        _buildCompactAnalysisItem(
-                          'Occasion Intelligence',
-                          '${widget.occasion.toLowerCase()} suitability',
-                          Icons.event_rounded,
-                          97,
-                          colors['neonGreen']!,
-                        ),
-                        SizedBox(height: 12),
-                        _buildCompactAnalysisItem(
-                          'Weather Optimization',
-                          '${widget.weather.toLowerCase()} ready',
-                          Icons.thermostat_rounded,
-                          92,
-                          colors['electricBlue']!,
-                        ),
-                      ],
-                    )
-                    : _buildLoadingIndicator(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStyleTipsContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Professional Style Tips',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: colors['darkGray'],
+Widget _buildAIAnalysisContent() {
+  final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+  
+  return SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.psychology_rounded,
+              color: colors['vibrantPurple'],
+              size: 20,
             ),
-          ),
-          SizedBox(height: 16),
-          _buildStyleTip(
-            'Color Coordination',
-            'Your outfit uses complementary colors that enhance your natural features.',
-            Icons.palette_rounded,
-            colors['sunsetOrange']!,
-          ),
-          SizedBox(height: 12),
-          _buildStyleTip(
-            'Fit & Silhouette',
-            'The proportions create a balanced and flattering silhouette.',
-            Icons.straighten_rounded,
-            colors['electricBlue']!,
-          ),
-          SizedBox(height: 12),
-          _buildStyleTip(
-            'Occasion Appropriateness',
-            'Perfect for ${widget.occasion.toLowerCase()} events.',
-            Icons.event_rounded,
-            colors['neonGreen']!,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAlternativesContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Alternative Outfits',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: colors['darkGray'],
+            SizedBox(width: 8),
+            Text(
+              'AI Deep Analysis',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: colors['darkGray'],
+              ),
             ),
-          ),
-          SizedBox(height: 16),
-          ..._alternatives.map((alt) => _buildAlternativeCard(alt)),
-        ],
-      ),
-    );
-  }
+            Spacer(),
+            _buildLiveBadge(),
+          ],
+        ),
+        SizedBox(height: 16),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 1000),
+          child: _showAIAnalysis
+              ? Column(
+                  children: [
+                    _buildRealAnalysisItem(
+                      'Style Coherence Analysis',
+                      _getStyleCoherenceAnalysis(),
+                      Icons.visibility_rounded,
+                      _calculateOverallStyleScore(),
+                      colors['vibrantPurple']!,
+                    ),
+                    SizedBox(height: 12),
+                    _buildRealAnalysisItem(
+                      'Color Harmony Detection',
+                      _getColorHarmonyAnalysis(outfitItems),
+                      Icons.palette_rounded,
+                      _calculateColorHarmonyScore(outfitItems),
+                      colors['sunsetOrange']!,
+                    ),
+                    SizedBox(height: 12),
+                    _buildRealAnalysisItem(
+                      'Occasion Intelligence',
+                      'Analyzed ${widget.occasion.toLowerCase()} appropriateness',
+                      Icons.event_rounded,
+                      _calculateOccasionScore(),
+                      colors['neonGreen']!,
+                    ),
+                    SizedBox(height: 12),
+                    _buildRealAnalysisItem(
+                      'Weather Optimization',
+                      'Optimized for ${widget.weather.toLowerCase()} conditions',
+                      Icons.thermostat_rounded,
+                      _calculateWeatherScore(),
+                      colors['electricBlue']!,
+                    ),
+                  ],
+                )
+              : _buildLoadingIndicator(),
+        ),
+      ],
+    ),
+  );
+}
 
-  Widget _buildAlternativeCard(Map<String, dynamic> alternative) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors['pureWhite'],
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colors['shadowColor']!,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+Widget _buildStyleTipsContent() {
+  final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+  final realTips = _generateRealStyleTips(outfitItems);
+  
+  return SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AI Style Recommendations',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: colors['darkGray'],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
+        ),
+        SizedBox(height: 16),
+        ...realTips.map((tip) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildStyleTip(
+            tip['title'],
+            tip['description'],
+            tip['icon'],
+            tip['color'],
+          ),
+        )),
+      ],
+    ),
+  );
+}
+
+ Widget _buildAlternativesContent() {
+  final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+  final realAlternatives = _generateRealAlternatives(outfitItems);
+  
+  return SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Style Variations',
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: colors['darkGray'],
+          ),
+        ),
+        SizedBox(height: 16),
+        if (realAlternatives.isEmpty)
           Container(
-            width: 50,
-            height: 50,
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colors['primaryBlue']!, colors['electricBlue']!],
+              color: colors['lightGray']!.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors['mediumGray']!.withValues(alpha: 0.3),
+                width: 1,
               ),
-              borderRadius: BorderRadius.circular(25),
             ),
-            child: Icon(
-              Icons.checkroom_rounded,
-              color: colors['pureWhite'],
-              size: 24,
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: colors['mediumGray'],
+                  size: 32,
+                ),
+                SizedBox(height: 8),
                 Text(
-                  alternative['name'],
+                  'Perfect as is!',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -1089,93 +1041,24 @@ class _OutfitResultPageState extends State<OutfitResultPage>
                   ),
                 ),
                 Text(
-                  alternative['style'],
+                  'Your current outfit is optimally styled',
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: colors['mediumGray'],
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
-          ),
-          Row(
-            children: [
-              Icon(Icons.star_rounded, color: colors['accentYellow'], size: 16),
-              SizedBox(width: 4),
-              Text(
-                '${alternative['rating']}',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colors['darkGray'],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+          )
+        else
+          ...realAlternatives.map((alt) => _buildRealAlternativeCard(alt)),
+      ],
+    ),
+  );
+}
 
-  Widget _buildCompactAnalysisItem(
-    String title,
-    String description,
-    IconData icon,
-    int percentage,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: colors['pureWhite'], size: 16),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: colors['darkGray'],
-                  ),
-                ),
-                Text(
-                  description,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    color: colors['mediumGray'],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '$percentage%',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildStyleTip(
     String title,
@@ -1288,45 +1171,44 @@ class _OutfitResultPageState extends State<OutfitResultPage>
     );
   }
 
-  Widget _buildSmartInsightsSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildInsightCard(
-              'Weather',
-              '88%',
-              'Good',
-              Icons.wb_sunny_rounded,
-              Colors.orange,
-            ),
+Widget _buildSmartInsightsSection() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: _buildInsightCard(
+            'Weather',
+            '${_calculateWeatherScore()}%',
+            _getWeatherStatus(_calculateWeatherScore()),
+            Icons.wb_sunny_rounded,
+            _getWeatherColor(_calculateWeatherScore()),
           ),
-          SizedBox(width: 8),
-          Expanded(
-            child: _buildInsightCard(
-              'Occasion',
-              '98%',
-              'Perfect',
-              Icons.event_rounded,
-              Colors.green,
-            ),
+        ),
+        SizedBox(width: 8),
+        Expanded(
+          child: _buildInsightCard(
+            'Occasion',
+            '${_calculateOccasionScore()}%',
+            _getOccasionStatus(_calculateOccasionScore()),
+            Icons.event_rounded,
+            _getOccasionColor(_calculateOccasionScore()),
           ),
-          SizedBox(width: 8),
-          Expanded(
-            child: _buildInsightCard(
-              'Style',
-              '95%',
-              'Trending',
-              Icons.trending_up_rounded,
-              colors['primaryBlue']!,
-            ),
+        ),
+        SizedBox(width: 8),
+        Expanded(
+          child: _buildInsightCard(
+            'Style',
+            '${_calculateOverallStyleScore()}%',
+            _getStyleStatus(_calculateOverallStyleScore()),
+            Icons.trending_up_rounded,
+            _getStyleColor(_calculateOverallStyleScore()),
           ),
-        ],
-      ),
-    );
-  }
-
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildInsightCard(
     String title,
     String percentage,
@@ -1400,119 +1282,135 @@ class _OutfitResultPageState extends State<OutfitResultPage>
     );
   }
 
-  Widget _buildOutfitPreviewSection() {
-    final components =
-        widget.outfitData['components'] as List<Map<String, dynamic>>? ??
-        [
-          {
-            'name': 'Classic White Blazer',
-            'category': 'Outerwear',
-            'brand': 'Zara',
-            'color': 'White',
-            'price': '\$89',
-          },
-          {
-            'name': 'Slim Fit Trousers',
-            'category': 'Bottoms',
-            'brand': 'H&M',
-            'color': 'Navy',
-            'price': '\$45',
-          },
-          {
-            'name': 'Leather Ankle Boots',
-            'category': 'Shoes',
-            'brand': 'Steve Madden',
-            'color': 'Black',
-            'price': '\$120',
-          },
-          {
-            'name': 'Minimalist Watch',
-            'category': 'Accessories',
-            'brand': 'Daniel Wellington',
-            'color': 'Rose Gold',
-            'price': '\$65',
-          },
-        ];
+Widget _buildOutfitPreviewSection() {
+  // ✅ HAPUS hardcoded data, pakai data real dari AI result
+  final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+  
+  // ✅ Convert ke format yang sesuai (TANPA brand field)
+  final components = outfitItems.map((item) => {
+    'name': item['name'] ?? 'Unknown Item',
+    'category': item['category'] ?? 'Item',
+    'imageUrl': item['imageUrl'] ?? '',
+    'description': item['description'] ?? '',
+    'color': item['color'] ?? '',
+    // ✅ HAPUS brand karena tidak ada di wardrobe form kamu
+  }).toList();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colors['pureWhite']!,
-            colors['lightGray']!.withValues(alpha: 0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: colors['shadowColor']!,
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          colors['pureWhite']!,
+          colors['lightGray']!.withValues(alpha: 0.8),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colors['primaryBlue']!,
-                      colors['primaryBlue']!.withValues(alpha: 0.8),
-                    ],
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: colors['shadowColor']!,
+          blurRadius: 15,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colors['primaryBlue']!,
+                    colors['primaryBlue']!.withValues(alpha: 0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors['primaryBlue']!.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors['primaryBlue']!.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons
-                      .collections_rounded, // Changed from auto_awesome_rounded
-                  color: colors['pureWhite'],
-                  size: 20,
-                ),
+                ],
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Complete Outfit',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: colors['darkGray'],
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    Text(
-                      'Tap items for details',
-                      style: GoogleFonts.poppins(
-                        fontSize: 10,
-                        color: colors['mediumGray'],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+              child: Icon(
+                Icons.collections_rounded,
+                color: colors['pureWhite'],
+                size: 20,
               ),
-            ],
-          ),
-          SizedBox(height: 16),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your AI Generated Outfit',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: colors['darkGray'],
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  Text(
+                    '${components.length} items selected',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: colors['mediumGray'],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        SizedBox(height: 16),
+        
+        // ✅ TAMPILKAN REAL DATA atau pesan jika kosong
+        if (components.isEmpty)
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: colors['lightGray']!.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors['mediumGray']!.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    color: colors['mediumGray'],
+                    size: 32,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'No outfit items generated',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: colors['mediumGray'],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1523,611 +1421,592 @@ class _OutfitResultPageState extends State<OutfitResultPage>
               childAspectRatio: 0.8,
             ),
             itemCount: components.length,
-            itemBuilder: (context, index) {
-              if (index < components.length) {
-                return _buildOutfitItemCard(components[index]);
-              }
-              return const SizedBox.shrink();
-            },
+            itemBuilder: (context, index) => _buildOutfitItemCard(components[index]),
           ),
-        ],
+      ],
+    ),
+  );
+}
+
+Widget _buildOutfitItemCard(Map<String, dynamic> item) {
+  if (item.isEmpty) return const SizedBox.shrink();
+
+  final categoryColor = _getCategoryColor(item['category']);
+
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [colors['pureWhite']!, categoryColor.withValues(alpha: 0.1)],
       ),
-    );
-  }
-
-  Widget _buildOutfitItemCard(Map<String, dynamic> item) {
-    if (item.isEmpty) return const SizedBox.shrink();
-
-    final categoryColor = _getCategoryColor(item['category']);
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors['pureWhite']!, categoryColor.withValues(alpha: 0.1)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: categoryColor.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: categoryColor.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: categoryColor.withValues(alpha: 0.3),
+        width: 1.5,
       ),
-      child: Material(
-        color: Colors.transparent,
+      boxShadow: [
+        BoxShadow(
+          color: categoryColor.withValues(alpha: 0.15),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _showOutfitItemDetails(item),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        categoryColor,
-                        categoryColor.withValues(alpha: 0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    item['category']?.toString() ?? 'Item',
-                    style: GoogleFonts.poppins(
-                      fontSize: 7,
-                      fontWeight: FontWeight.w800,
-                      color: colors['pureWhite'],
-                      letterSpacing: 0.3,
-                    ),
-                  ),
+        onTap: () => _showOutfitItemDetails(item),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 3,
                 ),
-                SizedBox(height: 8),
-                Expanded(
-                  child: Center(
-                    child: Icon(
-                      _getCategoryIconData(item['category']),
-                      size: 28,
-                      color: categoryColor.withValues(alpha: 0.8),
-                    ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      categoryColor,
+                      categoryColor.withValues(alpha: 0.8),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                SizedBox(height: 8),
-                Text(
-                  item['name']?.toString() ?? 'Item',
+                child: Text(
+                  item['category']?.toString() ?? 'Item',
                   style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: colors['darkGray'],
-                    height: 1.2,
+                    fontSize: 7,
+                    fontWeight: FontWeight.w800,
+                    color: colors['pureWhite'],
+                    letterSpacing: 0.3,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                if (item['price'] != null) ...[
-                  SizedBox(height: 2),
-                  Text(
-                    item['price'].toString(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: colors['accentRed'],
-                    ),
-                  ),
-                ],
-                SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: categoryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: categoryColor.withValues(alpha: 0.2),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.touch_app_rounded,
-                        size: 8,
-                        color: categoryColor.withValues(alpha: 0.8),
-                      ),
-                      SizedBox(width: 2),
-                      Text(
-                        'Tap for detail',
-                        style: GoogleFonts.poppins(
-                          fontSize: 7,
-                          fontWeight: FontWeight.w600,
+              ),
+              SizedBox(height: 8),
+              Expanded(
+                child: Center(
+                  child: (item['imageUrl'] != null && item['imageUrl'] != "")
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            item['imageUrl'],
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, e, s) => Icon(
+                              _getCategoryIconData(item['category']),
+                              size: 28,
+                              color: categoryColor.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          _getCategoryIconData(item['category']),
+                          size: 28,
                           color: categoryColor.withValues(alpha: 0.8),
                         ),
-                      ),
-                    ],
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                item['name']?.toString() ?? 'Item',
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: colors['darkGray'],
+                  height: 1.2,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (item['price'] != null) ...[
+                SizedBox(height: 2),
+                Text(
+                  item['price'].toString(),
+                  style: GoogleFonts.poppins(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: colors['accentRed'],
                   ),
                 ),
               ],
-            ),
+              SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: categoryColor.withValues(alpha: 0.2),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.touch_app_rounded,
+                      size: 8,
+                      color: categoryColor.withValues(alpha: 0.8),
+                    ),
+                    SizedBox(width: 2),
+                    Text(
+                      'Tap for detail',
+                      style: GoogleFonts.poppins(
+                        fontSize: 7,
+                        fontWeight: FontWeight.w600,
+                        color: categoryColor.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  void _showOutfitItemDetails(Map<String, dynamic> item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      enableDrag: true,
-      builder:
-          (context) => DraggableScrollableSheet(
-            initialChildSize: 0.85,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            builder:
-                (context, scrollController) => Container(
+ void _showOutfitItemDetails(Map<String, dynamic> item) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    enableDrag: true,
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colors['pureWhite']!,
+              colors['lightGray']!.withValues(alpha: 0.95),
+              colors['skyBlue']!.withValues(alpha: 0.3),
+            ],
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colors['shadowColor']!,
+              blurRadius: 25,
+              offset: const Offset(0, -10),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 60,
+                  height: 6,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
                       colors: [
-                        colors['pureWhite']!,
-                        colors['lightGray']!.withValues(alpha: 0.95),
-                        colors['skyBlue']!.withValues(alpha: 0.3),
+                        colors['vibrantPurple']!.withValues(alpha: 0.6),
+                        colors['electricBlue']!.withValues(alpha: 0.6),
                       ],
                     ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors['shadowColor']!,
-                        blurRadius: 25,
-                        offset: const Offset(0, -10),
-                      ),
-                    ],
-                  ),
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Drag Handle
-                        Center(
-                          child: Container(
-                            width: 60,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colors['vibrantPurple']!.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                  colors['electricBlue']!.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 24),
-
-                        // Header with Category Badge
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    _getCategoryColor(item['category']),
-                                    _getCategoryColor(
-                                      item['category'],
-                                    ).withValues(alpha: 0.8),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _getCategoryColor(
-                                      item['category'],
-                                    ).withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getCategoryIconData(item['category']),
-                                    color: colors['pureWhite'],
-                                    size: 16,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    item['category']
-                                            ?.toString()
-                                            .toUpperCase() ??
-                                        'ITEM',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w900,
-                                      color: colors['pureWhite'],
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Spacer(),
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: colors['lightGray']!.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  color: colors['mediumGray'],
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 24),
-
-                        // Item Image Placeholder with AI Analysis
-                        Container(
-                          height: 250,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                _getCategoryColor(
-                                  item['category'],
-                                ).withValues(alpha: 0.1),
-                                _getCategoryColor(
-                                  item['category'],
-                                ).withValues(alpha: 0.05),
-                                colors['pureWhite']!,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: _getCategoryColor(
-                                item['category'],
-                              ).withValues(alpha: 0.2),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _getCategoryColor(
-                                  item['category'],
-                                ).withValues(alpha: 0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            children: [
-                              // Main Item Display
-                              Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(20),
-                                      decoration: BoxDecoration(
-                                        color: _getCategoryColor(
-                                          item['category'],
-                                        ).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Icon(
-                                        _getCategoryIconData(item['category']),
-                                        size: 64,
-                                        color: _getCategoryColor(
-                                          item['category'],
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 16),
-                                    Text(
-                                      'AI Visual Analysis',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: colors['mediumGray'],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // AI Confidence Badge
-                              Positioned(
-                                top: 16,
-                                right: 16,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        colors['neonGreen']!,
-                                        colors['deepTeal']!,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors['neonGreen']!.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.verified_rounded,
-                                        color: colors['pureWhite'],
-                                        size: 14,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '${_getItemConfidence(item['category'])}%',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w900,
-                                          color: colors['pureWhite'],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: 24),
-
-                        // Item Details
-                        Text(
-                          item['name']?.toString() ?? 'Item Details',
-                          style: GoogleFonts.poppins(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            color: colors['darkGray'],
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-
-                        SizedBox(height: 8),
-
-                        // Brand and Price Row
-                        Row(
-                          children: [
-                            if (item['brand'] != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors['primaryBlue']!.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: colors['primaryBlue']!.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  item['brand'].toString(),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: colors['primaryBlue'],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                            ],
-                            if (item['price'] != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      colors['accentRed']!.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      colors['sunsetOrange']!.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: colors['accentRed']!.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  item['price'].toString(),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: colors['accentRed'],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-
-                        SizedBox(height: 24),
-
-                        // AI Analysis Section
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                colors['vibrantPurple']!.withValues(
-                                  alpha: 0.05,
-                                ),
-                                colors['electricBlue']!.withValues(alpha: 0.05),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: colors['vibrantPurple']!.withValues(
-                                alpha: 0.2,
-                              ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          colors['vibrantPurple']!,
-                                          colors['electricBlue']!,
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.psychology_rounded,
-                                      color: colors['pureWhite'],
-                                      size: 20,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'AI Selection Reasoning',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                        color: colors['darkGray'],
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors['neonGreen']!,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      'OPTIMAL',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: colors['pureWhite'],
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              SizedBox(height: 16),
-
-                              Text(
-                                _getAIReasoningText(item),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: colors['darkGray'],
-                                  height: 1.6,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        SizedBox(height: 20),
-
-                        // Analysis Metrics
-                        _buildAnalysisMetrics(item),
-
-                        SizedBox(height: 20),
-
-                        // Style Compatibility
-                        _buildStyleCompatibility(item),
-
-                        SizedBox(height: 40),
-                      ],
-                    ),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
+              ),
+
+              SizedBox(height: 24),
+
+              // Header with Category Badge
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getCategoryColor(item['category']),
+                          _getCategoryColor(item['category']).withValues(alpha: 0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getCategoryColor(item['category']).withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getCategoryIconData(item['category']),
+                          color: colors['pureWhite'],
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          item['category']?.toString().toUpperCase() ?? 'ITEM',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: colors['pureWhite'],
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colors['lightGray']!.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: colors['mediumGray'],
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 24),
+
+              // Item Image with Real Image Support
+              Container(
+                height: 250,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _getCategoryColor(item['category']).withValues(alpha: 0.1),
+                      _getCategoryColor(item['category']).withValues(alpha: 0.05),
+                      colors['pureWhite']!,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: _getCategoryColor(item['category']).withValues(alpha: 0.2),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _getCategoryColor(item['category']).withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Main Item Display - Support Real Images
+                    Center(
+                      child: (item['imageUrl'] != null && item['imageUrl'] != "")
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.network(
+                                item['imageUrl'],
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, e, s) => _buildFallbackDisplay(item),
+                              ),
+                            )
+                          : _buildFallbackDisplay(item),
+                    ),
+
+                    // AI Confidence Badge
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colors['neonGreen']!, colors['deepTeal']!],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors['neonGreen']!.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.verified_rounded,
+                              color: colors['pureWhite'],
+                              size: 14,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              '${_getItemConfidence(item['category'])}%',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: colors['pureWhite'],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 24),
+
+              // Item Details
+              Text(
+                item['name']?.toString() ?? 'Item Details',
+                style: GoogleFonts.poppins(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: colors['darkGray'],
+                  letterSpacing: -0.5,
+                ),
+              ),
+
+              SizedBox(height: 8),
+
+              // ✅ FIXED: Brand and Price Row - HAPUS brand reference
+              Row(
+                children: [
+                  // ✅ HAPUS seluruh brand section karena tidak ada di wardrobe form
+                  if (item['price'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colors['accentRed']!.withValues(alpha: 0.1),
+                            colors['sunsetOrange']!.withValues(alpha: 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors['accentRed']!.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        item['price'].toString(),
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: colors['accentRed'],
+                        ),
+                      ),
+                    ),
+                  ],
+                  // ✅ ATAU jika tidak ada price, tampilkan kategori sebagai fallback
+                  if (item['price'] == null && item['category'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getCategoryColor(item['category']).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getCategoryColor(item['category']).withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        item['category'].toString().toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _getCategoryColor(item['category']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+
+              SizedBox(height: 24),
+
+              // AI Analysis Section
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colors['vibrantPurple']!.withValues(alpha: 0.05),
+                      colors['electricBlue']!.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: colors['vibrantPurple']!.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colors['vibrantPurple']!,
+                                colors['electricBlue']!,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.psychology_rounded,
+                            color: colors['pureWhite'],
+                            size: 20,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'AI Selection Reasoning',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: colors['darkGray'],
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors['neonGreen']!,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'OPTIMAL',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: colors['pureWhite'],
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 16),
+
+                    Text(
+                      _getAIReasoningText(item),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: colors['darkGray'],
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              // Analysis Metrics
+              _buildAnalysisMetrics(item),
+
+              SizedBox(height: 20),
+
+              // Style Compatibility
+              _buildStyleCompatibility(item),
+
+              SizedBox(height: 40),
+            ],
           ),
-    );
-  }
+        ),
+      ),
+    ),
+  );
+}
+
+// ✅ TAMBAH helper method untuk fallback display
+Widget _buildFallbackDisplay(Map<String, dynamic> item) {
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _getCategoryColor(item['category']).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(
+          _getCategoryIconData(item['category']),
+          size: 64,
+          color: _getCategoryColor(item['category']),
+        ),
+      ),
+      SizedBox(height: 16),
+      Text(
+        'AI Visual Analysis',
+        style: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: colors['mediumGray'],
+        ),
+      ),
+    ],
+  );
+}
 
   void _generateAnother() {
     HapticFeedback.mediumImpact();
@@ -2211,60 +2090,271 @@ class _OutfitResultPageState extends State<OutfitResultPage>
         return 95;
     }
   }
-
+   // ✅ REPLACE method _getItemMetrics dengan dynamic calculation
   Map<String, Map<String, dynamic>> _getItemMetrics(Map<String, dynamic> item) {
+    // ✅ Get real data from AI result
+    final itemCategory = item['category']?.toString().toLowerCase() ?? '';
+    final itemColor = item['color']?.toString().toLowerCase() ?? '';
+    
+    // ✅ Calculate realistic scores based on actual data
+    int colorScore = _calculateColorHarmonyScoreForItem(itemColor, item);
+    int occasionScore = _calculateOccasionMatchScore(itemCategory, widget.occasion);
+    int weatherScore = _calculateWeatherSuitabilityScore(itemCategory, widget.weather);
+    int styleScore = _calculateStyleCoherenceScore(itemCategory, widget.style);
+    
     return {
       'Color Harmony': {
-        'score': 96,
+        'score': colorScore,
         'color': colors['vibrantPurple']!,
-        'description': 'Perfect color coordination with outfit palette',
+        'description': _getColorHarmonyDescription(colorScore, itemColor),
       },
       'Occasion Match': {
-        'score': 98,
+        'score': occasionScore,
         'color': colors['neonGreen']!,
-        'description': 'Ideal for ${widget.occasion.toLowerCase()} settings',
+        'description': _getOccasionMatchDescription(occasionScore, widget.occasion),
       },
       'Weather Suitability': {
-        'score': 92,
+        'score': weatherScore,
         'color': colors['electricBlue']!,
-        'description':
-            'Optimized for ${widget.weather.toLowerCase()} conditions',
+        'description': _getWeatherSuitabilityDescription(weatherScore, widget.weather),
       },
       'Style Coherence': {
-        'score': 94,
+        'score': styleScore,
         'color': colors['sunsetOrange']!,
-        'description': 'Maintains consistent style theme throughout outfit',
+        'description': _getStyleCoherenceDescription(styleScore, widget.style),
       },
     };
   }
 
-  List<Map<String, dynamic>> _getStyleCompatibilities(
-    Map<String, dynamic> item,
-  ) {
-    return [
-      {
+  // ✅ REPLACE _getStyleCompatibilities dengan dynamic tags
+  List<Map<String, dynamic>> _getStyleCompatibilities(Map<String, dynamic> item) {
+    final itemCategory = item['category']?.toString().toLowerCase() ?? '';
+    final itemColor = item['color']?.toString().toLowerCase() ?? '';
+    
+    List<Map<String, dynamic>> compatibilities = [];
+    
+    // ✅ Dynamic compatibility berdasarkan actual item properties
+    
+    // Professional compatibility
+    int professionalScore = _calculateOccasionMatchScore(itemCategory, 'work/office');
+    if (professionalScore >= 85) {
+      compatibilities.add({
         'label': 'Professional',
         'icon': Icons.business_center_rounded,
         'color': colors['primaryBlue']!,
-      },
-      {
+      });
+    }
+    
+    // Versatile compatibility
+    int versatilityScore = (
+      _calculateOccasionMatchScore(itemCategory, 'casual day') +
+      _calculateOccasionMatchScore(itemCategory, 'work/office') +
+      _calculateOccasionMatchScore(itemCategory, 'date night')
+    ) ~/ 3;
+    if (versatilityScore >= 80) {
+      compatibilities.add({
         'label': 'Versatile',
         'icon': Icons.tune_rounded,
         'color': colors['neonGreen']!,
-      },
-      {
+      });
+    }
+    
+    // Seasonal compatibility
+    int seasonalScore = (
+      _calculateWeatherSuitabilityScore(itemCategory, 'sunny & warm') +
+      _calculateWeatherSuitabilityScore(itemCategory, 'mild & pleasant')
+    ) ~/ 2;
+    if (seasonalScore >= 80) {
+      compatibilities.add({
         'label': 'Seasonal',
         'icon': Icons.wb_sunny_rounded,
         'color': colors['sunsetOrange']!,
-      },
-      {
+      });
+    }
+    
+    // Trending compatibility (berdasarkan style coherence)
+    int trendingScore = _calculateStyleCoherenceScore(itemCategory, 'trendy');
+    if (trendingScore >= 85) {
+      compatibilities.add({
         'label': 'Trending',
         'icon': Icons.trending_up_rounded,
         'color': colors['vibrantPurple']!,
-      },
-    ];
+      });
+    }
+    
+    // ✅ Tambahkan compatibility khusus berdasarkan warna
+    if (['black', 'white', 'navy', 'gray'].contains(itemColor)) {
+      compatibilities.add({
+        'label': 'Timeless',
+        'icon': Icons.access_time_rounded,
+        'color': colors['darkGray']!,
+      });
+    }
+    
+    // ✅ Fallback jika tidak ada compatibility
+    if (compatibilities.isEmpty) {
+      compatibilities.addAll([
+        {
+          'label': 'Casual',
+          'icon': Icons.weekend_rounded,
+          'color': colors['mediumGray']!,
+        },
+        {
+          'label': 'Comfortable',
+          'icon': Icons.sentiment_satisfied_rounded,
+          'color': colors['neonGreen']!,
+        },
+      ]);
+    }
+    
+    return compatibilities;
   }
 
+
+int _calculateColorHarmonyScoreForItem(String itemColor, Map<String, dynamic> item) {
+  // Get outfit items untuk analyze color harmony
+  final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+  
+  // Base score berdasarkan warna
+  Map<String, int> colorBaseScores = {
+    'black': 95, 'white': 95, 'navy': 90, 'gray': 90, 'beige': 88,
+    'blue': 85, 'brown': 85, 'red': 80, 'green': 80, 'purple': 75,
+    'yellow': 70, 'pink': 70, 'orange': 65,
+  };
+  
+  int baseScore = colorBaseScores[itemColor] ?? 75;
+  
+  // Bonus jika ada color coordination dengan items lain
+  int coordinationBonus = 0;
+  for (var otherItem in outfitItems) {
+    if (otherItem['color']?.toString().toLowerCase() == itemColor) {
+      coordinationBonus += 5; // Bonus untuk matching colors
+    }
+  }
+  
+  // Cap maximum score
+  return (baseScore + coordinationBonus).clamp(65, 98);
+}
+
+
+  int _calculateOccasionMatchScore(String itemCategory, String occasion) {
+    // Mapping category-occasion compatibility
+    Map<String, Map<String, int>> categoryOccasionScores = {
+      'tops': {
+        'work/office': 95, 'formal meeting': 98, 'casual day': 85, 
+        'date night': 88, 'party/event': 80, 'workout/gym': 30, 
+        'travel/vacation': 85, 'home/relaxing': 90,
+      },
+      'bottoms': {
+        'work/office': 90, 'formal meeting': 95, 'casual day': 95, 
+        'date night': 85, 'party/event': 88, 'workout/gym': 40, 
+        'travel/vacation': 90, 'home/relaxing': 95,
+      },
+      'outerwear': {
+        'work/office': 85, 'formal meeting': 90, 'casual day': 95, 
+        'date night': 80, 'party/event': 85, 'workout/gym': 60, 
+        'travel/vacation': 98, 'home/relaxing': 70,
+      },
+      'shoes': {
+        'work/office': 90, 'formal meeting': 95, 'casual day': 85, 
+        'date night': 90, 'party/event': 95, 'workout/gym': 98, 
+        'travel/vacation': 85, 'home/relaxing': 60,
+      },
+      'accessories': {
+        'work/office': 80, 'formal meeting': 85, 'casual day': 75, 
+        'date night': 95, 'party/event': 98, 'workout/gym': 20, 
+        'travel/vacation': 80, 'home/relaxing': 40,
+      },
+    };
+    
+    return categoryOccasionScores[itemCategory]?[occasion.toLowerCase()] ?? 75;
+  }
+
+  int _calculateWeatherSuitabilityScore(String itemCategory, String weather) {
+    // Mapping category-weather compatibility
+    Map<String, Map<String, int>> categoryWeatherScores = {
+      'tops': {
+        'sunny & warm': 85, 'hot & humid': 90, 'mild & pleasant': 95,
+        'rainy & cool': 80, 'cold & windy': 70,
+      },
+      'bottoms': {
+        'sunny & warm': 90, 'hot & humid': 85, 'mild & pleasant': 95,
+        'rainy & cool': 90, 'cold & windy': 88,
+      },
+      'outerwear': {
+        'sunny & warm': 40, 'hot & humid': 30, 'mild & pleasant': 80,
+        'rainy & cool': 98, 'cold & windy': 98,
+      },
+      'shoes': {
+        'sunny & warm': 85, 'hot & humid': 80, 'mild & pleasant': 90,
+        'rainy & cool': 95, 'cold & windy': 90,
+      },
+      'accessories': {
+        'sunny & warm': 70, 'hot & humid': 65, 'mild & pleasant': 80,
+        'rainy & cool': 75, 'cold & windy': 85,
+      },
+    };
+    
+    return categoryWeatherScores[itemCategory]?[weather.toLowerCase()] ?? 75;
+  }
+
+  int _calculateStyleCoherenceScore(String itemCategory, String style) {
+    // Mapping category-style compatibility
+    Map<String, Map<String, int>> categoryStyleScores = {
+      'tops': {
+        'professional': 95, 'classic': 90, 'minimalist': 90, 'trendy': 85,
+        'bohemian': 75, 'edgy': 80, 'romantic': 85, 'sporty': 70,
+      },
+      'bottoms': {
+        'professional': 90, 'classic': 95, 'minimalist': 95, 'trendy': 88,
+        'bohemian': 80, 'edgy': 85, 'romantic': 75, 'sporty': 90,
+      },
+      'outerwear': {
+        'professional': 85, 'classic': 90, 'minimalist': 85, 'trendy': 90,
+        'bohemian': 88, 'edgy': 95, 'romantic': 75, 'sporty': 85,
+      },
+      'shoes': {
+        'professional': 90, 'classic': 85, 'minimalist': 80, 'trendy': 95,
+        'bohemian': 85, 'edgy': 90, 'romantic': 88, 'sporty': 98,
+      },
+      'accessories': {
+        'professional': 75, 'classic': 80, 'minimalist': 70, 'trendy': 95,
+        'bohemian': 98, 'edgy': 95, 'romantic': 98, 'sporty': 60,
+      },
+    };
+    
+    return categoryStyleScores[itemCategory]?[style.toLowerCase()] ?? 75;
+  }
+
+  // ✅ TAMBAH description methods yang dinamis
+  String _getColorHarmonyDescription(int score, String color) {
+    if (score >= 90) return 'Excellent color coordination with perfect palette balance';
+    if (score >= 80) return 'Good color harmony with complementary tones';
+    if (score >= 70) return 'Decent color matching with room for improvement';
+    return 'Color coordination could be enhanced for better harmony';
+  }
+
+  String _getOccasionMatchDescription(int score, String occasion) {
+    if (score >= 95) return 'Perfect match for ${occasion.toLowerCase()} settings';
+    if (score >= 85) return 'Very suitable for ${occasion.toLowerCase()} occasions';
+    if (score >= 75) return 'Appropriate for ${occasion.toLowerCase()} with minor adjustments';
+    return 'May need styling adjustments for ${occasion.toLowerCase()}';
+  }
+
+  String _getWeatherSuitabilityDescription(int score, String weather) {
+    if (score >= 90) return 'Optimally designed for ${weather.toLowerCase()} conditions';
+    if (score >= 80) return 'Well-suited for ${weather.toLowerCase()} weather';
+    if (score >= 70) return 'Adequate for ${weather.toLowerCase()} with layering options';
+    return 'Consider weather-appropriate alternatives for ${weather.toLowerCase()}';
+  }
+
+  String _getStyleCoherenceDescription(int score, String style) {
+    if (score >= 90) return 'Perfectly embodies ${style.toLowerCase()} aesthetic principles';
+    if (score >= 80) return 'Strong alignment with ${style.toLowerCase()} style elements';
+    if (score >= 70) return 'Good fit for ${style.toLowerCase()} with minor style notes';
+    return 'Style elements could be refined for better ${style.toLowerCase()} coherence';
+  }
+  
   Widget _buildAnalysisMetrics(Map<String, dynamic> item) {
     final metrics = _getItemMetrics(item);
 
@@ -2484,7 +2574,6 @@ class _OutfitResultPageState extends State<OutfitResultPage>
         return colors['primaryBlue']!;
     }
   }
-
   IconData _getCategoryIconData(String? category) {
     switch (category?.toLowerCase()) {
       case 'outerwear':
@@ -2502,5 +2591,506 @@ class _OutfitResultPageState extends State<OutfitResultPage>
       default:
         return Icons.category_rounded;
     }
+  }
+
+  // ✅ TAMBAHKAN SEMUA HELPER METHODS INI
+
+  // Calculate real style coherence
+  int _calculateOverallStyleScore() {
+    final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+    if (outfitItems.isEmpty) return 75;
+    
+    int totalScore = 0;
+    int itemCount = 0;
+    
+    for (var item in outfitItems) {
+      final category = item['category']?.toString().toLowerCase() ?? '';
+      final score = _calculateStyleCoherenceScoreForItem(category, widget.style);
+      totalScore += score;
+      itemCount++;
+    }
+    
+    return itemCount > 0 ? (totalScore / itemCount).round() : 75;
+  }
+
+  // Calculate color harmony based on actual items
+  int _calculateColorHarmonyScore(List<dynamic> items) {
+    if (items.isEmpty) return 75;
+    
+    // Get unique colors
+    Set<String> colors = {};
+    for (var item in items) {
+      final color = item['color']?.toString().toLowerCase();
+      if (color != null && color.isNotEmpty) {
+        colors.add(color);
+      }
+    }
+    
+    // Score based on color coordination
+    if (colors.length <= 2) return 95; // Monochromatic/complementary
+    if (colors.length == 3) return 85; // Triadic
+    if (colors.length == 4) return 75; // Complex but workable
+    return 65; // Too many colors
+  }
+
+  // Calculate occasion appropriateness
+  int _calculateOccasionScore() {
+    final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+    if (outfitItems.isEmpty) return 75;
+    
+    int totalScore = 0;
+    int itemCount = 0;
+    
+    for (var item in outfitItems) {
+      final category = item['category']?.toString().toLowerCase() ?? '';
+      final score = _calculateOccasionMatchScoreForItem(category, widget.occasion);
+      totalScore += score;
+      itemCount++;
+    }
+    
+    return itemCount > 0 ? (totalScore / itemCount).round() : 75;
+  }
+
+  // Calculate weather suitability
+  int _calculateWeatherScore() {
+    final outfitItems = widget.result['outfit'] as List<dynamic>? ?? [];
+    if (outfitItems.isEmpty) return 75;
+    
+    int totalScore = 0;
+    int itemCount = 0;
+    
+    for (var item in outfitItems) {
+      final category = item['category']?.toString().toLowerCase() ?? '';
+      final score = _calculateWeatherSuitabilityScoreForItem(category, widget.weather);
+      totalScore += score;
+      itemCount++;
+    }
+    
+    return itemCount > 0 ? (totalScore / itemCount).round() : 75;
+  }
+
+  // Generate real style tips based on actual outfit
+  List<Map<String, dynamic>> _generateRealStyleTips(List<dynamic> items) {
+    List<Map<String, dynamic>> tips = [];
+    
+    if (items.isEmpty) {
+      return [
+        {
+          'title': 'AI Recommendations',
+          'description': 'Generate an outfit to receive personalized style tips.',
+          'icon': Icons.lightbulb_outline_rounded,
+          'color': colors['mediumGray']!,
+        }
+      ];
+    }
+    
+    // Analyze actual items for tips
+    final categories = items.map((item) => item['category']?.toString().toLowerCase()).toSet();
+    final itemColors = items.map((item) => item['color']?.toString().toLowerCase()).toSet();
+    
+    // Color coordination tip
+    if (itemColors.length <= 2) {
+      tips.add({
+        'title': 'Perfect Color Harmony',
+        'description': 'Your ${itemColors.join(' and ')} color palette creates excellent visual balance and sophistication.',
+        'icon': Icons.palette_rounded,
+        'color': colors['sunsetOrange']!,
+      });
+    } else if (itemColors.length == 3) {
+      tips.add({
+        'title': 'Balanced Color Mix',
+        'description': 'The three-color combination adds visual interest while maintaining harmony.',
+        'icon': Icons.palette_rounded,
+        'color': colors['sunsetOrange']!,
+      });
+    }
+    
+    // Occasion appropriateness tip
+    if (_calculateOccasionScore() >= 90) {
+      tips.add({
+        'title': 'Occasion Perfect',
+        'description': 'This outfit is exceptionally well-suited for ${widget.occasion.toLowerCase()} settings.',
+        'icon': Icons.event_rounded,
+        'color': colors['neonGreen']!,
+      });
+    }
+    
+    // Layering tip based on weather
+    if (widget.weather.toLowerCase().contains('cool') || widget.weather.toLowerCase().contains('cold')) {
+      if (categories.contains('outerwear')) {
+        tips.add({
+          'title': 'Smart Layering',
+          'description': 'The outerwear piece provides perfect weather protection while maintaining style.',
+          'icon': Icons.layers_rounded,
+          'color': colors['electricBlue']!,
+        });
+      }
+    }
+    
+    // Style coherence tip
+    if (_calculateOverallStyleScore() >= 90) {
+      tips.add({
+        'title': 'Style Mastery',
+        'description': 'Your outfit perfectly embodies ${widget.style.toLowerCase()} aesthetic principles.',
+        'icon': Icons.auto_awesome_rounded,
+        'color': colors['vibrantPurple']!,
+      });
+    }
+    
+    // Default tip if no specific tips generated
+    if (tips.isEmpty) {
+      tips.add({
+        'title': 'Versatile Selection',
+        'description': 'This combination offers great flexibility for various situations.',
+        'icon': Icons.tune_rounded,
+        'color': colors['primaryBlue']!,
+      });
+    }
+    
+    return tips;
+  }
+
+  // Generate real alternatives based on current outfit
+  List<Map<String, dynamic>> _generateRealAlternatives(List<dynamic> items) {
+    List<Map<String, dynamic>> alternatives = [];
+    
+    if (items.isEmpty) return alternatives;
+    
+    // Create variations based on current items
+    items.map((item) => item['category']?.toString()).toList();
+    final currentNames = items.map((item) => item['name']?.toString()).toList();
+    
+    // Suggest seasonal alternative
+    if (widget.weather.toLowerCase().contains('warm')) {
+      alternatives.add({
+        'name': 'Summer Variation',
+        'rating': 4.7,
+        'items': currentNames.take(2).toList() + ['Light Accessories'],
+        'style': 'Breathable & Cool',
+        'description': 'Lighter version perfect for warmer weather',
+      });
+    } else if (widget.weather.toLowerCase().contains('cold')) {
+      alternatives.add({
+        'name': 'Winter Layered',
+        'rating': 4.8,
+        'items': currentNames + ['Warm Scarf'],
+        'style': 'Cozy & Stylish',
+        'description': 'Enhanced warmth without sacrificing style',
+      });
+    }
+    
+    // Suggest occasion alternative
+    if (widget.occasion.toLowerCase().contains('casual')) {
+      alternatives.add({
+        'name': 'Elevated Casual',
+        'rating': 4.6,
+        'items': currentNames.map((name) => name?.replaceAll(RegExp(r'Casual|Basic'), 'Premium') ?? 'Premium Item').toList(),
+        'style': 'Refined Casual',
+        'description': 'Same comfort, elevated sophistication',
+      });
+    }
+    
+    return alternatives;
+  }
+
+  // Helper method for real analysis items
+  Widget _buildRealAnalysisItem(
+    String title,
+    String description,
+    IconData icon,
+    int percentage,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: colors['pureWhite'], size: 16),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: colors['darkGray'],
+                  ),
+                ),
+                Text(
+                  description,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    color: colors['mediumGray'],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '$percentage%',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Real alternative card builder
+  Widget _buildRealAlternativeCard(Map<String, dynamic> alternative) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors['pureWhite'],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colors['shadowColor']!,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors['primaryBlue']!, colors['electricBlue']!],
+                  ),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: colors['pureWhite'],
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      alternative['name'],
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: colors['darkGray'],
+                      ),
+                    ),
+                    Text(
+                      alternative['style'],
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: colors['mediumGray'],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  Icon(Icons.star_rounded, color: colors['accentYellow'], size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    '${alternative['rating']}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: colors['darkGray'],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (alternative['description'] != null) ...[
+            SizedBox(height: 8),
+            Text(
+              alternative['description'],
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: colors['mediumGray'],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Status and color helpers for insights
+  String _getWeatherStatus(int score) {
+    if (score >= 90) return 'Excellent';
+    if (score >= 80) return 'Good';
+    if (score >= 70) return 'Fair';
+    return 'Poor';
+  }
+
+  String _getOccasionStatus(int score) {
+    if (score >= 95) return 'Perfect';
+    if (score >= 85) return 'Great';
+    if (score >= 75) return 'Good';
+    return 'Fair';
+  }
+
+  String _getStyleStatus(int score) {
+    if (score >= 90) return 'Trending';
+    if (score >= 80) return 'Stylish';
+    if (score >= 70) return 'Good';
+    return 'Basic';
+  }
+
+  Color _getWeatherColor(int score) {
+    if (score >= 90) return colors['neonGreen']!;
+    if (score >= 80) return Colors.orange;
+    if (score >= 70) return colors['accentYellow']!;
+    return colors['accentRed']!;
+  }
+
+  Color _getOccasionColor(int score) {
+    if (score >= 95) return colors['neonGreen']!;
+    if (score >= 85) return colors['electricBlue']!;
+    if (score >= 75) return colors['accentYellow']!;
+    return colors['accentRed']!;
+  }
+
+  Color _getStyleColor(int score) {
+    if (score >= 90) return colors['vibrantPurple']!;
+    if (score >= 80) return colors['primaryBlue']!;
+    if (score >= 70) return colors['accentYellow']!;
+    return colors['mediumGray']!;
+  }
+
+  // Additional helper methods for analysis
+  String _getStyleCoherenceAnalysis() {
+    final score = _calculateOverallStyleScore();
+    if (score >= 90) return 'Exceptional ${widget.style.toLowerCase()} style alignment detected';
+    if (score >= 80) return 'Strong ${widget.style.toLowerCase()} style coherence';
+    if (score >= 70) return 'Good ${widget.style.toLowerCase()} style compatibility';
+    return 'Basic ${widget.style.toLowerCase()} style elements present';
+  }
+
+  String _getColorHarmonyAnalysis(List<dynamic> items) {
+    final score = _calculateColorHarmonyScore(items);
+    final itemColors = items.map((item) => item['color']?.toString()).where((c) => c != null).toSet();
+    
+    if (score >= 90) return 'Perfect ${itemColors.length}-color harmony achieved';
+    if (score >= 80) return 'Excellent color coordination with ${itemColors.length} tones';
+    if (score >= 70) return 'Good color balance maintained';
+    return 'Color coordination needs refinement';
+  }
+
+  // Helper methods for item-specific calculations
+  int _calculateStyleCoherenceScoreForItem(String category, String style) {
+    Map<String, Map<String, int>> categoryStyleScores = {
+      'tops': {
+        'professional': 95, 'classic': 90, 'minimalist': 90, 'trendy': 85,
+        'bohemian': 75, 'edgy': 80, 'romantic': 85, 'sporty': 70,
+      },
+      'bottoms': {
+        'professional': 90, 'classic': 95, 'minimalist': 95, 'trendy': 88,
+        'bohemian': 80, 'edgy': 85, 'romantic': 75, 'sporty': 90,
+      },
+      'outerwear': {
+        'professional': 85, 'classic': 90, 'minimalist': 85, 'trendy': 90,
+        'bohemian': 88, 'edgy': 95, 'romantic': 75, 'sporty': 85,
+      },
+      'shoes': {
+        'professional': 90, 'classic': 85, 'minimalist': 80, 'trendy': 95,
+        'bohemian': 85, 'edgy': 90, 'romantic': 88, 'sporty': 98,
+      },
+      'accessories': {
+        'professional': 75, 'classic': 80, 'minimalist': 70, 'trendy': 95,
+        'bohemian': 98, 'edgy': 95, 'romantic': 98, 'sporty': 60,
+      },
+    };
+    
+    return categoryStyleScores[category]?[style.toLowerCase()] ?? 75;
+  }
+
+  int _calculateOccasionMatchScoreForItem(String category, String occasion) {
+    Map<String, Map<String, int>> categoryOccasionScores = {
+      'tops': {
+        'work/office': 95, 'formal meeting': 98, 'casual day': 85, 
+        'date night': 88, 'party/event': 80, 'workout/gym': 30, 
+        'travel/vacation': 85, 'home/relaxing': 90,
+      },
+      'bottoms': {
+        'work/office': 90, 'formal meeting': 95, 'casual day': 95, 
+        'date night': 85, 'party/event': 88, 'workout/gym': 40, 
+        'travel/vacation': 90, 'home/relaxing': 95,
+      },
+      'outerwear': {
+        'work/office': 85, 'formal meeting': 90, 'casual day': 95, 
+        'date night': 80, 'party/event': 85, 'workout/gym': 60, 
+        'travel/vacation': 98, 'home/relaxing': 70,
+      },
+      'shoes': {
+        'work/office': 90, 'formal meeting': 95, 'casual day': 85, 
+        'date night': 90, 'party/event': 95, 'workout/gym': 98, 
+        'travel/vacation': 85, 'home/relaxing': 60,
+      },
+      'accessories': {
+        'work/office': 80, 'formal meeting': 85, 'casual day': 75, 
+        'date night': 95, 'party/event': 98, 'workout/gym': 20, 
+        'travel/vacation': 80, 'home/relaxing': 40,
+      },
+    };
+    
+    return categoryOccasionScores[category]?[occasion.toLowerCase()] ?? 75;
+  }
+
+  int _calculateWeatherSuitabilityScoreForItem(String category, String weather) {
+    Map<String, Map<String, int>> categoryWeatherScores = {
+      'tops': {
+        'sunny & warm': 85, 'hot & humid': 90, 'mild & pleasant': 95,
+        'rainy & cool': 80, 'cold & windy': 70,
+      },
+      'bottoms': {
+        'sunny & warm': 90, 'hot & humid': 85, 'mild & pleasant': 95,
+        'rainy & cool': 90, 'cold & windy': 88,
+      },
+      'outerwear': {
+        'sunny & warm': 40, 'hot & humid': 30, 'mild & pleasant': 80,
+        'rainy & cool': 98, 'cold & windy': 98,
+      },
+      'shoes': {
+        'sunny & warm': 85, 'hot & humid': 80, 'mild & pleasant': 90,
+        'rainy & cool': 95, 'cold & windy': 90,
+      },
+      'accessories': {
+        'sunny & warm': 70, 'hot & humid': 65, 'mild & pleasant': 80,
+        'rainy & cool': 75, 'cold & windy': 85,
+      },
+    };
+    
+    return categoryWeatherScores[category]?[weather.toLowerCase()] ?? 75;
   }
 }

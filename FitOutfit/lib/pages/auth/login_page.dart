@@ -144,7 +144,27 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       setState(() => _isGoogleLoading = false);
 
       if (userCredential != null && mounted) {
-        _navigateToHome();
+        final user = userCredential.user;
+        if (user != null) {
+          final doc = await FirebaseFirestore.instance
+              .collection('personalisasi')
+              .doc(user.uid)
+              .get();
+
+          if (doc.exists) {
+            // Sudah ada data personalisasi, langsung ke HomePage
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomePage()),
+            );
+          } else {
+            // Belum ada data personalisasi, ke PersonalizationPage
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const PersonalizationPage(),
+              ),
+            );
+          }
+        }
       } else if (mounted) {
         _showErrorSnackBar("Google Sign-In cancelled.");
       }

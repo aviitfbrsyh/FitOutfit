@@ -1,9 +1,15 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import './outfit_result_page.dart';
+import 'package:flutter/foundation.dart'; 
+import '../../services/gpt_vision_service.dart';
+import 'outfit_result_page.dart';
+import '../../models/wardrobe_item.dart'; // ✅ PASTIKAN INI ADA
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/firebase_storage_service.dart'; 
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -75,62 +81,15 @@ class _WardrobePageState extends State<WardrobePage>
     'Professional',
   ];
 
+
+
+
   // Add search controller
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Make _wardrobeItems final but keep the list mutable
-  final List<Map<String, dynamic>> _wardrobeItems = [
-    {
-      'id': '1',
-      'name': 'Classic White Shirt',
-      'category': 'Tops',
-      'color': 'White',
-      'brand': 'Zara',
-      'description':
-          'Crisp cotton button-down shirt perfect for professional settings',
-      'image': null,
-      'tags': ['professional', 'versatile', 'cotton', 'formal'],
-      'lastWorn': '2 days ago',
-      'favorite': false,
-    },
-    {
-      'id': '2',
-      'name': 'Black Skinny Jeans',
-      'category': 'Bottoms',
-      'color': 'Black',
-      'brand': 'Levi\'s',
-      'description': 'High-waisted skinny fit jeans with stretch comfort',
-      'image': null,
-      'tags': ['casual', 'stretchy', 'comfortable', 'versatile'],
-      'lastWorn': '1 week ago',
-      'favorite': true,
-    },
-    {
-      'id': '3',
-      'name': 'Floral Summer Dress',
-      'category': 'Dresses',
-      'color': 'Blue',
-      'brand': 'H&M',
-      'description': 'Light floral print midi dress with flowing silhouette',
-      'image': null,
-      'tags': ['summer', 'romantic', 'breathable', 'feminine'],
-      'lastWorn': '3 days ago',
-      'favorite': false,
-    },
-    {
-      'id': '4',
-      'name': 'Navy Blazer',
-      'category': 'Outerwear',
-      'color': 'Navy',
-      'brand': 'Mango',
-      'description': 'Tailored navy blazer with gold buttons',
-      'image': null,
-      'tags': ['professional', 'formal', 'structured', 'elegant'],
-      'lastWorn': '5 days ago',
-      'favorite': true,
-    },
-  ];
+// Make _wardrobeItems final but keep the list mutable
+final List<Map<String, dynamic>> _wardrobeItems = [];
 
   @override
   void initState() {
@@ -208,6 +167,7 @@ class _WardrobePageState extends State<WardrobePage>
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
+// FIX: Replace Wrap with Row/Column untuk responsive layout
 Widget _buildEnhancedSliverAppBar() {
   return SliverAppBar(
     expandedHeight: 140,
@@ -216,7 +176,7 @@ Widget _buildEnhancedSliverAppBar() {
     floating: false,
     backgroundColor: Colors.transparent,
     elevation: 0,
-    centerTitle: false, // DISABLE CENTER TITLE
+    centerTitle: false,
     leading: Container(
       margin: const EdgeInsets.all(8),
       child: Material(
@@ -245,9 +205,7 @@ Widget _buildEnhancedSliverAppBar() {
         ),
       ),
     ),
-    // HILANGKAN ACTIONS (TITIK 3)
     actions: const [],
-    // HILANGKAN TITLE COMPLETELY
     title: null,
     flexibleSpace: LayoutBuilder(
       builder: (context, constraints) {
@@ -256,7 +214,6 @@ Widget _buildEnhancedSliverAppBar() {
         final screenWidth = MediaQuery.of(context).size.width;
 
         return FlexibleSpaceBar(
-          // NO TITLE - EMPTY
           title: const SizedBox.shrink(),
           background: AnimatedBuilder(
             animation: _headerAnimation,
@@ -309,18 +266,16 @@ Widget _buildEnhancedSliverAppBar() {
                   ),
                   child: SafeArea(
                     child: Container(
-                      // RESPONSIVE PADDING BASED ON SCREEN WIDTH
                       padding: EdgeInsets.fromLTRB(
-                        screenWidth > 400 ? 32 : 24, // RESPONSIVE LEFT PADDING
+                        screenWidth > 400 ? 32 : 24,
                         25,
-                        screenWidth > 400 ? 24 : 16, // RESPONSIVE RIGHT PADDING
+                        screenWidth > 400 ? 24 : 16,
                         isCollapsed ? 20 : 32,
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // RESPONSIVE CONTENT
                           AnimatedOpacity(
                             duration: const Duration(milliseconds: 200),
                             opacity: isCollapsed ? 0.0 : 1.0,
@@ -330,7 +285,6 @@ Widget _buildEnhancedSliverAppBar() {
                                 
                                 return Row(
                                   children: [
-                                    // RESPONSIVE ICON CONTAINER
                                     Container(
                                       padding: EdgeInsets.all(
                                         screenWidth > 400 
@@ -365,7 +319,6 @@ Widget _buildEnhancedSliverAppBar() {
                                       ),
                                     ),
                                     SizedBox(width: screenWidth > 400 ? 18 : 12),
-                                    // RESPONSIVE TEXT CONTENT
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,10 +341,8 @@ Widget _buildEnhancedSliverAppBar() {
                                           ),
                                           if (!isCollapsed) ...[
                                             SizedBox(height: screenWidth > 400 ? 8 : 6),
-                                            // RESPONSIVE BOTTOM INFO
-                                            Wrap(
-                                              spacing: screenWidth > 400 ? 12 : 8,
-                                              crossAxisAlignment: WrapCrossAlignment.center,
+                                            // FIX: Replace Wrap with Row
+                                            Row(
                                               children: [
                                                 Container(
                                                   padding: EdgeInsets.symmetric(
@@ -414,12 +365,14 @@ Widget _buildEnhancedSliverAppBar() {
                                                   ),
                                                 ),
                                                 if (availableWidth > 200) ...[
+                                                  SizedBox(width: 8),
                                                   Icon(
                                                     Icons.fiber_manual_record,
                                                     size: screenWidth > 400 ? 6 : 4,
                                                     color: pureWhite.withValues(alpha: 0.7),
                                                   ),
-                                                  Flexible(
+                                                  SizedBox(width: 8),
+                                                  Expanded(
                                                     child: Text(
                                                       'Updated 2025-06-13 19:29',
                                                       style: GoogleFonts.poppins(
@@ -1563,331 +1516,478 @@ Widget _buildEnhancedWardrobeGrid() {
     );
   }
 
-  Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: pureWhite,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: primaryBlue.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: () => _showItemDetails(item),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Enhanced image section
-              Expanded(
-                flex: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        primaryBlue.withValues(alpha: 0.06),
-                        accentYellow.withValues(alpha: 0.04),
-                        accentRed.withValues(alpha: 0.03),
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: pureWhite.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: shadowColor,
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _getCategoryIcon(item['category']),
-                            size: 28,
-                            color: primaryBlue,
-                          ),
-                        ),
-                      ),
-                      // Favorite button
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => _toggleFavorite(item['id']),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: pureWhite,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: shadowColor,
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                item['favorite']
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                size: 14,
-                                color:
-                                    item['favorite'] ? accentRed : mediumGray,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Color indicator
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getColorFromName(item['color']),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: pureWhite, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: shadowColor,
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            item['color'],
-                            style: GoogleFonts.poppins(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              color: _getTextColorForBackground(
-                                _getColorFromName(item['color']),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Details section
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['name'],
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: darkGray,
-                          letterSpacing: -0.2,
-                          height: 1.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      if (item['brand'] != null &&
-                          item['brand'].toString().isNotEmpty)
-                        Text(
-                          item['brand'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: mediumGray,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  primaryBlue.withValues(alpha: 0.1),
-                                  primaryBlue.withValues(alpha: 0.05),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              item['category'],
-                              style: GoogleFonts.poppins(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: primaryBlue,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.schedule_rounded,
-                                size: 10,
-                                color: mediumGray,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                item['lastWorn'],
-                                style: GoogleFonts.poppins(
-                                  fontSize: 8,
-                                  color: mediumGray,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+// Update _buildEnhancedWardrobeItem dengan better error handling:
+Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
+  return Container(
+    decoration: BoxDecoration(
+      color: pureWhite,
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: [
+        BoxShadow(
+          color: shadowColor,
+          blurRadius: 12,
+          offset: const Offset(0, 6),
         ),
-      ),
-    );
-  }
-
-  Widget _buildEnhancedEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+        BoxShadow(
+          color: primaryBlue.withValues(alpha: 0.04),
+          blurRadius: 20,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => _showItemDetails(item),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    primaryBlue.withValues(alpha: 0.1),
-                    accentYellow.withValues(alpha: 0.1),
+            // ✅ IMPROVED IMAGE SECTION
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      primaryBlue.withValues(alpha: 0.06),
+                      accentYellow.withValues(alpha: 0.04),
+                      accentRed.withValues(alpha: 0.03),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // ✅ MAIN IMAGE/ICON CONTAINER WITH BETTER ERROR HANDLING
+                    Center(
+                      child: Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
+                          ),
+                        ),
+                        child: _buildItemImage(item),
+                      ),
+                    ),
+                    // Favorite button
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _toggleFavorite(item['id']),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: pureWhite,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: shadowColor,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              item['favorite']
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 14,
+                              color: item['favorite'] ? accentRed : mediumGray,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Color indicator
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getColorFromName(item['color']),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: pureWhite, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: shadowColor,
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          item['color'],
+                          style: GoogleFonts.poppins(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: _getTextColorForBackground(
+                              _getColorFromName(item['color']),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: [
-                  BoxShadow(
-                    color: shadowColor,
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.checkroom_rounded,
-                size: 80,
-                color: primaryBlue.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(height: 32),
-            Text(
-              'No items in $_selectedCategory',
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: darkGray,
-                letterSpacing: -0.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Start building your digital wardrobe\nby adding your first $_selectedCategory item',
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                color: mediumGray,
-                height: 1.6,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [primaryBlue, secondaryBlue]),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryBlue.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: _showAddItemDialog,
-                icon: const Icon(Icons.add_rounded, size: 20),
-                label: Text(
-                  'Add Your First Item',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: pureWhite,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+            // Details section
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['name'],
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: darkGray,
+                        letterSpacing: -0.2,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (item['brand'] != null &&
+                        item['brand'].toString().isNotEmpty)
+                      Text(
+                        item['brand'],
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: mediumGray,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                primaryBlue.withValues(alpha: 0.1),
+                                primaryBlue.withValues(alpha: 0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            item['category'],
+                            style: GoogleFonts.poppins(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: primaryBlue,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 10,
+                              color: mediumGray,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              item['lastWorn'],
+                              style: GoogleFonts.poppins(
+                                fontSize: 8,
+                                color: mediumGray,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
+    ),
+  );
+}
+
+// Replace _buildItemImage method completely
+Widget _buildItemImage(Map<String, dynamic> item) {
+  final imageUrl = item['image'];
+  
+  print('🔍 DEBUG: Building image for item ${item['name']}');
+  print('🔍 DEBUG: Image URL: $imageUrl');
+  print('🔍 DEBUG: Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}');
+  
+  if (imageUrl != null && 
+      imageUrl.toString().trim().isNotEmpty && 
+      imageUrl.toString() != 'null') {
+    
+    print('✅ DEBUG: Loading image: $imageUrl');
+    
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+      ),
+      child: kIsWeb 
+          ? Image.network(  
+              imageUrl.toString().trim(),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) {
+                  print('✅ WEB Image loaded successfully: $imageUrl');
+                  return child;  // ✅ Return actual image
+                }
+                return _buildLoadingPlaceholder(loadingProgress);
+              },
+              errorBuilder: (context, error, stackTrace) {
+                print('❌ WEB Image error for ${item['name']}: $error');
+                print('❌ Stack trace: $stackTrace');
+                print('❌ Failed URL: $imageUrl');
+                // Return fallback icon instead of success placeholder
+                return _buildFallbackIcon(item['category']);
+              },
+            )
+          : CachedNetworkImage(  
+              imageUrl: imageUrl.toString().trim(),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              placeholder: (context, url) => _buildLoadingPlaceholder(null),
+              errorWidget: (context, url, error) {
+                print('❌ Mobile image error for ${item['name']}: $error');
+                print('❌ Failed URL: $url');
+                // Return fallback icon instead of success placeholder
+                return _buildFallbackIcon(item['category']);
+              },
+            ),
     );
+  } else {
+    print('⚠️ No valid image URL for item: ${item['name']}');
+    return _buildFallbackIcon(item['category']);
   }
+}
+
+// ✅ ADD SUCCESS PLACEHOLDER FOR WEB IMAGES
+
+// ✅ ADD LOADING PLACEHOLDER
+Widget _buildLoadingPlaceholder(ImageChunkEvent? loadingProgress) {
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          primaryBlue.withValues(alpha: 0.05),
+          accentYellow.withValues(alpha: 0.03),
+          Colors.white,
+        ],
+      ),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: primaryBlue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              value: loadingProgress?.expectedTotalBytes != null
+                  ? loadingProgress!.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              color: primaryBlue,
+              strokeWidth: 3,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Loading Image...',
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: primaryBlue,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (loadingProgress?.expectedTotalBytes != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            '${((loadingProgress!.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!) * 100).toInt()}%',
+            style: GoogleFonts.poppins(
+              fontSize: 9,
+              color: mediumGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+// ✅ UPDATE FALLBACK ICON METHOD (keep your existing one but improve it)
+Widget _buildFallbackIcon(String category) {
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          mediumGray.withValues(alpha: 0.1),
+          lightGray,
+          Colors.white,
+        ],
+      ),
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+      ),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: pureWhite.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: lightGray,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(
+            _getCategoryIcon(category),
+            size: 28,
+            color: primaryBlue,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'No Image',
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: mediumGray,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Add photo to this item',
+          style: GoogleFonts.poppins(
+            fontSize: 8,
+            color: mediumGray.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+ Widget _buildEnhancedEmptyState() {
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  primaryBlue.withValues(alpha: 0.1),
+                  accentYellow.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(40),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.checkroom_rounded,
+              size: 80,
+              color: primaryBlue.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'No items in $_selectedCategory',
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: darkGray,
+              letterSpacing: -0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Start building your digital wardrobe\nby adding your first $_selectedCategory item',
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: mediumGray,
+              height: 1.6,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildEnhancedFloatingActionButton() {
     return ScaleTransition(
@@ -2439,51 +2539,225 @@ Widget _buildEnhancedWardrobeGrid() {
     return const SizedBox.shrink(); // Return empty widget instead
   }
 
-  void _generateAIRecommendations() {
-    HapticFeedback.mediumImpact();
+Future<void> _generateAIRecommendations() async {
+  if (_wardrobeItems.isEmpty ||
+      _selectedOccasion.isEmpty ||
+      _selectedWeather.isEmpty ||
+      _selectedStyle.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('❌ Please complete all selections and add items to wardrobe!'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
 
-    // Don't show any loading state, just navigate directly after a short delay
-    Future.delayed(const Duration(milliseconds: 800), () {
-      // Check if widget is still mounted before using context
-      if (!mounted) return;
+  // ✅ FILTER ITEMS YANG PUNYA GAMBAR VALID
+  final itemsWithImages = _wardrobeItems.where((item) => 
+    item['image'] != null && 
+    item['image'].toString().trim().isNotEmpty && 
+    item['image'].toString() != 'null'
+  ).toList();
 
-      // Reset the flag and navigate immediately
-      setState(() {
-        _showAIRecommendations = false;
-      });
+  if (itemsWithImages.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('❌ No items with photos found. Add photos to your wardrobe items first!'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 4),
+      ),
+    );
+    return;
+  }
 
-      // Navigate to detailed outfit result page
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => OutfitResultPage(
-                outfitData: {
-                  'name': 'Perfect Style Match',
-                  'components': _wardrobeItems.take(3).toList(),
-                  'rating': 4.9,
-                  'matchScore': 95,
-                },
-                occasion: _selectedOccasion,
-                weather: _selectedWeather,
-                style: _selectedStyle,
-              ),
+  print('🤖 Items with valid images: ${itemsWithImages.length}/${_wardrobeItems.length}');
+
+  // ✅ SHOW LOADING DIALOG
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (c) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
-      );
-    });
-  }
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryBlue, secondaryBlue],
+                ),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryBlue.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              '🤖 AI Analyzing Your Style',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: darkGray,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Analyzing ${itemsWithImages.length} items with photos...',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: mediumGray,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Occasion: $_selectedOccasion\nWeather: $_selectedWeather\nStyle: $_selectedStyle',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: mediumGray,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
-  void _addNewItem(Map<String, dynamic> newItem) {
-    setState(() {
-      // Generate new ID
-      final newId = (int.parse(_wardrobeItems.last['id']) + 1).toString();
-      newItem['id'] = newId;
-      newItem['lastWorn'] = 'Never';
-      newItem['favorite'] = false;
+  try {
+    // ✅ CONVERT WARDROBE ITEMS TO WARDROBEITEM MODEL
+    final wardrobeItems = itemsWithImages
+        .map((item) => WardrobeItem.fromMap(item))
+        .toList();
 
-      _wardrobeItems.add(newItem);
-    });
+    print('🤖 Sending ${wardrobeItems.length} items to AI:');
+    for (var item in wardrobeItems) {
+      print('   - ${item.name} (${item.category}, ${item.color})');
+      print('     Image: ${item.imageUrl?.substring(0, 50)}...');
+    }
+
+    // ✅ TEST API KEY FIRST
+    print('🔑 Testing OpenAI API key...');
+    final isApiKeyValid = await GptVisionService.testApiKey();
+    if (!isApiKeyValid) {
+      throw Exception('Invalid OpenAI API key. Please check your configuration.');
+    }
+    print('✅ API key is valid!');
+
+    // ✅ GENERATE AI RECOMMENDATIONS
+    final result = await GptVisionService.generateOutfitRecommendation(
+      wardrobeItems, // ✅ Pass WardrobeItem objects with imageUrl
+      occasion: _selectedOccasion,
+      weather: _selectedWeather,
+      style: _selectedStyle,
+    );
+
+    Navigator.of(context).pop(); // Close loading dialog
+
+    print('✅ AI generation successful!');
+    print('🎯 Result: $result');
+
+    // ✅ NAVIGATE TO OUTFIT RESULT PAGE
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OutfitResultPage(
+          result: result,
+          occasion: _selectedOccasion,
+          weather: _selectedWeather,
+          style: _selectedStyle,
+        ),
+      ),
+    );
+  } catch (e) {
+    Navigator.of(context).pop(); // Close loading dialog
+    
+    print('❌ AI Generation Error: $e');
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '❌ AI Generation Failed',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              e.toString().length > 100 
+                ? '${e.toString().substring(0, 100)}...'
+                : e.toString(),
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 6),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
+}
+
+// Replace _addNewItem method dengan debugging
+void _addNewItem(Map<String, dynamic> newItem) {
+  print('🎯 DEBUG: Adding new item to wardrobe');
+  print('🎯 DEBUG: Item data: $newItem');
+  print('🎯 DEBUG: Item image URL: ${newItem['image']}');
+  
+  final imageUrl = newItem['image']?.toString() ?? '';
+  if (imageUrl.isNotEmpty) {
+    print('🎯 DEBUG: URL length: ${imageUrl.length}');
+    print('🎯 DEBUG: URL starts with: ${imageUrl.substring(0, imageUrl.length > 50 ? 50 : imageUrl.length)}');
+    print('🎯 DEBUG: Contains firebasestorage: ${imageUrl.contains('firebasestorage')}');
+    print('🎯 DEBUG: Contains fitoutfit-f47ae: ${imageUrl.contains('fitoutfit-f47ae')}');
+  }
+  
+  setState(() {
+    final newId = _wardrobeItems.isEmpty 
+        ? '1' 
+        : (int.parse(_wardrobeItems.last['id']) + 1).toString();
+    newItem['id'] = newId;
+    newItem['lastWorn'] = 'Never';
+    newItem['favorite'] = false;
+
+    _wardrobeItems.add(newItem);
+    
+    print('🎯 DEBUG: Item added successfully. Total items: ${_wardrobeItems.length}');
+    print('🎯 DEBUG: Last item image URL: ${_wardrobeItems.last['image']}');
+  });
+}
 
   void _showAddItemDialog() {
     showModalBottomSheet(
@@ -2604,6 +2878,7 @@ Widget _buildEnhancedWardrobeGrid() {
   }
 }
 
+
 class _AddItemBottomSheet extends StatefulWidget {
   final Function(Map<String, dynamic>) onItemAdded;
 
@@ -2626,8 +2901,10 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
 
   String _selectedCategory = 'Tops';
   String _selectedColor = 'White';
-  File? _selectedImage;
+  dynamic _selectedImage;
   final List<String> _selectedTags = [];
+
+  bool _isUploading = false;
 
   final List<String> _categories = [
     'Tops',
@@ -2821,55 +3098,75 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
               width: 1,
             ),
           ),
-          child:
-              _selectedImage != null
-                  ? ClipRRect(
+          child: _selectedImage != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: _buildSelectedImage(), // Helper method untuk handle web/mobile
+                )
+              : Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _pickImage,
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.file(_selectedImage!, fit: BoxFit.cover),
-                  )
-                  : Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _pickImage,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: primaryBlue.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              Icons.camera_alt_rounded,
-                              color: primaryBlue,
-                              size: 32,
-                            ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: primaryBlue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Add Photo',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: darkGray,
-                            ),
+                          child: Icon(
+                            Icons.camera_alt_rounded,
+                            color: primaryBlue,
+                            size: 32,
                           ),
-                          Text(
-                            'Tap to take a photo or choose from gallery',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: mediumGray,
-                            ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Add Photo',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: darkGray,
                           ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          'Tap to take a photo or choose from gallery',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: mediumGray,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
         ),
       ],
     );
+  }
+
+  // Helper method untuk handle web vs mobile image display
+  Widget _buildSelectedImage() {
+    if (kIsWeb) {
+      // Web: gunakan Image.memory
+      return Image.memory(
+        _selectedImage as Uint8List,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } else {
+      // Mobile: gunakan Image.file
+      return Image.file(
+        _selectedImage as File,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
   }
 
   Widget _buildTextField(
@@ -3140,45 +3437,55 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
     );
   }
 
-  Widget _buildSaveButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryBlue, primaryBlue.withValues(alpha: 0.8)],
-        ),
+// Update the _buildSaveButton method to use _isUploading:
 
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: primaryBlue.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+Widget _buildSaveButton() {
+  return Container(
+    width: double.infinity,
+    height: 56,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [primaryBlue, primaryBlue.withValues(alpha: 0.8)],
       ),
-      child: ElevatedButton.icon(
-        onPressed: _saveItem,
-        icon: Icon(Icons.save_rounded, color: Colors.white, size: 20),
-        label: Text(
-          'Save Item',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: primaryBlue.withValues(alpha: 0.4),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+      ],
+    ),
+    child: ElevatedButton.icon(
+      onPressed: _isUploading ? null : _saveItem, // Disable when uploading
+      icon: _isUploading 
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+          : Icon(Icons.save_rounded, color: Colors.white, size: 20),
+      label: Text(
+        _isUploading ? 'Uploading...' : 'Save Item', // Change text when uploading
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
         ),
       ),
-    );
-  }
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    ),
+  );
+}
 
   Color _getColorValue(String colorName) {
     switch (colorName.toLowerCase()) {
@@ -3214,116 +3521,140 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
   void _pickImage() async {
     showModalBottomSheet(
       context: context,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt_rounded, color: primaryBlue),
+              title: Text('Take Photo', style: GoogleFonts.poppins()),
+              onTap: () async {
+                Navigator.pop(context);
+                await _pickImageFromSource(ImageSource.camera);
+              },
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.camera_alt_rounded, color: primaryBlue),
-                  title: Text('Take Photo', style: GoogleFonts.poppins()),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    final picker = ImagePicker();
-                    final image = await picker.pickImage(
-                      source: ImageSource.camera,
-                    );
-                    if (image != null) {
-                      setState(() => _selectedImage = File(image.path));
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.photo_library_rounded,
-                    color: primaryBlue,
-                  ),
-                  title: Text(
-                    'Choose from Gallery',
-                    style: GoogleFonts.poppins(),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    final picker = ImagePicker();
-                    final image = await picker.pickImage(
-                      source: ImageSource.gallery,
-                    );
-                    if (image != null) {
-                      setState(() => _selectedImage = File(image.path));
-                    }
-                  },
-                ),
-              ],
+            ListTile(
+              leading: Icon(
+                Icons.photo_library_rounded,
+                color: primaryBlue,
+              ),
+              title: Text(
+                'Choose from Gallery',
+                style: GoogleFonts.poppins(),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _pickImageFromSource(ImageSource.gallery);
+              },
             ),
-          ),
+          ],
+        ),
+      ),
     );
   }
 
-  void _saveItem() {
-    if (_formKey.currentState!.validate()) {
-      // Create new item
+  
+  // Helper method untuk pick image dengan web support
+  Future<void> _pickImageFromSource(ImageSource source) async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: source);
+    
+    if (image != null) {
+      if (kIsWeb) {
+        // Web: convert ke Uint8List
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImage = bytes;
+        });
+      } else {
+        // Mobile: gunakan File
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    }
+  }
+
+
+// Replace _saveItem method dengan ini
+void _saveItem() async {
+  if (_formKey.currentState!.validate()) {
+    if (_selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please add a photo!')),
+      );
+      return;
+    }
+    
+    setState(() => _isUploading = true);
+
+    try {
+      // ✅ GET BYTES FOR FIREBASE UPLOAD
+      Uint8List bytes;
+      if (kIsWeb) {
+        bytes = _selectedImage as Uint8List;
+      } else {
+        bytes = await (_selectedImage as File).readAsBytes();
+      }
+      
+      print('🔥 DEBUG: Starting Firebase upload');
+      print('🔥 DEBUG: Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}');
+      print('🔥 DEBUG: Image size: ${bytes.length} bytes');
+
+      // ✅ USE FIREBASE STORAGE INSTEAD OF IMGBB
+      final fileName = FirebaseStorageService.generateFileName('wardrobe_item');
+      print('🔥 DEBUG: Generated filename: $fileName');
+      
+      final imageUrl = await FirebaseStorageService.uploadImage(
+        imageBytes: bytes,
+        fileName: fileName,
+        folder: 'wardrobe_items',
+      );
+
+      print('🔥 DEBUG: Firebase upload successful!');
+      print('🔥 DEBUG: Image URL: $imageUrl');
+
+      setState(() => _isUploading = false);
+
+      // ✅ CREATE NEW ITEM WITH FIREBASE URL
       final newItem = {
         'name': _nameController.text.trim(),
         'category': _selectedCategory,
         'color': _selectedColor,
-        'brand': '', // Set empty brand
+        'brand': '',
         'description': _descriptionController.text.trim(),
-        'image': _selectedImage?.path,
+        'image': imageUrl, // ✅ Firebase Storage URL
         'tags': List<String>.from(_selectedTags),
       };
 
-      // Add item to wardrobe
-      widget.onItemAdded(newItem);
+      print('🔥 DEBUG: New item created: $newItem');
 
+      widget.onItemAdded(newItem);
       Navigator.pop(context);
 
-      // Show success message
+      // Success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Item Added Successfully!',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '${_nameController.text} added to $_selectedCategory',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green[600],
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
+         content: Text('🎉 Yay! Successfully added to your wardrobe collection.'),
+          backgroundColor: Colors.green,
         ),
+      );
+    } catch (e) {
+      print('❌ Firebase upload error: $e');
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Firebase upload failed: $e')),
       );
     }
   }
+}
+// Replace from line 3373 onwards with this complete, corrected code:
+
 }
 
 class _ItemDetailsBottomSheet extends StatelessWidget {
@@ -3342,7 +3673,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(32),
@@ -3373,7 +3704,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          item['name'],
+                          item['name'] ?? '',
                           style: GoogleFonts.poppins(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -3388,10 +3719,10 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          item['favorite']
+                          item['favorite'] == true
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          color: item['favorite'] ? accentRed : mediumGray,
+                          color: item['favorite'] == true ? accentRed : mediumGray,
                         ),
                       ),
                     ],
@@ -3409,7 +3740,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  // Image placeholder
+                  // Image or placeholder
                   Container(
                     width: double.infinity,
                     height: 200,
@@ -3420,39 +3751,62 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                           accentYellow.withValues(alpha: 0.1),
                         ],
                       ),
-
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
-                      child: Icon(
-                        Icons.checkroom_rounded,
-                        size: 64,
-                        color: primaryBlue.withValues(alpha: 0.6),
-                      ),
+                      child: (item['image'] != null && (item['image'] as String).isNotEmpty)
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                item['image'],
+                                width: 160,
+                                height: 160,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, e, s) => Icon(
+                                  Icons.checkroom_rounded,
+                                  size: 64,
+                                  color: primaryBlue.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              Icons.checkroom_rounded,
+                              size: 64,
+                              color: primaryBlue.withValues(alpha: 0.6),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Details
+                  // Details section
+                  _buildDetailRow('Category', item['category']),
+                  _buildDetailRow('Color', item['color']),
+                  if (item['brand'] != null && item['brand'].toString().isNotEmpty)
+                    _buildDetailRow('Brand', item['brand']),
+                  _buildDetailRow('Last Worn', item['lastWorn']),
+                  
+                  const SizedBox(height: 20),
+                  // Description
                   Text(
-                    'Details',
+                    'Description',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: darkGray,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
-                    item['description'],
+                    item['description'] ?? 'No description available',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: mediumGray,
                       height: 1.5,
                     ),
                   ),
+                  
                   const SizedBox(height: 20),
                   // Tags
-                  if (item['tags'] != null && item['tags'].isNotEmpty) ...[
+                  if (item['tags'] != null && (item['tags'] as List).isNotEmpty) ...[
                     Text(
                       'Tags',
                       style: GoogleFonts.poppins(
@@ -3465,32 +3819,69 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children:
-                          (item['tags'] as List)
-                              .map(
-                                (tag) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: primaryBlue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Text(
-                                    tag,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: primaryBlue,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                      children: (item['tags'] as List)
+                          .map<Widget>(
+                            (tag) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: primaryBlue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: primaryBlue.withValues(alpha: 0.3),
+                                  width: 1,
                                 ),
-                              )
-                              .toList(),
+                              ),
+                              child: Text(
+                                tag.toString(),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: primaryBlue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ],
+                  const SizedBox(height: 40),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: mediumGray,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value?.toString() ?? 'Not specified',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: darkGray,
               ),
             ),
           ),

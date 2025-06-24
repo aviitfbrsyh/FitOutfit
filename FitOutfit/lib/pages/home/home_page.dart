@@ -6,8 +6,7 @@ import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../favorites/all_favorites_page.dart';
 import '../community/community_page.dart';
-import '../style_quiz/style_quiz_page.dart';
-import '../outfit_planner/outfit_planner_page.dart';
+import '../profile/profile_page.dart'; // tambahkan import ini
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -2008,10 +2007,9 @@ class _HomePageState extends State<HomePage>
                 MaterialPageRoute(builder: (context) => const CommunityPage()),
               );
             } else if (index == 4) {
-              // Ganti dengan ProfilePage jika ada
-              // Navigator.of(context).push(
-              //   MaterialPageRoute(builder: (context) => const ProfilePage()),
-              // );
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
             }
           },
           type: BottomNavigationBarType.fixed,
@@ -2288,7 +2286,9 @@ class _HomePageState extends State<HomePage>
   // Navigation methods
   void _navigateToProfile() {
     HapticFeedback.mediumImpact();
-    // Navigate to profile page
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const ProfilePage()),
+    );
   }
 
   void _navigateToAllRecommendations() {
@@ -2314,17 +2314,13 @@ class _HomePageState extends State<HomePage>
     ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
   }
 
-void _navigateToStyleQuiz() {
-  Navigator.of(context).push(
-    MaterialPageRoute(builder: (context) => const StyleQuizPage()),
-  );
-}
+  void _navigateToStyleQuiz() {
+    // Navigate to style quiz
+  }
 
-void _navigateToPlanner() {
-  Navigator.of(context).push(
-    MaterialPageRoute(builder: (context) => const OutfitPlannerPage()),
-  );
-}
+  void _navigateToPlanner() {
+    // Navigate to outfit planner
+  }
 
   void _navigateToNews() {
     // Navigate to fashion news

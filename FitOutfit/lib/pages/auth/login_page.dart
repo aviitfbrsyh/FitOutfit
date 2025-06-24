@@ -146,10 +146,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       if (userCredential != null && mounted) {
         final user = userCredential.user;
         if (user != null) {
-          final doc = await FirebaseFirestore.instance
-              .collection('personalisasi')
-              .doc(user.uid)
-              .get();
+          final doc =
+              await FirebaseFirestore.instance
+                  .collection('personalisasi')
+                  .doc(user.uid)
+                  .get();
 
           if (doc.exists) {
             // Sudah ada data personalisasi, langsung ke HomePage

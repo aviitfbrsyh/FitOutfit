@@ -1,26 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_storage/firebase_storage.dart'; // ✅ ADD THIS
+import 'package:provider/provider.dart';
+import 'firebase_options.dart';
+import 'providers/wardrobe_provider.dart';
 import 'pages/splash_screen_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) {
+  
+  try {
+    // ✅ INITIALIZE FIREBASE dengan config yang benar
     await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyBlsF9FDh0TDDKxw7mZX3301m2lqwn5FRc",
-        authDomain: "fitoutfit-f47ae.firebaseapp.com",
-        projectId: "fitoutfit-f47ae",
-        storageBucket: "fitoutfit-f47ae.appspot.com",
-        messagingSenderId: "1020357822298",
-        appId: "1:1020357822298:web:b51c742da1c68809cc1563",
-        measurementId: "G-VKTVP5F6L7",
-      ),
+      options: DefaultFirebaseOptions.currentPlatform,
     );
-  } else {
-    await Firebase.initializeApp();
+    
+    print('🔥 Firebase initialized successfully!');
+    print('🔥 Project: fitoutfit-f47ae');
+    
+    // ✅ GET ACTUAL BUCKET FROM FIREBASE INSTANCE
+    final storage = FirebaseStorage.instance;
+    print('🔥 Storage bucket (actual): ${storage.bucket}');
+    print('🔥 Storage bucket (config): ${DefaultFirebaseOptions.currentPlatform.storageBucket}');
+    
+    // ✅ VERIFY FIREBASE CONFIG
+    print('🔥 Platform: ${DefaultFirebaseOptions.currentPlatform.projectId}');
+    print('🔥 Auth domain: ${DefaultFirebaseOptions.currentPlatform.authDomain}');
+    
+  } catch (e) {
+    print('❌ Firebase initialization failed: $e');
   }
-  runApp(const MyApp());
+  
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WardrobeProvider()),
+        // Tambahkan provider lain di sini jika butuh
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

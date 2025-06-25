@@ -91,9 +91,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       CircleAvatar(
                         radius: 38,
                         backgroundColor: Colors.white,
-                        backgroundImage: photoUrl != null && photoUrl!.isNotEmpty
+                        backgroundImage: (photoUrl != null && photoUrl!.isNotEmpty)
                             ? NetworkImage(photoUrl!)
-                            : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                            : const AssetImage('assets/avatar.jpg') as ImageProvider,
                       ),
                       const SizedBox(width: 20),
                       Expanded(

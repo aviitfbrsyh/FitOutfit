@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class EditProfilePage extends StatefulWidget {
   final String initialName;
@@ -26,6 +28,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _nameController;
   late TextEditingController _bioController;
   File? _imageFile;
+  Uint8List? _webImage;
   bool _loading = false;
 
   @override
@@ -46,9 +49,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() {
-        _imageFile = File(picked.path);
-      });
+      print('Picked image path: ${picked.path}');
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _webImage = bytes;
+          _imageFile = null;
+        });
+      } else {
+        setState(() {
+          _imageFile = File(picked.path);
+          _webImage = null;
+        });
+      }
     }
   }
 
@@ -66,8 +79,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
           .ref()
           .child('profile_pict')
           .child('${user.uid}.jpg');
-      await ref.putFile(_imageFile!);
-      photoUrl = await ref.getDownloadURL();
+      try {
+        await ref.putFile(_imageFile!);
+        photoUrl = await ref.getDownloadURL();
+      } catch (e) {
+        print('Upload error: $e');
+        // Tampilkan pesan error ke user jika perlu
+      }
+    } else if (_webImage != null && kIsWeb) {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_pict')
+          .child('${user.uid}.jpg');
+      try {
+        await ref.putData(_webImage!);
+        photoUrl = await ref.getDownloadURL();
+      } catch (e) {
+        print('Upload error: $e');
+      }
     }
 
     // Update Firestore
@@ -122,26 +151,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 children: [
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
-                    child: _imageFile != null
+                    child: _webImage != null
                         ? CircleAvatar(
-                            key: ValueKey(_imageFile!.path),
+                            key: const ValueKey('web'),
                             radius: 48,
                             backgroundColor: Colors.grey[200],
-                            backgroundImage: FileImage(_imageFile!),
+                            backgroundImage: MemoryImage(_webImage!),
                           )
-                        : (widget.initialPhotoUrl != null && widget.initialPhotoUrl!.isNotEmpty
+                        : _imageFile != null
                             ? CircleAvatar(
-                                key: ValueKey(widget.initialPhotoUrl),
+                                key: ValueKey(_imageFile!.path),
                                 radius: 48,
                                 backgroundColor: Colors.grey[200],
-                                backgroundImage: NetworkImage(widget.initialPhotoUrl!),
+                                backgroundImage: FileImage(_imageFile!),
                               )
-                            : CircleAvatar(
-                                key: const ValueKey('default'),
-                                radius: 48,
-                                backgroundColor: Colors.grey[200],
-                                backgroundImage: const AssetImage('assets/images/default_avatar.png'),
-                              )),
+                            : (widget.initialPhotoUrl != null && widget.initialPhotoUrl!.isNotEmpty
+                                ? CircleAvatar(
+                                    key: ValueKey(widget.initialPhotoUrl),
+                                    radius: 48,
+                                    backgroundColor: Colors.grey[200],
+                                    backgroundImage: NetworkImage(widget.initialPhotoUrl!),
+                                  )
+                                : CircleAvatar(
+                                    key: const ValueKey('default'),
+                                    radius: 48,
+                                    backgroundColor: Colors.grey[200],
+                                    backgroundImage: const AssetImage('assets/avatar.jpg'),
+                                  )),
                   ),
                   Container(
                     decoration: BoxDecoration(

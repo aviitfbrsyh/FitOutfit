@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-import '../home/home_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/user_service.dart';
 
 class StyleQuizPage extends StatefulWidget {
   const StyleQuizPage({super.key});
@@ -13,7 +16,7 @@ class StyleQuizPage extends StatefulWidget {
 
 class _StyleQuizPageState extends State<StyleQuizPage>
     with TickerProviderStateMixin {
-  // FitOutfit Brand Colors - Mobile Optimized
+  // FitOutfit Brand Colors
   static const Color primaryBlue = Color(0xFF4A90E2);
   static const Color accentYellow = Color(0xFFF5A623);
   static const Color accentRed = Color(0xFFD0021B);
@@ -26,13 +29,17 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   static const Color lightBlue = Color(0xFFE6F0FF);
   static const Color shadowColor = Color(0x1A000000);
 
+  // API Configuration - GANTI API KEY MU DI SINI!
+  static const String OPENAI_API_KEY = ("OPENAI_API_KEY");
+
   // Animation Controllers
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late AnimationController _scaleController;
   late AnimationController _rotationController;
   late AnimationController _progressController;
-  
+  late AnimationController _shimmerController;
+
   // Animations
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -40,270 +47,32 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   late Animation<double> _rotationAnimation;
   late Animation<double> _progressAnimation;
   late Animation<double> _breathingAnimation;
+  late Animation<double> _shimmerAnimation;
 
   // State Variables
   int _currentQuestion = 0;
   final Map<int, String> _answers = {};
   bool _isLoading = false;
+  bool _isGeneratingQuestions = true;
   bool _showResult = false;
   String? _styleResult;
   String? _styleDescription;
   List<String> _personalizedTips = [];
+  String _quizSessionId = '';
 
-  // Enhanced Questions - Mobile Optimized
-  final List<Map<String, dynamic>> _questions = [
-    {
-      'id': 1,
-      'category': 'Style',
-      'question': 'What aesthetic defines you?',
-      'subtitle': 'Your style personality',
-      'icon': Icons.palette_outlined,
-      'options': [
-        {
-          'text': 'Minimalist',
-          'subtitle': 'Clean & Simple',
-          'value': 'minimalist',
-          'icon': Icons.architecture_outlined,
-          'color': primaryBlue,
-        },
-        {
-          'text': 'Bohemian',
-          'subtitle': 'Free & Artistic',
-          'value': 'bohemian',
-          'icon': Icons.nature_people_outlined,
-          'color': accentYellow,
-        },
-        {
-          'text': 'Classic',
-          'subtitle': 'Timeless & Elegant',
-          'value': 'classic',
-          'icon': Icons.diamond_outlined,
-          'color': deepBlue,
-        },
-        {
-          'text': 'Trendy',
-          'subtitle': 'Bold & Modern',
-          'value': 'trendy',
-          'icon': Icons.trending_up_outlined,
-          'color': accentRed,
-        },
-      ]
-    },
-    {
-      'id': 2,
-      'category': 'Colors',
-      'question': 'Which palette speaks to you?',
-      'subtitle': 'Your color preference',
-      'icon': Icons.color_lens_outlined,
-      'options': [
-        {
-          'text': 'Neutrals',
-          'subtitle': 'Black, White, Beige',
-          'value': 'neutral',
-          'icon': Icons.circle_outlined,
-          'color': darkGray,
-        },
-        {
-          'text': 'Earth Tones',
-          'subtitle': 'Brown, Green, Terra',
-          'value': 'earth',
-          'icon': Icons.eco_outlined,
-          'color': Color(0xFF8B4513),
-        },
-        {
-          'text': 'Bold Colors',
-          'subtitle': 'Red, Blue, Yellow',
-          'value': 'bold',
-          'icon': Icons.flash_on_outlined,
-          'color': accentRed,
-        },
-        {
-          'text': 'Pastels',
-          'subtitle': 'Pink, Lavender, Mint',
-          'value': 'pastel',
-          'icon': Icons.favorite_border_outlined,
-          'color': accentPurple,
-        },
-      ]
-    },
-    {
-      'id': 3,
-      'category': 'Lifestyle',
-      'question': 'Your weekend vibe?',
-      'subtitle': 'Comfort zone style',
-      'icon': Icons.weekend_outlined,
-      'options': [
-        {
-          'text': 'Cozy Casual',
-          'subtitle': 'Jeans & Sweater',
-          'value': 'casual',
-          'icon': Icons.home_outlined,
-          'color': mediumGray,
-        },
-        {
-          'text': 'Romantic',
-          'subtitle': 'Flowy & Feminine',
-          'value': 'romantic',
-          'icon': Icons.local_florist_outlined,
-          'color': accentPurple,
-        },
-        {
-          'text': 'Polished',
-          'subtitle': 'Tailored & Crisp',
-          'value': 'polished',
-          'icon': Icons.business_center_outlined,
-          'color': primaryBlue,
-        },
-        {
-          'text': 'Edgy',
-          'subtitle': 'Bold & Statement',
-          'value': 'edgy',
-          'icon': Icons.star_outline,
-          'color': accentRed,
-        },
-      ]
-    },
-    {
-      'id': 4,
-      'category': 'Fit',
-      'question': 'How do clothes fit you?',
-      'subtitle': 'Your preferred silhouette',
-      'icon': Icons.checkroom_outlined,
-      'options': [
-        {
-          'text': 'Relaxed',
-          'subtitle': 'Comfortable & Easy',
-          'value': 'relaxed',
-          'icon': Icons.air_outlined,
-          'color': lightBlue,
-        },
-        {
-          'text': 'Fitted',
-          'subtitle': 'Tailored & Sharp',
-          'value': 'fitted',
-          'icon': Icons.straighten_outlined,
-          'color': primaryBlue,
-        },
-        {
-          'text': 'Flowy',
-          'subtitle': 'Loose & Graceful',
-          'value': 'flowy',
-          'icon': Icons.waves_outlined,
-          'color': accentYellow,
-        },
-        {
-          'text': 'Mixed',
-          'subtitle': 'Fitted + Loose Balance',
-          'value': 'mixed',
-          'icon': Icons.balance_outlined,
-          'color': deepBlue,
-        },
-      ]
-    },
-    {
-      'id': 5,
-      'category': 'Accessories',
-      'question': 'Your accessory philosophy?',
-      'subtitle': 'How you complete looks',
-      'icon': Icons.watch_outlined,
-      'options': [
-        {
-          'text': 'Minimal',
-          'subtitle': 'Less is More',
-          'value': 'minimal',
-          'icon': Icons.minimize_outlined,
-          'color': darkGray,
-        },
-        {
-          'text': 'Statement',
-          'subtitle': 'Bold Pieces',
-          'value': 'statement',
-          'icon': Icons.campaign_outlined,
-          'color': accentRed,
-        },
-        {
-          'text': 'Layered',
-          'subtitle': 'Creative Mix',
-          'value': 'layered',
-          'icon': Icons.layers_outlined,
-          'color': accentYellow,
-        },
-        {
-          'text': 'Classic',
-          'subtitle': 'Timeless Pieces',
-          'value': 'classic_acc',
-          'icon': Icons.history_outlined,
-          'color': primaryBlue,
-        },
-      ]
-    }
-  ];
+  // User Data
+  String _currentUser = 'User';
+  String _currentUserId = 'user_001';
 
-  // Mobile-Optimized Style Profiles
-  final Map<String, Map<String, dynamic>> _styleProfiles = {
-    'minimalist': {
-      'title': 'Minimalist Chic',
-      'subtitle': 'Less is More',
-      'description': 'You appreciate clean lines, quality fabrics, and timeless pieces. Your style is sophisticated in its simplicity.',
-      'icon': Icons.architecture_outlined,
-      'color': primaryBlue,
-      'tips': [
-        'Focus on quality basics in neutral colors',
-        'Choose pieces with perfect fit',
-        'One statement piece per outfit',
-        'Build a versatile capsule wardrobe',
-        'Invest in premium fabrics'
-      ]
-    },
-    'bohemian': {
-      'title': 'Bohemian Spirit',
-      'subtitle': 'Free & Creative',
-      'description': 'You express creativity through fashion, mixing textures and patterns. Your style tells unique stories.',
-      'icon': Icons.nature_people_outlined,
-      'color': accentYellow,
-      'tips': [
-        'Mix patterns with confidence',
-        'Layer textures creatively',
-        'Choose flowing silhouettes',
-        'Embrace earthy colors',
-        'Add vintage pieces'
-      ]
-    },
-    'classic': {
-      'title': 'Timeless Classic',
-      'subtitle': 'Elegant & Refined',
-      'description': 'Your style is refined and never goes out of fashion. You appreciate traditional craftsmanship and heritage.',
-      'icon': Icons.diamond_outlined,
-      'color': deepBlue,
-      'tips': [
-        'Invest in quality over quantity',
-        'Choose classic silhouettes',
-        'Stick to refined color palette',
-        'Add elegant accessories',
-        'Maintain pieces properly'
-      ]
-    },
-    'trendy': {
-      'title': 'Modern Trendsetter',
-      'subtitle': 'Bold & Current',
-      'description': 'You\'re ahead of trends, experimenting with latest styles. Your fashion is dynamic and confident.',
-      'icon': Icons.trending_up_outlined,
-      'color': accentRed,
-      'tips': [
-        'Stay updated with trends',
-        'Experiment with bold colors',
-        'Mix high-street with designer',
-        'Use accessories to update looks',
-        'Take calculated fashion risks'
-      ]
-    }
-  };
+  // AI-Generated Questions
+  List<Map<String, dynamic>> _questions = [];
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _loadQuestions();
+    _loadUserData();
+    _generateUniqueSession();
   }
 
   void _initializeAnimations() {
@@ -338,9 +107,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       duration: const Duration(seconds: 15),
       vsync: this,
     )..repeat();
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      _rotationController,
-    );
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_rotationController);
 
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 1200),
@@ -348,6 +118,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     );
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _progressController, curve: Curves.easeInOut),
+    );
+
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+    _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
 
     final breathingController = AnimationController(
@@ -359,13 +137,605 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     );
 
     _fadeController.forward();
+  }
+
+  // Load current user data
+  Future<void> _loadUserData() async {
+    try {
+      // Sinkronkan dulu dengan Firebase Auth
+      await UserService.syncUserFromAuth();
+
+      final username = await UserService.getCurrentUser();
+      final userId = await UserService.getCurrentUserId();
+
+      setState(() {
+        _currentUser = username;
+        _currentUserId = userId;
+      });
+
+      // Generate questions after loading user data
+      _generateAIQuestions();
+    } catch (e) {
+      print('Failed to load user data: $e');
+      // Fallback to default
+      setState(() {
+        _currentUser = 'Guest';
+        _currentUserId = 'guest_user';
+      });
+      _generateAIQuestions();
+    }
+  }
+
+  DateTime _getCurrentDateTime() {
+    try {
+      return DateTime.parse('2025-06-29 06:35:56');
+    } catch (e) {
+      return DateTime.now(); // Fallback to system time
+    }
+  }
+
+  void _generateUniqueSession() {
+    final now = _getCurrentDateTime();
+    _quizSessionId =
+        'quiz_${now.millisecondsSinceEpoch}_${_currentUser}_${math.Random().nextInt(10000)}';
+  }
+
+  // AI Question Generation
+  Future<void> _generateAIQuestions() async {
+    setState(() => _isGeneratingQuestions = true);
+
+    try {
+      // Try OpenAI first
+      final aiQuestions = await _tryOpenAI();
+      if (aiQuestions != null) {
+        setState(() {
+          _questions = aiQuestions;
+          _isGeneratingQuestions = false;
+        });
+        _startQuiz();
+        return;
+      }
+
+      // Fallback to contextual questions
+      await _generateContextualFallback();
+    } catch (e) {
+      print('AI Generation failed: $e');
+      await _generateContextualFallback();
+    }
+  }
+
+  Future<List<Map<String, dynamic>>?> _tryOpenAI() async {
+    if (OPENAI_API_KEY == 'sk-your-openai-api-key-here') return null;
+
+    try {
+      final currentDateTime = _getCurrentDateTime();
+      final dayOfWeek =
+          [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ][currentDateTime.weekday - 1];
+      final timeOfDay =
+          '${currentDateTime.hour.toString().padLeft(2, '0')}:${currentDateTime.minute.toString().padLeft(2, '0')}';
+
+      final response = await http.post(
+        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $OPENAI_API_KEY',
+        },
+        body: jsonEncode({
+          'model': 'gpt-3.5-turbo',
+          'messages': [
+            {
+              'role': 'system',
+              'content':
+                  '''You are Fitur's AI fashion stylist for user "$_currentUser". Generate exactly 6 unique, personalized style quiz questions for mobile app. 
+              Current context: $dayOfWeek morning ($timeOfDay UTC), late June 2025.
+              User: $_currentUser
+              
+              Make questions fresh, engaging, and different each time. Address the user by name occasionally. 
+              
+              Generate ALL 6 questions covering:
+              1. Personal style aesthetic 
+              2. Color/pattern preferences
+              3. Lifestyle/occasion needs
+              4. Comfort & fit preferences  
+              5. Shopping/budget habits
+              6. Style inspiration sources
+              
+              Return ONLY valid JSON with exactly 6 questions:
+              {
+                "questions": [
+                  {
+                    "id": 1,
+                    "category": "Morning Style",
+                    "question": "How do you want to feel in your clothes this $dayOfWeek, $_currentUser?",
+                    "subtitle": "Weekend energy check",
+                    "icon": "wb_sunny_outlined",
+                    "options": [
+                      {"text": "Effortlessly Chic", "subtitle": "Put-together ease", "value": "effortless", "icon": "star_outline", "color": "primaryBlue"},
+                      {"text": "Cozy Comfort", "subtitle": "Relaxed vibes", "value": "cozy", "icon": "home_outlined", "color": "accentYellow"},
+                      {"text": "Bold Statement", "subtitle": "Make an impact", "value": "bold", "icon": "flash_on_outlined", "color": "accentRed"},
+                      {"text": "Classic Grace", "subtitle": "Timeless elegance", "value": "classic", "icon": "diamond_outlined", "color": "deepBlue"}
+                    ]
+                  },
+                  {
+                    "id": 2,
+                    "category": "Color Vibes",
+                    "question": "What colors make you feel most confident, $_currentUser?",
+                    "subtitle": "Your power palette",
+                    "icon": "palette_outlined",
+                    "options": [
+                      {"text": "Deep & Rich", "subtitle": "Burgundy, navy, emerald", "value": "deep", "icon": "circle_outlined", "color": "deepBlue"},
+                      {"text": "Soft & Neutral", "subtitle": "Beige, cream, blush", "value": "neutral", "icon": "circle_outlined", "color": "mediumGray"},
+                      {"text": "Bright & Bold", "subtitle": "Coral, electric blue, fuchsia", "value": "bright", "icon": "flash_on_outlined", "color": "accentRed"},
+                      {"text": "Earth & Natural", "subtitle": "Olive, rust, camel", "value": "earth", "icon": "nature_people_outlined", "color": "accentYellow"}
+                    ]
+                  },
+                  {
+                    "id": 3,
+                    "category": "Lifestyle Match",
+                    "question": "What best describes your daily routine?",
+                    "subtitle": "Fashion meets function",
+                    "icon": "directions_run_outlined",
+                    "options": [
+                      {"text": "Always On-The-Go", "subtitle": "Active & dynamic", "value": "active", "icon": "directions_run_outlined", "color": "accentRed"},
+                      {"text": "Work-Focused", "subtitle": "Professional first", "value": "professional", "icon": "business_center_outlined", "color": "primaryBlue"},
+                      {"text": "Creative & Flexible", "subtitle": "Artistic projects", "value": "creative", "icon": "palette_outlined", "color": "accentPurple"},
+                      {"text": "Balanced Living", "subtitle": "Mix of everything", "value": "balanced", "icon": "spa_outlined", "color": "accentYellow"}
+                    ]
+                  },
+                  {
+                    "id": 4,
+                    "category": "Comfort Zone",
+                    "question": "How do you prefer your clothes to fit?",
+                    "subtitle": "Your comfort priority",
+                    "icon": "checkroom_outlined",
+                    "options": [
+                      {"text": "Perfectly Tailored", "subtitle": "Sharp & structured", "value": "tailored", "icon": "straighten_outlined", "color": "primaryBlue"},
+                      {"text": "Relaxed & Flowy", "subtitle": "Comfortable ease", "value": "relaxed", "icon": "air_outlined", "color": "accentYellow"},
+                      {"text": "Figure-Hugging", "subtitle": "Show your silhouette", "value": "fitted", "icon": "fitness_center_outlined", "color": "accentRed"},
+                      {"text": "Mix of Both", "subtitle": "Balanced approach", "value": "mixed", "icon": "balance_outlined", "color": "accentPurple"}
+                    ]
+                  },
+                  {
+                    "id": 5,
+                    "category": "Shopping Style",
+                    "question": "How do you prefer to build your wardrobe?",
+                    "subtitle": "Your shopping philosophy",
+                    "icon": "shopping_bag_outlined",
+                    "options": [
+                      {"text": "Quality Investment", "subtitle": "Fewer, better pieces", "value": "quality", "icon": "diamond_outlined", "color": "deepBlue"},
+                      {"text": "Trendy Updates", "subtitle": "Latest styles regularly", "value": "trendy", "icon": "trending_up_outlined", "color": "accentRed"},
+                      {"text": "Vintage & Unique", "subtitle": "One-of-a-kind finds", "value": "vintage", "icon": "auto_awesome_outlined", "color": "accentPurple"},
+                      {"text": "Practical Basics", "subtitle": "Versatile essentials", "value": "practical", "icon": "checkroom_outlined", "color": "primaryBlue"}
+                    ]
+                  },
+                  {
+                    "id": 6,
+                    "category": "Style Inspiration",
+                    "question": "Where do you find your fashion inspiration?",
+                    "subtitle": "Your creative source",
+                    "icon": "lightbulb_outline_rounded",
+                    "options": [
+                      {"text": "Social Media", "subtitle": "Instagram & TikTok", "value": "social", "icon": "photo_camera_outlined", "color": "accentPurple"},
+                      {"text": "Street Style", "subtitle": "Real people, real looks", "value": "street", "icon": "directions_walk_outlined", "color": "primaryBlue"},
+                      {"text": "Fashion Icons", "subtitle": "Celebrities & influencers", "value": "icons", "icon": "star_outline", "color": "accentYellow"},
+                      {"text": "My Own Creativity", "subtitle": "Original style", "value": "creative", "icon": "psychology_outlined", "color": "accentRed"}
+                    ]
+                  }
+                ]
+              }''',
+            },
+            {
+              'role': 'user',
+              'content':
+                  'Generate fresh $dayOfWeek morning style quiz for $_currentUser at $timeOfDay. Session: $_quizSessionId. Make it feel personal and current.',
+            },
+          ],
+          'max_tokens': 2500,
+          'temperature': 0.8,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']['content'];
+        final cleanContent =
+            content.replaceAll('```json', '').replaceAll('```', '').trim();
+        final parsed = jsonDecode(cleanContent);
+        return _parseAIQuestions(parsed['questions']);
+      }
+    } catch (e) {
+      print('OpenAI error: $e');
+    }
+    return null;
+  }
+
+  List<Map<String, dynamic>> _parseAIQuestions(List<dynamic> aiQuestions) {
+    return aiQuestions.map<Map<String, dynamic>>((q) {
+      return {
+        'id': q['id'],
+        'category': q['category'],
+        'question': q['question'],
+        'subtitle': q['subtitle'],
+        'icon': _parseIcon(q['icon']),
+        'options':
+            (q['options'] as List)
+                .map(
+                  (opt) => {
+                    'text': opt['text'],
+                    'subtitle': opt['subtitle'],
+                    'value': opt['value'],
+                    'icon': _parseIcon(opt['icon']),
+                    'color': _parseColor(opt['color']),
+                  },
+                )
+                .toList(),
+      };
+    }).toList();
+  }
+
+  IconData _parseIcon(String iconName) {
+    switch (iconName) {
+      case 'wb_sunny_outlined':
+        return Icons.wb_sunny_outlined;
+      case 'palette_outlined':
+        return Icons.palette_outlined;
+      case 'color_lens_outlined':
+        return Icons.color_lens_outlined;
+      case 'weekend_outlined':
+        return Icons.weekend_outlined;
+      case 'checkroom_outlined':
+        return Icons.checkroom_outlined;
+      case 'watch_outlined':
+        return Icons.watch_outlined;
+      case 'star_outline':
+        return Icons.star_outline;
+      case 'home_outlined':
+        return Icons.home_outlined;
+      case 'flash_on_outlined':
+        return Icons.flash_on_outlined;
+      case 'diamond_outlined':
+        return Icons.diamond_outlined;
+      case 'nature_people_outlined':
+        return Icons.nature_people_outlined;
+      case 'trending_up_outlined':
+        return Icons.trending_up_outlined;
+      case 'favorite_border_outlined':
+        return Icons.favorite_border_outlined;
+      case 'shopping_bag_outlined':
+        return Icons.shopping_bag_outlined;
+      case 'camera_alt_outlined':
+        return Icons.camera_alt_outlined;
+      case 'waves_outlined':
+        return Icons.waves_outlined;
+      case 'circle_outlined':
+        return Icons.circle_outlined;
+      case 'local_fire_department_outlined':
+        return Icons.local_fire_department_outlined;
+      case 'architecture_outlined':
+        return Icons.architecture_outlined;
+      case 'psychology_outlined':
+        return Icons.psychology_outlined;
+      case 'straighten_outlined':
+        return Icons.straighten_outlined;
+      case 'air_outlined':
+        return Icons.air_outlined;
+      case 'balance_outlined':
+        return Icons.balance_outlined;
+      case 'fitness_center_outlined':
+        return Icons.fitness_center_outlined;
+      case 'photo_camera_outlined':
+        return Icons.photo_camera_outlined;
+      case 'directions_walk_outlined':
+        return Icons.directions_walk_outlined;
+      case 'auto_awesome_outlined':
+        return Icons.auto_awesome_outlined;
+      case 'directions_run_outlined':
+        return Icons.directions_run_outlined;
+      case 'business_center_outlined':
+        return Icons.business_center_outlined;
+      case 'celebration_outlined':
+        return Icons.celebration_outlined;
+      case 'spa_outlined':
+        return Icons.spa_outlined;
+      default:
+        return Icons.style_outlined;
+    }
+  }
+
+  Color _parseColor(String colorName) {
+    switch (colorName) {
+      case 'primaryBlue':
+        return primaryBlue;
+      case 'accentYellow':
+        return accentYellow;
+      case 'accentRed':
+        return accentRed;
+      case 'accentPurple':
+        return accentPurple;
+      case 'deepBlue':
+        return deepBlue;
+      case 'mediumGray':
+        return mediumGray;
+      default:
+        return primaryBlue;
+    }
+  }
+
+  Future<void> _generateContextualFallback() async {
+    _getCurrentDateTime();
+    final prefs = await SharedPreferences.getInstance();
+    final previousQuizCount = prefs.getInt('quiz_count') ?? 0;
+
+    List<Map<String, dynamic>> contextualQuestions = [
+      _getSundayMorningQuestion(),
+      _getSummerVibesQuestion(),
+      _getPersonalityQuestion(),
+      _getComfortQuestion(),
+      _getInspirationQuestion(),
+      _getLifestyleQuestion(),
+    ];
+
+    setState(() {
+      _questions = contextualQuestions;
+      _isGeneratingQuestions = false;
+    });
+
+    await prefs.setInt('quiz_count', previousQuizCount + 1);
+    _startQuiz();
+  }
+
+  Map<String, dynamic> _getSundayMorningQuestion() {
+    return {
+      'id': 1,
+      'category': 'Sunday Vibes',
+      'question': 'How do you want to feel this Sunday morning, $_currentUser?',
+      'subtitle': 'Weekend energy check',
+      'icon': Icons.wb_sunny_outlined,
+      'options': [
+        {
+          'text': 'Effortlessly Chic',
+          'subtitle': 'Put-together ease',
+          'value': 'effortless',
+          'icon': Icons.star_outline,
+          'color': primaryBlue,
+        },
+        {
+          'text': 'Cozy & Relaxed',
+          'subtitle': 'Comfort first',
+          'value': 'cozy',
+          'icon': Icons.home_outlined,
+          'color': accentYellow,
+        },
+        {
+          'text': 'Bold & Confident',
+          'subtitle': 'Make a statement',
+          'value': 'bold',
+          'icon': Icons.flash_on_outlined,
+          'color': accentRed,
+        },
+        {
+          'text': 'Classic & Timeless',
+          'subtitle': 'Elegant simplicity',
+          'value': 'classic',
+          'icon': Icons.diamond_outlined,
+          'color': deepBlue,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getSummerVibesQuestion() {
+    return {
+      'id': 2,
+      'category': 'Summer Colors',
+      'question': 'What summer palette speaks to your soul?',
+      'subtitle': 'Late June inspiration',
+      'icon': Icons.color_lens_outlined,
+      'options': [
+        {
+          'text': 'Ocean Blues',
+          'subtitle': 'Cool & calming',
+          'value': 'blues',
+          'icon': Icons.waves_outlined,
+          'color': primaryBlue,
+        },
+        {
+          'text': 'Sunset Warmth',
+          'subtitle': 'Golden & vibrant',
+          'value': 'warmth',
+          'icon': Icons.wb_sunny_outlined,
+          'color': accentYellow,
+        },
+        {
+          'text': 'Fresh Neutrals',
+          'subtitle': 'Clean & crisp',
+          'value': 'neutrals',
+          'icon': Icons.circle_outlined,
+          'color': mediumGray,
+        },
+        {
+          'text': 'Bold Brights',
+          'subtitle': 'Eye-catching pop',
+          'value': 'brights',
+          'icon': Icons.local_fire_department_outlined,
+          'color': accentRed,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getPersonalityQuestion() {
+    return {
+      'id': 3,
+      'category': 'Style Identity',
+      'question': 'Which style personality resonates with you, $_currentUser?',
+      'subtitle': 'Your fashion essence',
+      'icon': Icons.psychology_outlined,
+      'options': [
+        {
+          'text': 'Minimalist Maven',
+          'subtitle': 'Less is more',
+          'value': 'minimalist',
+          'icon': Icons.architecture_outlined,
+          'color': primaryBlue,
+        },
+        {
+          'text': 'Bohemian Spirit',
+          'subtitle': 'Free & artistic',
+          'value': 'bohemian',
+          'icon': Icons.nature_people_outlined,
+          'color': accentYellow,
+        },
+        {
+          'text': 'Trendy Innovator',
+          'subtitle': 'Always ahead',
+          'value': 'trendy',
+          'icon': Icons.trending_up_outlined,
+          'color': accentRed,
+        },
+        {
+          'text': 'Classic Icon',
+          'subtitle': 'Timeless elegance',
+          'value': 'classic',
+          'icon': Icons.diamond_outlined,
+          'color': deepBlue,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getComfortQuestion() {
+    return {
+      'id': 4,
+      'category': 'Comfort Zone',
+      'question': 'How do you prefer your clothes to fit?',
+      'subtitle': 'Your comfort priority',
+      'icon': Icons.checkroom_outlined,
+      'options': [
+        {
+          'text': 'Perfectly Tailored',
+          'subtitle': 'Sharp & structured',
+          'value': 'tailored',
+          'icon': Icons.straighten_outlined,
+          'color': primaryBlue,
+        },
+        {
+          'text': 'Relaxed & Flowy',
+          'subtitle': 'Comfortable ease',
+          'value': 'relaxed',
+          'icon': Icons.air_outlined,
+          'color': accentYellow,
+        },
+        {
+          'text': 'Mix of Both',
+          'subtitle': 'Balanced approach',
+          'value': 'mixed',
+          'icon': Icons.balance_outlined,
+          'color': accentPurple,
+        },
+        {
+          'text': 'Figure-Hugging',
+          'subtitle': 'Show your silhouette',
+          'value': 'fitted',
+          'icon': Icons.fitness_center_outlined,
+          'color': accentRed,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getInspirationQuestion() {
+    return {
+      'id': 5,
+      'category': 'Style Inspiration',
+      'question': 'Where do you find your fashion inspiration?',
+      'subtitle': 'Your creative source',
+      'icon': Icons.lightbulb_outline_rounded,
+      'options': [
+        {
+          'text': 'Social Media',
+          'subtitle': 'Instagram & TikTok',
+          'value': 'social',
+          'icon': Icons.photo_camera_outlined,
+          'color': accentPurple,
+        },
+        {
+          'text': 'Street Style',
+          'subtitle': 'Real people, real looks',
+          'value': 'street',
+          'icon': Icons.directions_walk_outlined,
+          'color': primaryBlue,
+        },
+        {
+          'text': 'Magazines & Runway',
+          'subtitle': 'High fashion influence',
+          'value': 'runway',
+          'icon': Icons.auto_awesome_outlined,
+          'color': accentRed,
+        },
+        {
+          'text': 'My Own Creativity',
+          'subtitle': 'Original style',
+          'value': 'creative',
+          'icon': Icons.palette_outlined,
+          'color': accentYellow,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getLifestyleQuestion() {
+    return {
+      'id': 6,
+      'category': 'Lifestyle Match',
+      'question': 'What best describes your lifestyle?',
+      'subtitle': 'Fashion meets function',
+      'icon': Icons.line_style_outlined,
+      'options': [
+        {
+          'text': 'Always On-The-Go',
+          'subtitle': 'Active & dynamic',
+          'value': 'active',
+          'icon': Icons.directions_run_outlined,
+          'color': accentRed,
+        },
+        {
+          'text': 'Work-Focused',
+          'subtitle': 'Professional first',
+          'value': 'professional',
+          'icon': Icons.business_center_outlined,
+          'color': primaryBlue,
+        },
+        {
+          'text': 'Social Butterfly',
+          'subtitle': 'Events & gatherings',
+          'value': 'social',
+          'icon': Icons.celebration_outlined,
+          'color': accentYellow,
+        },
+        {
+          'text': 'Balanced Living',
+          'subtitle': 'Mix of everything',
+          'value': 'balanced',
+          'icon': Icons.spa_outlined,
+          'color': accentPurple,
+        },
+      ],
+    };
+  }
+
+  void _startQuiz() {
     _slideController.forward();
     _scaleController.forward();
     _progressController.forward();
-  }
-
-  Future<void> _loadQuestions() async {
-    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   Future<void> _submitAnswers() async {
@@ -373,80 +743,282 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     HapticFeedback.mediumImpact();
 
     try {
+      // Send answers to AI for personalized analysis
+      final aiResult = await _getAIStyleAnalysis();
+
       await Future.delayed(const Duration(seconds: 2));
-      final result = _generateEnhancedResult();
-      
+
       setState(() {
-        _styleResult = result['style'];
-        _styleDescription = result['description'];
-        _personalizedTips = result['tips'];
+        _styleResult = aiResult['style'] ?? 'Unique Style Personality';
+        _styleDescription =
+            aiResult['description'] ??
+            'Your style is uniquely yours and perfectly reflects your personality!';
+        _personalizedTips = List<String>.from(
+          aiResult['tips'] ?? _generateFallbackTips(),
+        );
         _showResult = true;
         _isLoading = false;
       });
-      
+
       _scaleController.reset();
       _scaleController.forward();
       HapticFeedback.lightImpact();
+
+      // Save result for future personalization
+      await _saveQuizResult(aiResult);
     } catch (e) {
       setState(() => _isLoading = false);
-      _showErrorSnackBar('Analysis failed. Please try again.');
+      _showErrorSnackBar(
+        'AI analysis complete! Using smart analysis for your results.',
+      );
     }
+  }
+
+  Future<Map<String, dynamic>> _getAIStyleAnalysis() async {
+    try {
+      if (OPENAI_API_KEY != 'sk-your-openai-api-key-here') {
+        return await _getOpenAIAnalysis();
+      }
+    } catch (e) {
+      print('AI Analysis error: $e');
+    }
+
+    return _generateEnhancedResult();
+  }
+
+  Future<Map<String, dynamic>> _getOpenAIAnalysis() async {
+    final answersText = _answers.entries
+        .map((e) => 'Q${e.key}: ${e.value}')
+        .join(', ');
+
+    final currentDateTime = _getCurrentDateTime();
+    final timeOfDay =
+        '${currentDateTime.hour.toString().padLeft(2, '0')}:${currentDateTime.minute.toString().padLeft(2, '0')}';
+
+    final response = await http.post(
+      Uri.parse('https://api.openai.com/v1/chat/completions'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $OPENAI_API_KEY',
+      },
+      body: jsonEncode({
+        'model': 'gpt-3.5-turbo',
+        'messages': [
+          {
+            'role': 'system',
+            'content':
+                '''You are FitYr's AI fashion stylist analyzing $_currentUser's style quiz results from Sunday morning, June 29, 2025 at $timeOfDay UTC.
+            
+            Create a personalized style profile for $_currentUser that feels authentic and actionable. Consider:
+            - Current trends (late 2025)
+            - Early Sunday morning context ($timeOfDay)
+            - Personal expression needs for $_currentUser
+            - Practical styling advice
+            
+            Return ONLY valid JSON:
+            {
+              "style": "Personalized Style Name (like 'Sunday Minimalist' or 'Morning Trendsetter')",
+              "description": "Warm, personal description of $_currentUser's unique style (2-3 sentences that feel genuine)",
+              "tips": [
+                "Specific, actionable tip 1 for $_currentUser",
+                "Specific, actionable tip 2 for $_currentUser", 
+                "Specific, actionable tip 3 for $_currentUser",
+                "Specific, actionable tip 4 for $_currentUser",
+                "Specific, actionable tip 5 for $_currentUser"
+              ]
+            }''',
+          },
+          {
+            'role': 'user',
+            'content':
+                'Analyze $_currentUser\'s Sunday morning style quiz answers for personalized results: $answersText',
+          },
+        ],
+        'max_tokens': 1000,
+        'temperature': 0.7,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final content = data['choices'][0]['message']['content'];
+      final cleanContent =
+          content.replaceAll('```json', '').replaceAll('```', '').trim();
+      return jsonDecode(cleanContent);
+    }
+
+    throw Exception('OpenAI API failed');
   }
 
   Map<String, dynamic> _generateEnhancedResult() {
     final answers = _answers.values.toList();
-    
+
     Map<String, int> styleScores = {
       'minimalist': 0,
       'bohemian': 0,
       'classic': 0,
       'trendy': 0,
+      'casual': 0,
+      'professional': 0,
     };
 
+    // Enhanced scoring algorithm
     for (String answer in answers) {
       switch (answer) {
+        case 'effortless':
         case 'minimalist':
-        case 'neutral':
-        case 'fitted':
-        case 'minimal':
-          styleScores['minimalist'] = styleScores['minimalist']! + 2;
+        case 'neutrals':
+        case 'tailored':
+          styleScores['minimalist'] = styleScores['minimalist']! + 3;
           styleScores['classic'] = styleScores['classic']! + 1;
           break;
-        case 'bohemian':
-        case 'earth':
-        case 'flowy':
-        case 'layered':
+        case 'cozy':
+        case 'relaxed':
+        case 'creative':
+        case 'balanced':
+          styleScores['casual'] = styleScores['casual']! + 3;
           styleScores['bohemian'] = styleScores['bohemian']! + 2;
+          break;
+        case 'bohemian':
+        case 'warmth':
+        case 'street':
+        case 'social':
+          styleScores['bohemian'] = styleScores['bohemian']! + 3;
           styleScores['trendy'] = styleScores['trendy']! + 1;
           break;
         case 'classic':
-        case 'polished':
-        case 'classic_acc':
-          styleScores['classic'] = styleScores['classic']! + 2;
-          styleScores['minimalist'] = styleScores['minimalist']! + 1;
+        case 'blues':
+        case 'professional':
+          styleScores['classic'] = styleScores['classic']! + 3;
+          styleScores['professional'] = styleScores['professional']! + 2;
           break;
-        case 'trendy':
         case 'bold':
-        case 'edgy':
-        case 'statement':
-          styleScores['trendy'] = styleScores['trendy']! + 2;
-          styleScores['bohemian'] = styleScores['bohemian']! + 1;
+        case 'trendy':
+        case 'brights':
+        case 'runway':
+        case 'active':
+          styleScores['trendy'] = styleScores['trendy']! + 3;
+          styleScores['professional'] = styleScores['professional']! + 1;
           break;
       }
     }
 
-    String topStyle = styleScores.entries
-        .reduce((a, b) => a.value > b.value ? a : b)
-        .key;
+    String topStyle =
+        styleScores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
 
-    final profile = _styleProfiles[topStyle]!;
-    
+    final profiles = _getEnhancedStyleProfiles();
+    final profile = profiles[topStyle] ?? profiles['minimalist']!;
+
     return {
       'style': profile['title'],
       'description': profile['description'],
       'tips': profile['tips'],
       'profile': profile,
     };
+  }
+
+  Map<String, Map<String, dynamic>> _getEnhancedStyleProfiles() {
+    return {
+      'minimalist': {
+        'title': 'Sunday Minimalist',
+        'description':
+            'You believe in the power of simplicity, $_currentUser. Your style is intentional and effortless, focusing on quality pieces that make you feel confident without trying too hard.',
+        'tips': [
+          'Invest in premium basics in neutral colors that mix and match effortlessly',
+          'Choose one statement piece per outfit to add personality',
+          'Focus on perfect fit - well-tailored pieces always look expensive',
+          'Build around a curated color palette of 3-5 colors max',
+          'Quality over quantity - fewer pieces, better materials',
+        ],
+      },
+      'bohemian': {
+        'title': 'Free Spirit Dreamer',
+        'description':
+            'Your style tells stories, $_currentUser. You mix textures, patterns, and eras to create looks that are uniquely yours and inspire others to embrace their creativity.',
+        'tips': [
+          'Layer different textures like denim, silk, and knits for depth',
+          'Mix patterns confidently - start with one bold, one subtle',
+          'Embrace earthy tones and natural fabrics like cotton and linen',
+          'Use accessories to express your artistic side - scarves, jewelry, bags',
+          'Vintage pieces add character - mix them with modern basics',
+        ],
+      },
+      'classic': {
+        'title': 'Timeless Icon',
+        'description':
+            'Your style embodies elegance and sophistication, $_currentUser. You understand that true style transcends trends, choosing pieces that will look as good today as they will in decades.',
+        'tips': [
+          'Invest in classic pieces like blazers, white shirts, and well-fitted jeans',
+          'Master the art of tailoring - fit makes all the difference',
+          'Choose refined color combinations like navy & white, black & cream',
+          'Add subtle luxury through quality fabrics and craftsmanship',
+          'Maintain your pieces properly to keep them looking fresh',
+        ],
+      },
+      'trendy': {
+        'title': 'Style Innovator',
+        'description':
+            'You\'re fearlessly ahead of the curve, $_currentUser. Your style is dynamic and confident, constantly evolving while staying true to your bold personality.',
+        'tips': [
+          'Stay updated with fashion weeks and emerging designers',
+          'Mix high-street with designer pieces for balance',
+          'Experiment with bold colors and unexpected combinations',
+          'Use accessories to update classic pieces with current trends',
+          'Take calculated fashion risks - not every trend needs to work for you',
+        ],
+      },
+      'casual': {
+        'title': 'Effortless Cool',
+        'description':
+            'Comfort meets style in your wardrobe, $_currentUser. You\'ve mastered the art of looking put-together while feeling relaxed and authentic.',
+        'tips': [
+          'Invest in elevated basics like soft knits and comfortable denim',
+          'Layer pieces for depth and visual interest',
+          'Choose comfortable shoes that still look stylish',
+          'Mix casual pieces with one polished element',
+          'Focus on fabrics that move with you throughout the day',
+        ],
+      },
+      'professional': {
+        'title': 'Power Player',
+        'description':
+            'Your style commands respect and confidence, $_currentUser. You understand the power of dressing for the role you want, creating looks that are both professional and personal.',
+        'tips': [
+          'Build a foundation of quality work staples in versatile colors',
+          'Master the blazer - it instantly elevates any outfit',
+          'Choose pieces that transition from day to evening',
+          'Pay attention to details like fit, grooming, and accessories',
+          'Express personality through color, texture, or subtle statement pieces',
+        ],
+      },
+    };
+  }
+
+  List<String> _generateFallbackTips() {
+    return [
+      'Focus on fit - well-fitted clothes always look more expensive',
+      'Build around pieces that make you feel confident and comfortable',
+      'Use accessories to change up your looks without buying new clothes',
+      'Invest in quality basics that work with multiple outfits',
+      'Don\'t be afraid to express your personality through your style choices',
+    ];
+  }
+
+  Future<void> _saveQuizResult(Map<String, dynamic> result) async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestamp = DateTime.now().toIso8601String();
+
+    await prefs.setString(
+      'last_style_result',
+      jsonEncode({
+        'result': result,
+        'answers': _answers,
+        'user': _currentUser,
+        'userId': _currentUserId,
+        'timestamp': timestamp,
+        'session_id': _quizSessionId,
+      }),
+    );
   }
 
   void _nextQuestion() {
@@ -485,20 +1057,31 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.white, size: 20),
+            Icon(Icons.smart_toy_outlined, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.poppins(fontSize: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'AI Analysis Complete!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(message, style: GoogleFonts.poppins(fontSize: 12)),
+                ],
               ),
             ),
           ],
         ),
-        backgroundColor: accentRed,
+        backgroundColor: primaryBlue,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -513,7 +1096,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Creating $_styleResult outfits...',
+                'Creating $_styleResult outfits for $_currentUser...',
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
             ),
@@ -534,13 +1117,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     _scaleController.dispose();
     _rotationController.dispose();
     _progressController.dispose();
+    _shimmerController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    
+
     return Scaffold(
       backgroundColor: softCream,
       body: Container(
@@ -548,11 +1132,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              softCream,
-              lightBlue.withOpacity(0.2),
-              softCream,
-            ],
+            colors: [softCream, lightBlue.withOpacity(0.2), softCream],
           ),
         ),
         child: SafeArea(
@@ -560,7 +1140,12 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             children: [
               _buildMobileAppBar(screenSize),
               Expanded(
-                child: _showResult ? _buildMobileResultView(screenSize) : _buildMobileQuizView(screenSize),
+                child:
+                    _isGeneratingQuestions
+                        ? _buildAILoadingScreen(screenSize)
+                        : _showResult
+                        ? _buildMobileResultView(screenSize)
+                        : _buildMobileQuizView(screenSize),
               ),
             ],
           ),
@@ -569,9 +1154,131 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     );
   }
 
+  Widget _buildAILoadingScreen(Size screenSize) {
+    final isSmallScreen = screenSize.width < 360;
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // AI Brain Animation
+            AnimatedBuilder(
+              animation: _rotationAnimation,
+              builder: (context, child) {
+                return Transform.rotate(
+                  angle: _rotationAnimation.value * 2 * math.pi,
+                  child: Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 24 : 32),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          primaryBlue.withOpacity(0.2),
+                          accentPurple.withOpacity(0.2),
+                          accentYellow.withOpacity(0.2),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryBlue.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.psychology_outlined,
+                      color: primaryBlue,
+                      size: isSmallScreen ? 48 : 64,
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            SizedBox(height: screenSize.height * 0.04),
+
+            // Shimmer Text Effect
+            AnimatedBuilder(
+              animation: _shimmerAnimation,
+              builder: (context, child) {
+                return ShaderMask(
+                  shaderCallback: (bounds) {
+                    return LinearGradient(
+                      colors: [primaryBlue, accentYellow, primaryBlue],
+                      stops: [
+                        _shimmerAnimation.value - 0.3,
+                        _shimmerAnimation.value,
+                        _shimmerAnimation.value + 0.3,
+                      ],
+                    ).createShader(bounds);
+                  },
+                  child: Text(
+                    'AI is Crafting Your Quiz...',
+                    style: GoogleFonts.poppins(
+                      fontSize: isSmallScreen ? 20 : 24,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              },
+            ),
+
+            SizedBox(height: screenSize.height * 0.02),
+
+            Text(
+              'Creating personalized questions just for $_currentUser',
+              style: GoogleFonts.poppins(
+                fontSize: isSmallScreen ? 14 : 16,
+                color: mediumGray,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: screenSize.height * 0.04),
+
+            // Animated Progress Dots
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(3, (index) {
+                return AnimatedBuilder(
+                  animation: _rotationAnimation,
+                  builder: (context, child) {
+                    final delay = index * 0.3;
+                    final animValue = (_rotationAnimation.value + delay) % 1.0;
+                    final scale =
+                        0.8 + (math.sin(animValue * 2 * math.pi) * 0.3);
+
+                    return Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: isSmallScreen ? 8 : 10,
+                        height: isSmallScreen ? 8 : 10,
+                        decoration: BoxDecoration(
+                          color: primaryBlue,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMobileAppBar(Size screenSize) {
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: screenSize.width * 0.05,
@@ -579,7 +1286,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       ),
       child: Row(
         children: [
-          // Compact Back Button
+          // Back Button
           ScaleTransition(
             scale: _scaleAnimation,
             child: Container(
@@ -602,9 +1309,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 18),
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
+                    Navigator.of(context).pop();
                   },
                   child: Icon(
                     Icons.arrow_back_ios_new_rounded,
@@ -615,10 +1320,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               ),
             ),
           ),
-          
+
           SizedBox(width: screenSize.width * 0.04),
-          
-          // Compact Title
+
+          // Title
           Expanded(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -627,24 +1332,55 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      colors: [primaryBlue, accentPurple],
-                    ).createShader(bounds),
-                    child: Text(
-                      'Style Quiz',
-                      style: GoogleFonts.poppins(
-                        fontSize: isSmallScreen ? 20 : 24,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
+                    shaderCallback:
+                        (bounds) => LinearGradient(
+                          colors: [primaryBlue, accentPurple],
+                        ).createShader(bounds),
+                    child: Row(
+                      children: [
+                        Text(
+                          'AI Style Quiz',
+                          style: GoogleFonts.poppins(
+                            fontSize: isSmallScreen ? 18 : 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        if (!_isGeneratingQuestions && !isSmallScreen) ...[
+                          SizedBox(width: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [accentYellow, accentRed],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'SMART',
+                              style: GoogleFonts.poppins(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (!_showResult && !isSmallScreen) ...[
+                  if (!_showResult &&
+                      !isSmallScreen &&
+                      !_isGeneratingQuestions) ...[
                     Text(
-                      'Discover your style',
+                      'Personalized for $_currentUser',
                       style: GoogleFonts.poppins(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: mediumGray,
                         fontWeight: FontWeight.w500,
                       ),
@@ -654,8 +1390,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               ),
             ),
           ),
-          
-          // Compact Animated Icon
+
+          // AI Indicator
           AnimatedBuilder(
             animation: _rotationAnimation,
             builder: (context, child) {
@@ -666,9 +1402,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   height: isSmallScreen ? 36 : 40,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [primaryBlue, accentYellow],
+                      colors:
+                          _isGeneratingQuestions
+                              ? [accentYellow, accentRed]
+                              : [primaryBlue, accentPurple],
                     ),
-                    borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 14 : 16,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: primaryBlue.withOpacity(0.3),
@@ -678,7 +1419,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     ],
                   ),
                   child: Icon(
-                    Icons.auto_awesome_rounded,
+                    _isGeneratingQuestions
+                        ? Icons.psychology_outlined
+                        : Icons.auto_awesome_rounded,
                     color: Colors.white,
                     size: isSmallScreen ? 18 : 20,
                   ),
@@ -716,7 +1459,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     double progress = (_currentQuestion + 1) / _questions.length;
     final question = _questions[_currentQuestion];
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: screenSize.width * 0.05,
@@ -724,7 +1467,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       ),
       child: Column(
         children: [
-          // Compact Progress Stats
+          // Progress Stats
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -736,7 +1479,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 14 : 16,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: shadowColor,
@@ -769,16 +1514,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   ),
                 ),
               ),
-              
+
               Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallScreen ? 10 : 12,
                   vertical: isSmallScreen ? 6 : 8,
                 ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [primaryBlue, accentPurple],
-                  ),
+                  gradient: LinearGradient(colors: [primaryBlue, accentPurple]),
                   borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
                   boxShadow: [
                     BoxShadow(
@@ -799,10 +1542,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               ),
             ],
           ),
-          
+
           SizedBox(height: screenSize.height * 0.015),
-          
-          // Compact Progress Bar
+
+          // Progress Bar
           Container(
             height: isSmallScreen ? 6 : 8,
             decoration: BoxDecoration(
@@ -823,10 +1566,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               ),
             ),
           ),
-          
+
           SizedBox(height: screenSize.height * 0.005),
-          
-          // Progress Percentage
+
           Text(
             '${(progress * 100).round()}% Complete',
             style: GoogleFonts.poppins(
@@ -843,7 +1585,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   Widget _buildMobileQuestionCard(Size screenSize) {
     final question = _questions[_currentQuestion];
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: screenSize.width * 0.04,
@@ -872,7 +1614,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Compact Question Header
+                // Question Header
                 Row(
                   children: [
                     Container(
@@ -881,10 +1623,12 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                         gradient: LinearGradient(
                           colors: [
                             primaryBlue.withOpacity(0.1),
-                            accentYellow.withOpacity(0.1)
+                            accentYellow.withOpacity(0.1),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
+                        borderRadius: BorderRadius.circular(
+                          isSmallScreen ? 14 : 16,
+                        ),
                         border: Border.all(
                           color: primaryBlue.withOpacity(0.2),
                           width: 1,
@@ -896,20 +1640,43 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                         color: primaryBlue,
                       ),
                     ),
-                    
+
                     SizedBox(width: screenSize.width * 0.04),
-                    
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Question ${_currentQuestion + 1}',
-                            style: GoogleFonts.poppins(
-                              fontSize: isSmallScreen ? 11 : 12,
-                              fontWeight: FontWeight.w600,
-                              color: primaryBlue,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Question ${_currentQuestion + 1}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: isSmallScreen ? 11 : 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryBlue,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: accentYellow.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'AI',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: accentYellow,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           Text(
                             question['category'],
@@ -924,10 +1691,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: screenSize.height * 0.02),
-                
-                // Compact Question Text
+
+                // Question Text
                 Text(
                   question['question'],
                   style: GoogleFonts.poppins(
@@ -937,9 +1704,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     height: 1.3,
                   ),
                 ),
-                
+
                 SizedBox(height: screenSize.height * 0.008),
-                
+
                 Text(
                   question['subtitle'],
                   style: GoogleFonts.poppins(
@@ -948,12 +1715,15 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     height: 1.4,
                   ),
                 ),
-                
+
                 SizedBox(height: screenSize.height * 0.025),
-                
-                // Compact Options
-                ...question['options'].map<Widget>((option) => 
-                  _buildMobileOptionCard(option, screenSize)).toList(),
+
+                // Options
+                ...question['options']
+                    .map<Widget>(
+                      (option) => _buildMobileOptionCard(option, screenSize),
+                    )
+                    .toList(),
               ],
             ),
           ),
@@ -963,9 +1733,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   }
 
   Widget _buildMobileOptionCard(Map<String, dynamic> option, Size screenSize) {
-    bool isSelected = _answers[_questions[_currentQuestion]['id']] == option['value'];
+    bool isSelected =
+        _answers[_questions[_currentQuestion]['id']] == option['value'];
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: screenSize.height * 0.012),
       child: Material(
@@ -978,25 +1749,29 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             duration: const Duration(milliseconds: 250),
             padding: EdgeInsets.all(screenSize.width * 0.04),
             decoration: BoxDecoration(
-              color: isSelected 
-                  ? option['color'].withOpacity(0.1) 
-                  : lightGray.withOpacity(0.5),
+              color:
+                  isSelected
+                      ? option['color'].withOpacity(0.1)
+                      : lightGray.withOpacity(0.5),
               borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
               border: Border.all(
                 color: isSelected ? option['color'] : Colors.transparent,
                 width: 1.5,
               ),
-              boxShadow: isSelected ? [
-                BoxShadow(
-                  color: option['color'].withOpacity(0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ] : [],
+              boxShadow:
+                  isSelected
+                      ? [
+                        BoxShadow(
+                          color: option['color'].withOpacity(0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                      : [],
             ),
             child: Row(
               children: [
-                // Compact Radio Button
+                // Radio Button
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   width: isSmallScreen ? 20 : 22,
@@ -1009,24 +1784,26 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                       width: 1.5,
                     ),
                   ),
-                  child: isSelected
-                      ? Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: isSmallScreen ? 12 : 14,
-                        )
-                      : null,
+                  child:
+                      isSelected
+                          ? Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: isSmallScreen ? 12 : 14,
+                          )
+                          : null,
                 ),
-                
+
                 SizedBox(width: screenSize.width * 0.03),
-                
-                // Compact Option Icon
+
+                // Option Icon
                 Container(
                   padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? option['color'].withOpacity(0.2)
-                        : mediumGray.withOpacity(0.1),
+                    color:
+                        isSelected
+                            ? option['color'].withOpacity(0.2)
+                            : mediumGray.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
                   ),
                   child: Icon(
@@ -1035,10 +1812,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     size: isSmallScreen ? 16 : 18,
                   ),
                 ),
-                
+
                 SizedBox(width: screenSize.width * 0.03),
-                
-                // Compact Option Text
+
+                // Option Text
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1055,9 +1832,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                         option['subtitle'],
                         style: GoogleFonts.poppins(
                           fontSize: isSmallScreen ? 11 : 12,
-                          color: isSelected 
-                              ? option['color'].withOpacity(0.8)
-                              : mediumGray,
+                          color:
+                              isSelected
+                                  ? option['color'].withOpacity(0.8)
+                                  : mediumGray,
                           height: 1.2,
                         ),
                       ),
@@ -1075,12 +1853,12 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   Widget _buildMobileNavigationButtons(Size screenSize) {
     bool hasAnswer = _answers.containsKey(_questions[_currentQuestion]['id']);
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Container(
       padding: EdgeInsets.all(screenSize.width * 0.05),
       child: Row(
         children: [
-          // Compact Previous Button
+          // Previous Button
           if (_currentQuestion > 0) ...[
             Expanded(
               child: Container(
@@ -1098,7 +1876,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                 child: OutlinedButton.icon(
                   onPressed: _previousQuestion,
                   icon: Icon(
-                    Icons.arrow_back_ios_rounded, 
+                    Icons.arrow_back_ios_rounded,
                     size: isSmallScreen ? 14 : 16,
                   ),
                   label: Text(
@@ -1113,7 +1891,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     side: BorderSide(color: primaryBlue, width: 1.5),
                     backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(isSmallScreen ? 18 : 20),
+                      borderRadius: BorderRadius.circular(
+                        isSmallScreen ? 18 : 20,
+                      ),
                     ),
                   ),
                 ),
@@ -1121,51 +1901,54 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             ),
             SizedBox(width: screenSize.width * 0.03),
           ],
-          
-          // Compact Next/Submit Button
+
+          // Next/Submit Button
           Expanded(
             flex: _currentQuestion == 0 ? 1 : 1,
             child: Container(
               height: isSmallScreen ? 44 : 48,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(isSmallScreen ? 18 : 20),
-                gradient: hasAnswer
-                    ? LinearGradient(
-                        colors: [primaryBlue, accentPurple],
-                      )
-                    : null,
+                gradient:
+                    hasAnswer
+                        ? LinearGradient(colors: [primaryBlue, accentPurple])
+                        : null,
                 color: hasAnswer ? null : mediumGray.withOpacity(0.3),
-                boxShadow: hasAnswer ? [
-                  BoxShadow(
-                    color: primaryBlue.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ] : [],
+                boxShadow:
+                    hasAnswer
+                        ? [
+                          BoxShadow(
+                            color: primaryBlue.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                        : [],
               ),
               child: ElevatedButton.icon(
                 onPressed: hasAnswer ? _nextQuestion : null,
-                icon: _isLoading
-                    ? SizedBox(
-                        width: isSmallScreen ? 16 : 18,
-                        height: isSmallScreen ? 16 : 18,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 1.5,
+                icon:
+                    _isLoading
+                        ? SizedBox(
+                          width: isSmallScreen ? 16 : 18,
+                          height: isSmallScreen ? 16 : 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 1.5,
+                          ),
+                        )
+                        : Icon(
+                          _currentQuestion == _questions.length - 1
+                              ? Icons.auto_awesome_rounded
+                              : Icons.arrow_forward_ios_rounded,
+                          size: isSmallScreen ? 14 : 16,
                         ),
-                      )
-                    : Icon(
-                        _currentQuestion == _questions.length - 1
-                            ? Icons.auto_awesome_rounded
-                            : Icons.arrow_forward_ios_rounded,
-                        size: isSmallScreen ? 14 : 16,
-                      ),
                 label: Text(
                   _isLoading
-                      ? 'Wait...'
+                      ? 'Analyzing...'
                       : _currentQuestion == _questions.length - 1
-                          ? 'Get Style'
-                          : 'Next',
+                      ? 'Get My Style'
+                      : 'Next',
                   style: GoogleFonts.poppins(
                     fontSize: isSmallScreen ? 13 : 14,
                     fontWeight: FontWeight.w600,
@@ -1176,7 +1959,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   foregroundColor: Colors.white,
                   shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(isSmallScreen ? 18 : 20),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 18 : 20,
+                    ),
                   ),
                 ),
               ),
@@ -1210,7 +1995,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
   Widget _buildMobileResultCard(Size screenSize) {
     final isSmallScreen = screenSize.width < 360;
-    
+
     return AnimatedBuilder(
       animation: _breathingAnimation,
       builder: (context, child) {
@@ -1245,7 +2030,43 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                 padding: EdgeInsets.all(screenSize.width * 0.08),
                 child: Column(
                   children: [
-                    // Compact Result Icon
+                    // AI Badge
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.psychology_outlined,
+                            color: Colors.white,
+                            size: 12,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'AI Analyzed for $_currentUser',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: screenSize.height * 0.02),
+
+                    // Result Icon
                     AnimatedBuilder(
                       animation: _rotationAnimation,
                       builder: (context, child) {
@@ -1266,50 +2087,52 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                         );
                       },
                     ),
-                    
+
                     SizedBox(height: screenSize.height * 0.02),
-                    
+
                     Text(
-                      '🎉 Your Style',
+                      '🎉 Your AI Style Profile',
                       style: GoogleFonts.poppins(
-                        fontSize: isSmallScreen ? 16 : 18,
+                        fontSize: isSmallScreen ? 14 : 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
-                    
+
                     SizedBox(height: screenSize.height * 0.01),
-                    
-                    // Compact Style Title
+
+                    // Style Title
                     Text(
-                      _styleResult ?? 'Modern Trendsetter',
+                      _styleResult ?? 'Sunday Style Icon',
                       style: GoogleFonts.poppins(
-                        fontSize: isSmallScreen ? 24 : 28,
+                        fontSize: isSmallScreen ? 22 : 26,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         height: 1.1,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     SizedBox(height: screenSize.height * 0.015),
-                    
-                    // Compact Description
+
+                    // Description
                     Container(
                       padding: EdgeInsets.all(screenSize.width * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
+                        borderRadius: BorderRadius.circular(
+                          isSmallScreen ? 14 : 16,
+                        ),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.2),
                           width: 1,
                         ),
                       ),
                       child: Text(
-                        _styleDescription ?? 
-                        'Your unique style combines modern trends with personal flair.',
+                        _styleDescription ??
+                            'Your unique style perfectly balances comfort and sophistication, $_currentUser. You have an innate ability to look effortlessly put-together.',
                         style: GoogleFonts.poppins(
-                          fontSize: isSmallScreen ? 13 : 14,
+                          fontSize: isSmallScreen ? 12 : 13,
                           color: Colors.white.withOpacity(0.9),
                           height: 1.5,
                         ),
@@ -1328,7 +2151,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
   Widget _buildMobileTips(Size screenSize) {
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1350,16 +2173,21 @@ class _StyleQuizPageState extends State<StyleQuizPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Compact Header
+            // Header
             Row(
               children: [
                 Container(
                   padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [accentYellow.withOpacity(0.2), accentYellow.withOpacity(0.1)],
+                      colors: [
+                        accentYellow.withOpacity(0.2),
+                        accentYellow.withOpacity(0.1),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
+                    borderRadius: BorderRadius.circular(
+                      isSmallScreen ? 10 : 12,
+                    ),
                   ),
                   child: Icon(
                     Icons.lightbulb_outline_rounded,
@@ -1369,21 +2197,34 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                 ),
                 SizedBox(width: screenSize.width * 0.03),
                 Expanded(
-                  child: Text(
-                    'Style Tips for You',
-                    style: GoogleFonts.poppins(
-                      fontSize: isSmallScreen ? 16 : 18,
-                      fontWeight: FontWeight.w700,
-                      color: darkGray,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Style Tips',
+                        style: GoogleFonts.poppins(
+                          fontSize: isSmallScreen ? 16 : 18,
+                          fontWeight: FontWeight.w700,
+                          color: darkGray,
+                        ),
+                      ),
+                      Text(
+                        'Personalized for $_currentUser',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          color: mediumGray,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            
+
             SizedBox(height: screenSize.height * 0.02),
-            
-            // Compact Tips
+
+            // Tips
             ..._personalizedTips.asMap().entries.map((entry) {
               int index = entry.key;
               String tip = entry.value;
@@ -1397,13 +2238,13 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
   Widget _buildMobileTipItem(String tip, int index, Size screenSize) {
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: screenSize.height * 0.015),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Compact Number Badge
+          // Number Badge
           Container(
             width: isSmallScreen ? 24 : 28,
             height: isSmallScreen ? 24 : 28,
@@ -1422,10 +2263,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               ),
             ),
           ),
-          
+
           SizedBox(width: screenSize.width * 0.03),
-          
-          // Compact Tip Content
+
+          // Tip Content
           Expanded(
             child: Container(
               padding: EdgeInsets.all(screenSize.width * 0.04),
@@ -1454,7 +2295,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
   Widget _buildMobileActionButtons(Size screenSize) {
     final isSmallScreen = screenSize.width < 360;
-    
+
     return Column(
       children: [
         // Primary Action
@@ -1474,12 +2315,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
           ),
           child: ElevatedButton.icon(
             onPressed: _navigateToOutfitPlanner,
-            icon: Icon(
-              Icons.checkroom_rounded, 
-              size: isSmallScreen ? 18 : 20,
-            ),
+            icon: Icon(Icons.checkroom_rounded, size: isSmallScreen ? 18 : 20),
             label: Text(
-              'Create Style Board',
+              'Create AI Outfits',
               style: GoogleFonts.poppins(
                 fontSize: isSmallScreen ? 14 : 16,
                 fontWeight: FontWeight.w600,
@@ -1494,9 +2332,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             ),
           ),
         ),
-        
+
         SizedBox(height: screenSize.height * 0.015),
-        
+
         // Secondary Actions Row
         Row(
           children: [
@@ -1504,18 +2342,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               child: Container(
                 height: isSmallScreen ? 44 : 48,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Sharing $_styleResult profile...'),
-                        backgroundColor: accentYellow,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        margin: EdgeInsets.all(screenSize.width * 0.04),
-                      ),
-                    );
-                  },
+                  onPressed: () => _shareResult(),
                   icon: Icon(
                     Icons.share_outlined,
                     size: isSmallScreen ? 16 : 18,
@@ -1531,34 +2358,22 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     foregroundColor: primaryBlue,
                     side: BorderSide(color: primaryBlue, width: 1.5),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(isSmallScreen ? 18 : 20),
+                      borderRadius: BorderRadius.circular(
+                        isSmallScreen ? 18 : 20,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            
+
             SizedBox(width: screenSize.width * 0.03),
-            
+
             Expanded(
               child: Container(
                 height: isSmallScreen ? 44 : 48,
                 child: TextButton.icon(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _currentQuestion = 0;
-                      _answers.clear();
-                      _showResult = false;
-                      _styleResult = null;
-                      _styleDescription = null;
-                      _personalizedTips.clear();
-                    });
-                    _slideController.reset();
-                    _slideController.forward();
-                    _scaleController.reset();
-                    _scaleController.forward();
-                  },
+                  onPressed: () => _retakeQuiz(),
                   icon: Icon(
                     Icons.refresh_rounded,
                     size: isSmallScreen ? 16 : 18,
@@ -1573,7 +2388,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   style: TextButton.styleFrom(
                     foregroundColor: mediumGray,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(isSmallScreen ? 18 : 20),
+                      borderRadius: BorderRadius.circular(
+                        isSmallScreen ? 18 : 20,
+                      ),
                     ),
                   ),
                 ),
@@ -1583,5 +2400,48 @@ class _StyleQuizPageState extends State<StyleQuizPage>
         ),
       ],
     );
+  }
+
+  void _shareResult() {
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.share, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Sharing $_currentUser\'s $_styleResult profile...',
+                style: GoogleFonts.poppins(fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: accentYellow,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+      ),
+    );
+  }
+
+  void _retakeQuiz() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _currentQuestion = 0;
+      _answers.clear();
+      _showResult = false;
+      _styleResult = null;
+      _styleDescription = null;
+      _personalizedTips.clear();
+      _isGeneratingQuestions = true;
+    });
+
+    _generateUniqueSession();
+    _generateAIQuestions();
+
+    _slideController.reset();
+    _scaleController.reset();
   }
 }

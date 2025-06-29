@@ -2363,7 +2363,9 @@ void _navigateToStyleQuiz() {
   }
 
   void _navigateToNews() {
-    // Navigate to fashion news
+    Navigator.of(context).push(
+    MaterialPageRoute(builder: (context) => const NewsPage()),
+  );
   }
 
   void _navigateToJoinCommunity() {

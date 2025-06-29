@@ -6,7 +6,10 @@ import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../favorites/all_favorites_page.dart';
 import '../community/community_page.dart';
-import '../profile/profile_page.dart'; // tambahkan import ini
+import '../profile/profile_page.dart';
+import '../community/community_selection_popup.dart';
+import '../outfit_planner/outfit_planner_page.dart';
+import '../style_quiz/style_quiz_page.dart'; 
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -2180,44 +2183,50 @@ class _HomePageState extends State<HomePage>
                             children: [
                               SizedBox(
                                 width: double.infinity,
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: _getResponsiveHeight(12),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: primaryBlue,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Share Your Look',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: _getResponsiveFontSize(12),
+                                child: GestureDetector(
+                                  onTap: _showCommunitySelectionPopup,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: _getResponsiveHeight(12),
                                     ),
-                                    textAlign: TextAlign.center,
+                                    decoration: BoxDecoration(
+                                      color: primaryBlue,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Share Your Look',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: _getResponsiveFontSize(12),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
                               SizedBox(height: _getResponsiveHeight(8)),
                               SizedBox(
                                 width: double.infinity,
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: _getResponsiveHeight(12),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: primaryBlue),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Browse Styles',
-                                    style: GoogleFonts.poppins(
-                                      color: primaryBlue,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: _getResponsiveFontSize(12),
+                                child: GestureDetector(
+                                  onTap: () => _navigateToJoinCommunity(),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: _getResponsiveHeight(12),
                                     ),
-                                    textAlign: TextAlign.center,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: primaryBlue),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Browse Styles',
+                                      style: GoogleFonts.poppins(
+                                        color: primaryBlue,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: _getResponsiveFontSize(12),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -2228,43 +2237,49 @@ class _HomePageState extends State<HomePage>
                           Row(
                             children: [
                               Expanded(
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: _getResponsiveHeight(12),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: primaryBlue,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Share Your Look',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: _getResponsiveFontSize(12),
+                                child: GestureDetector(
+                                  onTap: _showCommunitySelectionPopup,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: _getResponsiveHeight(12),
                                     ),
-                                    textAlign: TextAlign.center,
+                                    decoration: BoxDecoration(
+                                      color: primaryBlue,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Share Your Look',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: _getResponsiveFontSize(12),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
                               SizedBox(width: _getHorizontalPadding() * 0.6),
                               Expanded(
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: _getResponsiveHeight(12),
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: primaryBlue),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    'Browse Styles',
-                                    style: GoogleFonts.poppins(
-                                      color: primaryBlue,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: _getResponsiveFontSize(12),
+                                child: GestureDetector(
+                                  onTap: () => _navigateToJoinCommunity(),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: _getResponsiveHeight(12),
                                     ),
-                                    textAlign: TextAlign.center,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: primaryBlue),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Browse Styles',
+                                      style: GoogleFonts.poppins(
+                                        color: primaryBlue,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: _getResponsiveFontSize(12),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -2286,9 +2301,9 @@ class _HomePageState extends State<HomePage>
   // Navigation methods
   void _navigateToProfile() {
     HapticFeedback.mediumImpact();
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const ProfilePage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const ProfilePage()));
   }
 
   void _navigateToAllRecommendations() {
@@ -2314,12 +2329,20 @@ class _HomePageState extends State<HomePage>
     ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
   }
 
-  void _navigateToStyleQuiz() {
-    // Navigate to style quiz
-  }
+
+void _navigateToStyleQuiz() {
+  HapticFeedback.mediumImpact();
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const StyleQuizPage(),
+    ),
+  );
+}
 
   void _navigateToPlanner() {
-    // Navigate to outfit planner
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const OutfitPlannerPage()));
   }
 
   void _navigateToNews() {
@@ -2327,11 +2350,41 @@ class _HomePageState extends State<HomePage>
   }
 
   void _navigateToJoinCommunity() {
-    // Navigate to join community
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const CommunityPage()));
   }
 
+  // TAMBAHKAN metode ini:
   void _navigateToQuickOutfit() {
-    // Navigate to quick outfit creation
+    HapticFeedback.mediumImpact();
+    // Navigate to wardrobe for quick outfit selection
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
+
+    // Optional: Show a snackbar to indicate the feature
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Quick Outfit feature - redirecting to Wardrobe!',
+          style: GoogleFonts.poppins(fontSize: _getResponsiveFontSize(14)),
+        ),
+        backgroundColor: accentRed,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showCommunitySelectionPopup() {
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => const CommunitySelectionPopup(),
+    );
   }
 
   void _showNotifications() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../wardrobe/wardrobe_page.dart';
@@ -9,7 +10,8 @@ import '../community/community_page.dart';
 import '../profile/profile_page.dart';
 import '../community/community_selection_popup.dart';
 import '../outfit_planner/outfit_planner_page.dart';
-import '../style_quiz/style_quiz_page.dart'; 
+import '../style_quiz/style_quiz_page.dart';
+import '../news/news_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -825,82 +827,91 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFashionNewsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Fashion News',
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Fashion News',
+              style: GoogleFonts.poppins(
+                fontSize: _getResponsiveFontSize(20),
+                fontWeight: FontWeight.w700,
+                color: darkGray,
+              ),
+            ),
+            TextButton(
+              onPressed: () => _navigateToNews(),
+              child: Text(
+                'Read More',
                 style: GoogleFonts.poppins(
-                  fontSize: _getResponsiveFontSize(20),
-                  fontWeight: FontWeight.w700,
-                  color: darkGray,
+                  color: primaryBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: _getResponsiveFontSize(14),
                 ),
               ),
-              TextButton(
-                onPressed: () => _navigateToNews(),
+            ),
+          ],
+        ),
+      ),
+      SizedBox(height: _getResponsiveHeight(16)),
+      SizedBox(
+        height: _getResponsiveHeight(160),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('fashion_news')
+              .orderBy('createdAt', descending: true)
+              .limit(10)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
                 child: Text(
-                  'Read More',
-                  style: GoogleFonts.poppins(
-                    color: primaryBlue,
-                    fontWeight: FontWeight.w600,
-                    fontSize: _getResponsiveFontSize(14),
-                  ),
+                  'No news yet.',
+                  style: GoogleFonts.poppins(color: mediumGray),
                 ),
-              ),
-            ],
-          ),
+              );
+            }
+            final docs = snapshot.data!.docs;
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final data = docs[index].data() as Map<String, dynamic>;
+                return _buildNewsCardFromFirestore(data, docs[index].id);
+              },
+            );
+          },
         ),
-        SizedBox(height: _getResponsiveHeight(16)),
-        SizedBox(
-          height: _getResponsiveHeight(160),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-            itemCount: 4,
-            itemBuilder: (context, index) => _buildNewsCard(index),
-          ),
+      ),
+    ],
+  );
+}
+
+  Widget _buildNewsCardFromFirestore(Map<String, dynamic> data, String docId) {
+  final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
+  final user = FirebaseAuth.instance.currentUser;
+  final userId = user?.uid ?? '';
+  final likedBy = List<String>.from(data['likedBy'] ?? []);
+  final isLiked = likedBy.contains(userId);
+
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NewsDetailPage(docId: docId),
         ),
-      ],
-    );
-  }
-
-  Widget _buildNewsCard(int index) {
-    final news = [
-      {
-        'title': 'Spring Fashion Trends 2024',
-        'readTime': '3 min read',
-        'author': 'Fashion Weekly',
-        'image': 'fashion_1.jpg',
-      },
-      {
-        'title': 'Sustainable Fashion Guide',
-        'readTime': '5 min read',
-        'author': 'Eco Style',
-        'image': 'fashion_2.jpg',
-      },
-      {
-        'title': 'Color Palette Tips',
-        'readTime': '2 min read',
-        'author': 'Style Expert',
-        'image': 'fashion_3.jpg',
-      },
-      {
-        'title': 'Minimalist Wardrobe',
-        'readTime': '4 min read',
-        'author': 'Less is More',
-        'image': 'fashion_4.jpg',
-      },
-    ];
-
-    final article = news[index];
-    final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
-
-    return Container(
+      );
+    },
+    child: Container(
       width: cardWidth,
       margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
       decoration: BoxDecoration(
@@ -908,107 +919,113 @@ class _HomePageState extends State<HomePage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            height: _getResponsiveHeight(80),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  primaryBlue.withValues(alpha: 0.8),
-                  accentYellow.withValues(alpha: 0.6),
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.bookmark_border_rounded,
-                      size: _isSmallScreen() ? 14 : 16,
-                      color: darkGray,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if ((data['imageUrl'] ?? '').isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  child: Image.network(
+                    data['imageUrl'],
+                    height: _getResponsiveHeight(80),
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: _getResponsiveHeight(80),
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      article['title'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: _getResponsiveFontSize(13),
-                        fontWeight: FontWeight.w600,
-                        color: darkGray,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  SizedBox(height: _getResponsiveHeight(8)),
-                  Row(
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
-                          article['readTime'] as String,
+                          data['title'] ?? '',
                           style: GoogleFonts.poppins(
-                            fontSize: _getResponsiveFontSize(10),
-                            color: mediumGray,
+                            fontSize: _getResponsiveFontSize(13),
+                            fontWeight: FontWeight.w600,
+                            color: darkGray,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        ' • ',
-                        style: TextStyle(
-                          color: mediumGray,
-                          fontSize: _getResponsiveFontSize(10),
-                        ),
-                      ),
+                      SizedBox(height: _getResponsiveHeight(8)),
                       Expanded(
                         child: Text(
-                          article['author'] as String,
+                          data['content'] ?? '',
                           style: GoogleFonts.poppins(
                             fontSize: _getResponsiveFontSize(10),
                             color: mediumGray,
                           ),
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
+              ),
+            ],
+          ),
+          // Love button di pojok kanan atas
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () async {
+                final ref = FirebaseFirestore.instance.collection('fashion_news').doc(docId);
+                if (isLiked) {
+                  await ref.update({
+                    'likedBy': FieldValue.arrayRemove([userId])
+                  });
+                } else {
+                  await ref.update({
+                    'likedBy': FieldValue.arrayUnion([userId])
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: isLiked ? Colors.red : Colors.grey,
+                  size: 22,
+                ),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildMyFavoritesSection() {
     return Padding(

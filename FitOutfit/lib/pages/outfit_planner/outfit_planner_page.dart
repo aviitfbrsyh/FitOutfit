@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../home/home_page.dart';
+import 'outfit_planning_form.dart' as OutfitForm;
+import 'outfit_history_page.dart';
+import '../wardrobe/wardrobe_page.dart';
 
 class OutfitPlannerPage extends StatefulWidget {
-  final String? userStyle;
-  
-  const OutfitPlannerPage({super.key, this.userStyle});
+  const OutfitPlannerPage({super.key});
 
   @override
   State<OutfitPlannerPage> createState() => _OutfitPlannerPageState();
@@ -13,68 +14,31 @@ class OutfitPlannerPage extends StatefulWidget {
 
 class _OutfitPlannerPageState extends State<OutfitPlannerPage>
     with TickerProviderStateMixin {
-  // Colors consistent with your app
+  // FitOutfit brand colors
   static const Color primaryBlue = Color(0xFF4A90E2);
   static const Color accentYellow = Color(0xFFF5A623);
   static const Color accentRed = Color(0xFFD0021B);
-  static const Color accentPurple = Color(0xFF7B68EE);
   static const Color darkGray = Color(0xFF2C3E50);
   static const Color mediumGray = Color(0xFF6B7280);
-  static const Color lightGray = Color(0xFFF8F9FA);
   static const Color softCream = Color(0xFFFAF9F7);
+
+  DateTime _selectedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
+  bool _isWeekView = false;
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Event categories with icons and colors
-  final List<Map<String, dynamic>> _eventCategories = [
-    {
-      'name': 'Work & Professional',
-      'icon': Icons.work_outline_rounded,
-      'color': primaryBlue,
-      'events': ['Interview', 'Meeting', 'Conference', 'Presentation']
-    },
-    {
-      'name': 'Social & Party',
-      'icon': Icons.celebration_outlined,
-      'color': accentRed,
-      'events': ['Birthday Party', 'Wedding', 'Cocktail Party', 'Dinner Date']
-    },
-    {
-      'name': 'Casual & Daily',
-      'icon': Icons.weekend_outlined,
-      'color': accentYellow,
-      'events': ['Shopping', 'Coffee Date', 'Movie Night', 'Casual Hangout']
-    },
-    {
-      'name': 'Active & Sports',
-      'icon': Icons.fitness_center_outlined,
-      'color': accentPurple,
-      'events': ['Gym', 'Yoga', 'Running', 'Sports Event']
-    },
-  ];
-
-  String _selectedCategory = '';
-  String _selectedEvent = '';
-  String _selectedWeather = '';
-  DateTime? _selectedDate;
-  bool _isLoading = false;
-  List<Map<String, dynamic>> _outfitSuggestions = [];
-
-  final List<String> _weatherOptions = [
-    'Sunny & Warm',
-    'Rainy & Cool', 
-    'Cold & Windy',
-    'Hot & Humid',
-    'Mild & Pleasant',
-  ];
+  // Sample outfit events data
+  final Map<DateTime, List<OutfitEvent>> _outfitEvents = {};
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    _loadSampleEvents();
   }
 
   void _initializeAnimations() {
@@ -83,103 +47,44 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
       vsync: this,
     );
     _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.3),
+      begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
 
     _fadeController.forward();
     _slideController.forward();
   }
 
-  Future<void> _generateOutfitPlan() async {
-    if (_selectedCategory.isEmpty || _selectedEvent.isEmpty || _selectedWeather.isEmpty) {
-      _showErrorSnackBar('Please fill in all fields');
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // TODO: Replace with actual API call
-      // final response = await http.post(
-      //   Uri.parse('YOUR_API_ENDPOINT/generate-outfit-plan'),
-      //   headers: {'Content-Type': 'application/json'},
-      //   body: json.encode({
-      //     'category': _selectedCategory,
-      //     'event': _selectedEvent,
-      //     'weather': _selectedWeather,
-      //     'date': _selectedDate?.toIso8601String(),
-      //     'userStyle': widget.userStyle,
-      //   }),
-      // );
-
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Mock outfit suggestions
-      List<Map<String, dynamic>> suggestions = _generateMockOutfits();
-      
-      setState(() {
-        _outfitSuggestions = suggestions;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorSnackBar('Failed to generate outfit plan. Please try again.');
-    }
-  }
-
-  List<Map<String, dynamic>> _generateMockOutfits() {
-    return [
-      {
-        'id': 1,
-        'name': 'Professional Power Look',
-        'description': 'Perfect for making a strong impression',
-        'items': ['Navy Blazer', 'White Shirt', 'Dark Jeans', 'Oxford Shoes'],
-        'confidence': 95,
-        'weather_suitable': true,
-        'style_match': widget.userStyle ?? 'Classic',
-      },
-      {
-        'id': 2,
-        'name': 'Smart Casual Comfort',
-        'description': 'Comfortable yet polished appearance',
-        'items': ['Knit Sweater', 'Chino Pants', 'Loafers', 'Watch'],
-        'confidence': 88,
-        'weather_suitable': true,
-        'style_match': widget.userStyle ?? 'Modern',
-      },
-      {
-        'id': 3,
-        'name': 'Contemporary Edge',
-        'description': 'Modern and trendy outfit choice',
-        'items': ['Graphic Tee', 'Bomber Jacket', 'Slim Jeans', 'Sneakers'],
-        'confidence': 82,
-        'weather_suitable': false,
-        'style_match': widget.userStyle ?? 'Trendy',
-      },
-    ];
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: accentRed,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  void _loadSampleEvents() {
+    // Add sample events for demonstration
+    final today = DateTime.now();
+    _outfitEvents[today] = [
+      OutfitEvent(
+        id: '1',
+        title: 'Work Meeting',
+        outfitName: 'Professional Chic',
+        reminderEmail: 'user@example.com',
+        status: OutfitEventStatus.planned,
       ),
-    );
+    ];
+    _outfitEvents[today.add(const Duration(days: 2))] = [
+      OutfitEvent(
+        id: '2',
+        title: 'Date Night',
+        outfitName: 'Elegant Evening',
+        reminderEmail: 'user@example.com',
+        status: OutfitEventStatus.emailSent,
+      ),
+    ];
   }
 
   @override
@@ -189,109 +94,782 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
     super.dispose();
   }
 
+  double _getScreenWidth() => MediaQuery.of(context).size.width;
+  bool _isSmallScreen() => _getScreenWidth() < 360;
+  double _getHorizontalPadding() => _isSmallScreen() ? 16 : 20;
+  double _getResponsiveHeight(double baseHeight) =>
+      _isSmallScreen() ? baseHeight * 0.9 : baseHeight;
+  double _getResponsiveFontSize(double baseSize) =>
+      _isSmallScreen() ? baseSize * 0.9 : baseSize;
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: softCream,
-      appBar: _buildAppBar(),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: _outfitSuggestions.isEmpty 
-              ? _buildPlannerForm() 
-              : _buildOutfitResults(),
+      body: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: CustomScrollView(
+              slivers: [
+                _buildAppBar(),
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      _buildCalendarSection(),
+                      SizedBox(height: _getResponsiveHeight(20)),
+                      _buildQuickActionsSection(),
+                      SizedBox(height: _getResponsiveHeight(20)),
+                      _buildTodayOutfitsSection(),
+                      SizedBox(height: _getResponsiveHeight(20)),
+                      _buildUpcomingEventsSection(),
+                      SizedBox(height: _getResponsiveHeight(100)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: _buildPlanOutfitFAB(),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      expandedHeight: _getResponsiveHeight(120),
+      floating: false,
+      pinned: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: IconButton(
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.arrow_back_ios_rounded, color: primaryBlue),
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.history_rounded, color: primaryBlue),
+          ),
+          onPressed: () => _navigateToHistory(),
+        ),
+        SizedBox(width: _getHorizontalPadding()),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                primaryBlue.withValues(alpha: 0.9),
+                accentYellow.withValues(alpha: 0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(_getResponsiveHeight(30)),
+              bottomRight: Radius.circular(_getResponsiveHeight(30)),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(_getHorizontalPadding()),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Outfit Planner',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(28),
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Plan your perfect looks ahead',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(14),
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: _getResponsiveHeight(10)),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        child: Material(
-          color: Colors.white.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomePage()),
+  Widget _buildCalendarSection() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: primaryBlue.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Colors.black,
-              size: 20,
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(_getHorizontalPadding()),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryBlue.withValues(alpha: 0.1),
+                    accentYellow.withValues(alpha: 0.05),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today_rounded, color: primaryBlue),
+                  SizedBox(width: _getHorizontalPadding() * 0.5),
+                  Text(
+                    'Select Date to Plan',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(16),
+                      fontWeight: FontWeight.w700,
+                      color: darkGray,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap:
+                        () => setState(() {
+                          _isWeekView = !_isWeekView;
+                        }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: primaryBlue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _isWeekView ? 'Month' : 'Week',
+                        style: GoogleFonts.poppins(
+                          fontSize: _getResponsiveFontSize(12),
+                          fontWeight: FontWeight.w600,
+                          color: primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            Padding(
+              padding: EdgeInsets.all(_getHorizontalPadding()),
+              child: _buildCustomCalendar(),
+            ),
+          ],
         ),
       ),
-      title: Text(
-        'Outfit Planner',
-        style: GoogleFonts.poppins(
-          color: darkGray,
-          fontWeight: FontWeight.w800,
-          fontSize: 22,
-          letterSpacing: -0.5,
-        ),
-      ),
-      centerTitle: true,
-      actions: [
-        if (_outfitSuggestions.isNotEmpty)
-          IconButton(
-            icon: Icon(Icons.refresh_rounded, color: primaryBlue),
-            onPressed: () {
-              setState(() {
-                _outfitSuggestions.clear();
-                _selectedCategory = '';
-                _selectedEvent = '';
-                _selectedWeather = '';
-                _selectedDate = null;
-              });
-            },
-          ),
+    );
+  }
+
+  Widget _buildCustomCalendar() {
+    return Column(
+      children: [
+        _buildCalendarHeader(),
+        SizedBox(height: _getResponsiveHeight(16)),
+        _buildCalendarDays(),
+        SizedBox(height: _getResponsiveHeight(16)),
+        _buildCalendarGrid(),
       ],
     );
   }
 
-  Widget _buildPlannerForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCalendarHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () {
+            setState(() {
+              _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+            });
+          },
+          icon: Icon(Icons.chevron_left_rounded, color: primaryBlue),
+        ),
+        Text(
+          '${_getMonthName(_focusedDay.month)} ${_focusedDay.year}',
+          style: GoogleFonts.poppins(
+            fontSize: _getResponsiveFontSize(18),
+            fontWeight: FontWeight.w700,
+            color: darkGray,
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            setState(() {
+              _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+            });
+          },
+          icon: Icon(Icons.chevron_right_rounded, color: primaryBlue),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarDays() {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return Row(
+      children:
+          days
+              .map(
+                (day) => Expanded(
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(12),
+                        fontWeight: FontWeight.w600,
+                        color: mediumGray,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+    );
+  }
+
+  Widget _buildCalendarGrid() {
+    final firstDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month, 1);
+    final lastDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
+    final firstWeekday = firstDayOfMonth.weekday;
+    final daysInMonth = lastDayOfMonth.day;
+
+    List<Widget> dayWidgets = [];
+
+    // Add empty cells for days before the first day of the month
+    for (int i = 1; i < firstWeekday; i++) {
+      dayWidgets.add(const SizedBox());
+    }
+
+    // Add days of the month
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(_focusedDay.year, _focusedDay.month, day);
+      dayWidgets.add(_buildDayCell(date));
+    }
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 7,
+      children: dayWidgets,
+    );
+  }
+
+  Widget _buildDayCell(DateTime date) {
+    final isSelected = _isSameDay(date, _selectedDay);
+    final isToday = _isSameDay(date, DateTime.now());
+    final isPastDate = date.isBefore(DateTime.now()) && !isToday;
+    final hasEvents = _getEventsForDay(date).isNotEmpty;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedDay = date;
+        });
+        HapticFeedback.lightImpact();
+      },
+      child: Container(
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color:
+              isPastDate
+                  ? mediumGray.withValues(
+                    alpha: 0.2,
+                  ) // Past dates get gray background
+                  : isSelected
+                  ? primaryBlue
+                  : isToday
+                  ? accentYellow
+                  : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow:
+              isSelected && !isPastDate
+                  ? [
+                    BoxShadow(
+                      color: primaryBlue.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Text(
+                '${date.day}',
+                style: GoogleFonts.poppins(
+                  fontSize: _getResponsiveFontSize(14),
+                  fontWeight: FontWeight.w600,
+                  color:
+                      isPastDate
+                          ? mediumGray.withValues(
+                            alpha: 0.6,
+                          ) // Past dates get muted text
+                          : isSelected || isToday
+                          ? Colors.white
+                          : darkGray,
+                ),
+              ),
+            ),
+            if (hasEvents)
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color:
+                        isPastDate
+                            ? mediumGray.withValues(
+                              alpha: 0.5,
+                            ) // Past events get muted indicator
+                            : isSelected || isToday
+                            ? Colors.white
+                            : accentRed,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            // Add strikethrough for past dates
+            if (isPastDate)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: StrikethroughPainter(
+                    color: mediumGray.withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[month - 1];
+  }
+
+  Widget _buildQuickActionsSection() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+      child: Row(
         children: [
-          _buildWelcomeSection(),
-          const SizedBox(height: 32),
-          _buildEventCategorySection(),
-          const SizedBox(height: 24),
-          _buildEventSelector(),
-          const SizedBox(height: 24),
-          _buildWeatherSelector(),
-          const SizedBox(height: 24),
-          _buildDateSelector(),
-          const SizedBox(height: 40),
-          _buildGenerateButton(),
+          Expanded(
+            child: _buildQuickActionCard(
+              'Go to Wardrobe',
+              'Browse your items',
+              Icons.checkroom_rounded,
+              primaryBlue,
+              () => _navigateToWardrobe(),
+            ),
+          ),
+          SizedBox(width: _getHorizontalPadding()),
+          Expanded(
+            child: _buildQuickActionCard(
+              'View History',
+              'Past outfits',
+              Icons.history_rounded,
+              accentYellow,
+              () => _navigateToHistory(),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildWelcomeSection() {
+  Widget _buildQuickActionCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
+      child: Container(
+        padding: EdgeInsets.all(_getHorizontalPadding()),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.2),
+                    color.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            SizedBox(height: _getResponsiveHeight(12)),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: _getResponsiveFontSize(14),
+                fontWeight: FontWeight.w700,
+                color: darkGray,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: _getResponsiveHeight(4)),
+            Text(
+              subtitle,
+              style: GoogleFonts.poppins(
+                fontSize: _getResponsiveFontSize(11),
+                color: mediumGray,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTodayOutfitsSection() {
+    final todayEvents = _getEventsForDay(_selectedDay);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Outfits for ${_formatSelectedDate()}',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(18),
+              fontWeight: FontWeight.w700,
+              color: darkGray,
+            ),
+          ),
+          SizedBox(height: _getResponsiveHeight(12)),
+          if (todayEvents.isEmpty)
+            _buildEmptyOutfitsCard()
+          else
+            Column(
+              children:
+                  todayEvents
+                      .map((event) => _buildOutfitEventCard(event))
+                      .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyOutfitsCard() {
+    final isPastDate =
+        _selectedDay.isBefore(DateTime.now()) &&
+        !_isSameDay(_selectedDay, DateTime.now());
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(_getHorizontalPadding() * 1.5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color:
+              isPastDate
+                  ? mediumGray.withValues(alpha: 0.3)
+                  : primaryBlue.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color:
+                  isPastDate
+                      ? mediumGray.withValues(alpha: 0.1)
+                      : primaryBlue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Icon(
+              isPastDate ? Icons.history_rounded : Icons.calendar_today_rounded,
+              color: isPastDate ? mediumGray : primaryBlue,
+              size: 32,
+            ),
+          ),
+          SizedBox(height: _getResponsiveHeight(16)),
+          Text(
+            isPastDate
+                ? 'This date has passed'
+                : 'No outfits planned for this day',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(16),
+              fontWeight: FontWeight.w600,
+              color: isPastDate ? mediumGray : darkGray,
+            ),
+          ),
+          SizedBox(height: _getResponsiveHeight(8)),
+          Text(
+            isPastDate
+                ? 'You cannot plan outfits for past dates. Select a future date to plan ahead.'
+                : 'Start planning your outfit for this date using the buttons above',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(12),
+              color: mediumGray,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOutfitEventCard(OutfitEvent event) {
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+
+    switch (event.status) {
+      case OutfitEventStatus.planned:
+        statusColor = accentYellow;
+        statusIcon = Icons.schedule_rounded;
+        statusText = 'Planned';
+        break;
+      case OutfitEventStatus.emailSent:
+        statusColor = Colors.green;
+        statusIcon = Icons.email_rounded;
+        statusText = 'Reminder Sent';
+        break;
+      case OutfitEventStatus.completed:
+        statusColor = primaryBlue;
+        statusIcon = Icons.check_circle_rounded;
+        statusText = 'Completed';
+        break;
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: _getResponsiveHeight(12)),
+      padding: EdgeInsets.all(_getHorizontalPadding()),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(16),
+                        fontWeight: FontWeight.w700,
+                        color: darkGray,
+                      ),
+                    ),
+                    Text(
+                      event.outfitName,
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(14),
+                        color: primaryBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, color: statusColor, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusText,
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(11),
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: _getResponsiveHeight(12)),
+          Row(
+            children: [
+              Icon(Icons.email_outlined, color: mediumGray, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  event.reminderEmail,
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(12),
+                    color: mediumGray,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _editOutfit(event),
+                child: Text(
+                  'Edit',
+                  style: GoogleFonts.poppins(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.w600,
+                    fontSize: _getResponsiveFontSize(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingEventsSection() {
+    final upcomingEvents = _getUpcomingEvents();
+
+    if (upcomingEvents.isEmpty) return const SizedBox();
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Upcoming Outfits',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(18),
+              fontWeight: FontWeight.w700,
+              color: darkGray,
+            ),
+          ),
+          SizedBox(height: _getResponsiveHeight(12)),
+          SizedBox(
+            height: _getResponsiveHeight(120),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: upcomingEvents.length,
+              itemBuilder: (context, index) {
+                final entry = upcomingEvents[index];
+                return _buildUpcomingEventCard(entry.key, entry.value.first);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingEventCard(DateTime date, OutfitEvent event) {
+    return Container(
+      width: _getScreenWidth() * 0.7,
+      margin: EdgeInsets.only(right: _getHorizontalPadding()),
+      padding: EdgeInsets.all(_getHorizontalPadding()),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [primaryBlue, accentPurple],
+          colors: [
+            primaryBlue.withValues(alpha: 0.8),
+            accentYellow.withValues(alpha: 0.6),
+          ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: primaryBlue.withOpacity(0.3),
+            color: primaryBlue.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -303,657 +881,271 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.calendar_today_outlined,
-                  color: Colors.white,
-                  size: 24,
+                child: Text(
+                  _formatDate(date),
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(10),
+                    fontWeight: FontWeight.w600,
+                    color: primaryBlue,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Plan Your Perfect Outfit',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'AI-powered styling for any occasion',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.8),
-                      ),
-                    ),
-                  ],
-                ),
+              const Spacer(),
+              Icon(
+                Icons.notifications_active_rounded,
+                color: Colors.white,
+                size: 16,
               ),
             ],
           ),
-          if (widget.userStyle != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    color: accentYellow,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Your Style: ${widget.userStyle}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
+          const Spacer(),
+          Text(
+            event.title,
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(14),
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
-          ],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            event.outfitName,
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(12),
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEventCategorySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Choose Event Category',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: darkGray,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: _eventCategories.length,
-          itemBuilder: (context, index) {
-            final category = _eventCategories[index];
-            bool isSelected = _selectedCategory == category['name'];
-            
-            return InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedCategory = category['name'];
-                  _selectedEvent = ''; // Reset event selection
-                });
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? LinearGradient(
-                          colors: [category['color'], category['color'].withOpacity(0.7)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: isSelected ? null : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? category['color'] : lightGray,
-                    width: isSelected ? 2 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: category['color'].withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      category['icon'],
-                      size: 32,
-                      color: isSelected ? Colors.white : category['color'],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      category['name'],
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : darkGray,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+  Widget _buildPlanOutfitFAB() {
+    final isPastDate =
+        _selectedDay.isBefore(DateTime.now()) &&
+        !_isSameDay(_selectedDay, DateTime.now());
 
-  Widget _buildEventSelector() {
-    if (_selectedCategory.isEmpty) return const SizedBox.shrink();
-    
-    final selectedCategoryData = _eventCategories.firstWhere(
-      (cat) => cat['name'] == _selectedCategory,
-    );
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Select Specific Event',
+    if (isPastDate) {
+      // Show different FAB for past dates
+      return FloatingActionButton.extended(
+        onPressed: null, // Disabled
+        backgroundColor: mediumGray.withValues(alpha: 0.5),
+        icon: const Icon(Icons.block_rounded, color: Colors.white),
+        label: Text(
+          'Past Date',
           style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: darkGray,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: selectedCategoryData['events'].map<Widget>((event) {
-            bool isSelected = _selectedEvent == event;
-            
-            return InkWell(
-              onTap: () => setState(() => _selectedEvent = event),
-              borderRadius: BorderRadius.circular(20),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? selectedCategoryData['color'] : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selectedCategoryData['color'],
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  event,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : selectedCategoryData['color'],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeatherSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Expected Weather',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: darkGray,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: lightGray),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              value: _selectedWeather.isEmpty ? null : _selectedWeather,
-              hint: Text(
-                'Select weather condition',
-                style: GoogleFonts.poppins(
-                  color: mediumGray,
-                  fontSize: 16,
-                ),
-              ),
-              icon: Icon(Icons.keyboard_arrow_down, color: primaryBlue),
-              items: _weatherOptions.map((weather) {
-                return DropdownMenuItem(
-                  value: weather,
-                  child: Row(
-                    children: [
-                      Icon(
-                        _getWeatherIcon(weather),
-                        color: primaryBlue,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        weather,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          color: darkGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedWeather = value ?? '');
-              },
-            ),
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
           ),
         ),
-      ],
+      );
+    }
+
+    return FloatingActionButton.extended(
+      onPressed: () => _navigateToPlanOutfit(),
+      backgroundColor: accentRed,
+      icon: const Icon(Icons.add_rounded, color: Colors.white),
+      label: Text(
+        'Plan Outfit',
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
+        ),
+      ),
     );
   }
 
-  IconData _getWeatherIcon(String weather) {
-    switch (weather) {
-      case 'Sunny & Warm':
-        return Icons.wb_sunny_outlined;
-      case 'Rainy & Cool':
-        return Icons.cloud_outlined;
-      case 'Cold & Windy':
-        return Icons.ac_unit_outlined;
-      case 'Hot & Humid':
-        return Icons.whatshot_outlined;
-      default:
-        return Icons.wb_cloudy_outlined;
+  // Helper methods
+  List<OutfitEvent> _getEventsForDay(DateTime day) {
+    return _outfitEvents[DateTime(day.year, day.month, day.day)] ?? [];
+  }
+
+  List<MapEntry<DateTime, List<OutfitEvent>>> _getUpcomingEvents() {
+    final now = DateTime.now();
+    return _outfitEvents.entries
+        .where((entry) => entry.key.isAfter(now))
+        .take(5)
+        .toList();
+  }
+
+  String _formatSelectedDate() {
+    if (_isSameDay(_selectedDay, DateTime.now())) {
+      return 'Today';
+    } else if (_isSameDay(
+      _selectedDay,
+      DateTime.now().add(const Duration(days: 1)),
+    )) {
+      return 'Tomorrow';
+    } else {
+      return '${_selectedDay.day}/${_selectedDay.month}/${_selectedDay.year}';
     }
   }
 
-  Widget _buildDateSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Event Date (Optional)',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: darkGray,
-          ),
-        ),
-        const SizedBox(height: 16),
-        InkWell(
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.light(
-                      primary: primaryBlue,
-                      onPrimary: Colors.white,
-                      surface: Colors.white,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (date != null) {
-              setState(() => _selectedDate = date);
-            }
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: lightGray),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_outlined, color: primaryBlue),
-                const SizedBox(width: 12),
-                Text(
-                  _selectedDate != null
-                      ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                      : 'Select date',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: _selectedDate != null ? darkGray : mediumGray,
-                  ),
-                ),
-                const Spacer(),
-                Icon(Icons.keyboard_arrow_down, color: mediumGray),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}';
   }
 
-  Widget _buildGenerateButton() {
-    bool canGenerate = _selectedCategory.isNotEmpty && 
-                      _selectedEvent.isNotEmpty && 
-                      _selectedWeather.isNotEmpty;
-    
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canGenerate ? _generateOutfitPlan : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: canGenerate ? primaryBlue : mediumGray,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+  void _addOutfitEvent(DateTime date, OutfitEvent event) {
+    setState(() {
+      final dateKey = DateTime(date.year, date.month, date.day);
+      if (_outfitEvents[dateKey] == null) {
+        _outfitEvents[dateKey] = [];
+      }
+      _outfitEvents[dateKey]!.add(event);
+    });
+  }
+
+  void _updateOutfitEvent(DateTime date, OutfitEvent updatedEvent) {
+    setState(() {
+      final dateKey = DateTime(date.year, date.month, date.day);
+      if (_outfitEvents[dateKey] != null) {
+        final index = _outfitEvents[dateKey]!.indexWhere(
+          (event) => event.id == updatedEvent.id,
+        );
+        if (index != -1) {
+          _outfitEvents[dateKey]![index] = updatedEvent;
+        }
+      }
+    });
+  }
+
+  // Navigation methods
+  void _navigateToPlanOutfit() async {
+    // Check if selected date is in the past
+    final isPastDate =
+        _selectedDay.isBefore(DateTime.now()) &&
+        !_isSameDay(_selectedDay, DateTime.now());
+
+    if (isPastDate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning_rounded, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Cannot plan outfits for past dates. Please select a future date.',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: accentRed,
+          behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
-          elevation: canGenerate ? 4 : 0,
+          duration: const Duration(seconds: 3),
         ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Generate Outfit Plan',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
+      );
+      return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                OutfitForm.OutfitPlanningForm(selectedDate: _selectedDay),
+      ),
+    );
+
+    if (result != null && result is OutfitEvent) {
+      _addOutfitEvent(_selectedDay, result);
+    }
+  }
+
+  void _navigateToWardrobe() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const WardrobePage()),
+    );
+  }
+
+  void _navigateToHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OutfitHistoryPage(outfitEvents: _outfitEvents),
       ),
     );
   }
 
-  Widget _buildOutfitResults() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildResultsHeader(),
-          const SizedBox(height: 24),
-          ..._outfitSuggestions.map((outfit) => _buildOutfitCard(outfit)).toList(),
-          const SizedBox(height: 32),
-          _buildActionButtons(),
-        ],
+  void _editOutfit(OutfitEvent event) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => OutfitForm.OutfitPlanningForm(
+              selectedDate: _selectedDay,
+              editingEvent: event,
+            ),
       ),
+    );
+
+    if (result != null && result is OutfitEvent) {
+      _updateOutfitEvent(_selectedDay, result);
+    }
+  }
+}
+
+// Data models
+class OutfitEvent {
+  final String id;
+  final String title;
+  final String outfitName;
+  final String reminderEmail;
+  final OutfitEventStatus status;
+  final String? notes;
+  final List<String>? wardrobeItems;
+
+  OutfitEvent({
+    required this.id,
+    required this.title,
+    required this.outfitName,
+    required this.reminderEmail,
+    required this.status,
+    this.notes,
+    this.wardrobeItems,
+  });
+}
+
+enum OutfitEventStatus { planned, emailSent, completed }
+
+// Add custom painter for strikethrough effect on past dates
+class StrikethroughPainter extends CustomPainter {
+  final Color color;
+
+  StrikethroughPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round;
+
+    // Draw diagonal line from top-left to bottom-right
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.2),
+      Offset(size.width * 0.8, size.height * 0.8),
+      paint,
     );
   }
 
-  Widget _buildResultsHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [accentYellow, accentYellow.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                'Outfit Plan Ready!',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Event: $_selectedEvent • Weather: $_selectedWeather',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOutfitCard(Map<String, dynamic> outfit) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          outfit['name'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: darkGray,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          outfit['description'],
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: mediumGray,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${outfit['confidence']}% Match',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: primaryBlue,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Outfit Items:',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: darkGray,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: outfit['items'].map<Widget>((item) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: lightGray,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      item,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: mediumGray,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(
-                    outfit['weather_suitable'] ? Icons.check_circle : Icons.info,
-                    color: outfit['weather_suitable'] ? Colors.green : accentYellow,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    outfit['weather_suitable'] 
-                        ? 'Perfect for selected weather'
-                        : 'Consider weather adjustments',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: mediumGray,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              // Save outfit plan or navigate to wardrobe
-              _showSuccessSnackBar('Outfit plan saved to your wardrobe!');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryBlue,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.bookmark_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  'Save Outfit Plan',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () {
-              setState(() {
-                _outfitSuggestions.clear();
-                _selectedCategory = '';
-                _selectedEvent = '';
-                _selectedWeather = '';
-                _selectedDate = null;
-              });
-            },
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: mediumGray),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Text(
-              'Plan Another Outfit',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: mediumGray,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

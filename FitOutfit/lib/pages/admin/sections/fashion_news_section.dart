@@ -1,6 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'news_detail_page.dart';
 
 class FashionNewsSection {
   // FitOutfit Brand Colors
@@ -30,8 +37,120 @@ class FashionNewsSection {
             _buildAddNewsForm(context),
             SizedBox(height: verticalPadding),
             _buildNewsStats(context),
-            SizedBox(height: verticalPadding),
-            _buildMobileNewsList(context),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('fashion_news')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Column(
+                  children: [
+                    SizedBox(height: verticalPadding), // padding hanya jika ada data
+                    ...snapshot.data!.docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => NewsDetailPage(
+                                    title: data['title'] ?? '',
+                                    imageUrl: data['imageUrl'] ?? '',
+                                    content: data['content'] ?? '',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      data['title'] ?? '',
+                                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if ((data['imageUrl'] ?? '').isNotEmpty)
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          data['imageUrl'],
+                                          height: 120,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      (data['content'] ?? '').length > 120
+                                          ? data['content']!.substring(0, 120) + '...'
+                                          : data['content'] ?? '',
+                                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Tombol hapus di pojok kanan atas
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              tooltip: 'Delete',
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete News'),
+                                    content: const Text('Are you sure you want to delete this news article?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  // Hapus gambar dari storage jika ada
+                                  if ((data['imageUrl'] ?? '').isNotEmpty) {
+                                    try {
+                                      final ref = FirebaseStorage.instance.refFromURL(data['imageUrl']);
+                                      await ref.delete();
+                                    } catch (e) {
+                                      // Ignore error jika file tidak ada
+                                    }
+                                  }
+                                  // Hapus dokumen dari Firestore
+                                  await doc.reference.delete();
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                );
+              },
+            ),
           ] else
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,51 +295,57 @@ class FashionNewsSection {
     final horizontalPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
     final verticalPadding = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isMobile ? 2 : 4,
-      crossAxisSpacing: horizontalPadding,
-      mainAxisSpacing: verticalPadding,
-      childAspectRatio: isMobile ? 1.2 : 1.3,
-      children: [
-        _buildNewsOverviewCard(
-          context,
-          'Total News',
-          '127',
-          'articles published',
-          Icons.article_rounded,
-          const Color(0xFF6B46C1),
-          '+12 this week',
-        ),
-        _buildNewsOverviewCard(
-          context,
-          'Weekly Views',
-          '24.5K',
-          'total views',
-          Icons.visibility_rounded,
-          const Color(0xFF0EA5E9),
-          '+8.3% from last week',
-        ),
-        _buildNewsOverviewCard(
-          context,
-          'Engagement',
-          '87%',
-          'avg engagement rate',
-          Icons.thumb_up_rounded,
-          const Color(0xFF10B981),
-          'Excellent performance',
-        ),
-        _buildNewsOverviewCard(
-          context,
-          'Trending',
-          '5',
-          'trending articles',
-          Icons.trending_up_rounded,
-          const Color(0xFFF59E0B),
-          'Hot topics this week',
-        ),
-      ],
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('fashion_news').snapshots(),
+      builder: (context, snapshot) {
+        final totalNews = snapshot.hasData ? snapshot.data!.docs.length.toString() : '...';
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: isMobile ? 2 : 4,
+          crossAxisSpacing: horizontalPadding,
+          mainAxisSpacing: verticalPadding,
+          childAspectRatio: isMobile ? 1.2 : 1.3,
+          children: [
+            _buildNewsOverviewCard(
+              context,
+              'Total News',
+              totalNews,
+              'articles published',
+              Icons.article_rounded,
+              const Color(0xFF6B46C1),
+              '+12 this week',
+            ),
+            _buildNewsOverviewCard(
+              context,
+              'Weekly Views',
+              '24.5K', // Ganti dengan data realtime jika ada
+              'total views',
+              Icons.visibility_rounded,
+              const Color(0xFF0EA5E9),
+              '+8.3% from last week',
+            ),
+            _buildNewsOverviewCard(
+              context,
+              'Engagement',
+              '87%', // Ganti dengan data realtime jika ada
+              'avg engagement rate',
+              Icons.thumb_up_rounded,
+              const Color(0xFF10B981),
+              'Excellent performance',
+            ),
+            _buildNewsOverviewCard(
+              context,
+              'Trending',
+              '5', // Ganti dengan data realtime jika ada
+              'trending articles',
+              Icons.trending_up_rounded,
+              const Color(0xFFF59E0B),
+              'Hot topics this week',
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -399,88 +524,33 @@ class FashionNewsSection {
     );
   }
 
-  static Widget _buildMobileNewsList(BuildContext context) {
-    return Column(
-      children: List.generate(3, (index) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Fashion Article ${index + 1}',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Article preview content here...',
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
-      )),
-    );
-  }
-
   static Widget _buildAddNewsForm(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardPadding = isMobile ? 16.0 : 24.0;
-    final borderRadius = isMobile ? 12.0 : 20.0;
-
-    return Container(
-      padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Add Fashion News',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: darkPurple,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            decoration: InputDecoration(
-              labelText: 'Article Title',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Content',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _publishNews(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: darkPurple,
-                foregroundColor: Colors.white,
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: _AddNewsForm(),
+                  ),
+                ),
               ),
-              child: const Text('Publish'),
             ),
-          ),
-        ],
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: darkPurple,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: const Text('Add Fashion News Content'),
       ),
     );
   }
@@ -490,36 +560,42 @@ class FashionNewsSection {
     final cardPadding = isMobile ? 16.0 : 24.0;
     final borderRadius = isMobile ? 12.0 : 20.0;
 
-    return Container(
-      padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('fashion_news').snapshots(),
+      builder: (context, snapshot) {
+        final totalNews = snapshot.hasData ? snapshot.data!.docs.length.toString() : '...';
+        return Container(
+          padding: EdgeInsets.all(cardPadding),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'News Performance',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: darkPurple,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'News Performance',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: darkPurple,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildStatRow('Total Articles', totalNews),
+              _buildStatRow('Total Views', '156.2K'), // Ganti jika ingin realtime
+              _buildStatRow('Engagement Rate', '87%'), // Ganti jika ingin realtime
+            ],
           ),
-          const SizedBox(height: 16),
-          _buildStatRow('Total Articles', '127'),
-          _buildStatRow('Total Views', '156.2K'),
-          _buildStatRow('Engagement Rate', '87%'),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -616,6 +692,191 @@ class FashionNewsSection {
   static void _publishNews(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('News published successfully!')),
+    );
+  }
+}
+
+class _AddNewsForm extends StatefulWidget {
+  const _AddNewsForm({Key? key}) : super(key: key);
+
+  @override
+  State<_AddNewsForm> createState() => _AddNewsFormState();
+}
+
+class _AddNewsFormState extends State<_AddNewsForm> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+  File? _selectedImage;
+  Uint8List? _webImage; // Untuk web
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _webImage = bytes;
+        });
+      } else {
+        setState(() {
+          _selectedImage = File(picked.path);
+        });
+      }
+    }
+  }
+
+  Future<String?> _uploadImageToFirebase(File imageFile) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('news_pict/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final uploadTask = await storageRef.putFile(imageFile);
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<String?> _uploadWebImageToFirebase(Uint8List imageBytes) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('news_pict/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final uploadTask = await storageRef.putData(imageBytes);
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    final cardPadding = isMobile ? 16.0 : 24.0;
+    final borderRadius = isMobile ? 12.0 : 20.0;
+
+    return Container(
+      padding: EdgeInsets.all(cardPadding),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add Fashion News',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: FashionNewsSection.darkPurple,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _titleController,
+            decoration: InputDecoration(
+              labelText: 'Article Title',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _pickImage,
+            child: kIsWeb
+                ? (_webImage == null
+                    ? Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: FashionNewsSection.primaryLavender,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Center(
+                          child: Text('Tap to upload poster/image'),
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          _webImage!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ))
+                : (_selectedImage == null
+                    ? Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: FashionNewsSection.primaryLavender,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Center(
+                          child: Text('Tap to upload poster/image'),
+                        ),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          _selectedImage!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      )),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _contentController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: 'Content',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                String? imageUrl;
+                if (kIsWeb && _webImage != null) {
+                  imageUrl = await _uploadWebImageToFirebase(_webImage!);
+                } else if (_selectedImage != null) {
+                  imageUrl = await _uploadImageToFirebase(_selectedImage!);
+                }
+                await FirebaseFirestore.instance.collection('fashion_news').add({
+                  'title': _titleController.text,
+                  'content': _contentController.text,
+                  'imageUrl': imageUrl ?? '',
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+                FashionNewsSection._publishNews(context);
+                Navigator.pop(context); // Tutup dialog
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FashionNewsSection.darkPurple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Publish'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

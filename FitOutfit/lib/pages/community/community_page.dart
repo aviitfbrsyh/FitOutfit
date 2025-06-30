@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../home/home_page.dart';
@@ -14,7 +16,7 @@ class CommunityPage extends StatefulWidget {
 }
 
 class _CommunityPageState extends State<CommunityPage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin<CommunityPage> {
   String? _selectedCommunity;
   String _displayName = '';
   final TextEditingController _displayNameController = TextEditingController();
@@ -458,6 +460,43 @@ class _CommunityPageState extends State<CommunityPage>
   }
 
   Widget _buildStatsHeader() {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, userSnapshot) {
+        final user = userSnapshot.data;
+        if (user == null) {
+          return _buildStatsRow(joinedCount: 0);
+        }
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('komunitas').snapshots(),
+          builder: (context, komunitasSnapshot) {
+            if (!komunitasSnapshot.hasData) {
+              return _buildStatsRow(joinedCount: 0);
+            }
+            final komunitasDocs = komunitasSnapshot.data!.docs;
+            return FutureBuilder<List<DocumentSnapshot>>(
+              future: Future.wait(
+                komunitasDocs.map((doc) =>
+                  doc.reference.collection('members').doc(user.uid).get()
+                ),
+              ),
+              builder: (context, memberSnapshot) {
+                if (!memberSnapshot.hasData) {
+                  return _buildStatsRow(joinedCount: 0);
+                }
+                final joinedCount = memberSnapshot.data!
+                    .where((doc) => doc.exists)
+                    .length;
+                return _buildStatsRow(joinedCount: joinedCount);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatsRow({required int joinedCount}) {
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: _getHorizontalPadding(),
@@ -486,15 +525,15 @@ class _CommunityPageState extends State<CommunityPage>
               primaryBlue,
             ),
           ),
-          _buildDivider(),
-          Expanded(
-            child: _buildStatItem(
-              'Joined',
-              '${_joinedCommunities.length}',
-              Icons.check_circle_rounded,
-              accentRed,
-            ),
-          ),
+          // _buildDivider(),
+          // Expanded(
+          //   child: _buildStatItem(
+          //     'Joined',
+          //     '$joinedCount',
+          //     Icons.check_circle_rounded,
+          //     accentRed,
+          //   ),
+          // ),
           _buildDivider(),
           Expanded(
             child: _buildStatItem(
@@ -701,9 +740,21 @@ class _CommunityPageState extends State<CommunityPage>
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        onTap: () {
+        onTap: () async {
           HapticFeedback.lightImpact();
-          if (joined) {
+          final isJoined = await isUserJoined(community['name']);
+          if (isJoined) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CommunityDetailPage(
+                  community: community,
+                  displayName: _displayName,
+                ),
+              ),
+            );
+          } else {
+            await toggleJoinCommunity(community['name']);
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -821,78 +872,54 @@ class _CommunityPageState extends State<CommunityPage>
             ),
           ],
         ),
-        trailing: _buildJoinButton(community),
+        trailing: _buildJoinButton(community, community['name']),
       ),
     );
   }
 
-  Widget _buildJoinButton(Map<String, dynamic> community) {
-    final joined = _joinedCommunities.contains(community['name']);
-
-    if (joined) {
-      return Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: _isSmallScreen() ? 10 : 12,
-          vertical: _isSmallScreen() ? 5 : 6,
-        ),
-        decoration: BoxDecoration(
-          color: primaryBlue,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_rounded,
-              color: Colors.white,
-              size: _isSmallScreen() ? 14 : 16,
+  Widget _buildJoinButton(Map<String, dynamic> community, String komunitasId) {
+    return FutureBuilder<bool>(
+      future: isUserJoined(komunitasId),
+      builder: (context, snapshot) {
+        final isJoined = snapshot.data ?? false;
+        return GestureDetector(
+          onTap: () => toggleJoinCommunity(komunitasId),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: _isSmallScreen() ? 10 : 12,
+              vertical: _isSmallScreen() ? 5 : 6,
             ),
-            const SizedBox(width: 4),
-            Text(
-              'Joined',
-              style: GoogleFonts.poppins(
-                fontSize: _getResponsiveFontSize(10),
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+            decoration: BoxDecoration(
+              color: isJoined ? primaryBlue : community['color'].withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isJoined
+                    ? primaryBlue.withOpacity(0.3)
+                    : community['color'].withOpacity(0.3),
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: () => _joinCommunity(community['name']),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: _isSmallScreen() ? 10 : 12,
-          vertical: _isSmallScreen() ? 5 : 6,
-        ),
-        decoration: BoxDecoration(
-          color: community['color'].withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: community['color'].withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.add_rounded,
-              color: community['color'],
-              size: _isSmallScreen() ? 14 : 16,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isJoined ? Icons.check_rounded : Icons.add_rounded,
+                  color: isJoined ? Colors.white : community['color'],
+                  size: _isSmallScreen() ? 14 : 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isJoined ? 'Joined' : 'Join',
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(10),
+                    fontWeight: FontWeight.w700,
+                    color: isJoined ? Colors.white : community['color'],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            Text(
-              'Join',
-              style: GoogleFonts.poppins(
-                fontSize: _getResponsiveFontSize(10),
-                fontWeight: FontWeight.w700,
-                color: community['color'],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -1013,86 +1040,103 @@ class _CommunityPageState extends State<CommunityPage>
     );
   }
 
+  Future<void> saveAllCommunitiesToFirestore() async {
+    for (final community in _communities) {
+      await FirebaseFirestore.instance.collection('komunitas').add({
+        'name': community['name'],
+        'desc': community['desc'],
+        'color': community['color'].value,
+        'icon': community['icon'].codePoint,
+        'tags': community['tags'],
+        'category': community['category'],
+        'members': community['members'],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Semua komunitas berhasil disimpan ke Firestore!'))
+    );
+  }
+
+  Future<void> toggleJoinCommunity(String komunitasId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final displayName = _displayName.isNotEmpty
+        ? _displayName
+        : (user.displayName?.isNotEmpty == true
+            ? user.displayName
+            : (user.email?.split('@').first ?? 'Anon'));
+
+    final memberRef = FirebaseFirestore.instance
+        .collection('komunitas')
+        .doc(komunitasId)
+        .collection('members')
+        .doc(user.uid);
+
+    final memberDoc = await memberRef.get();
+
+    if (memberDoc.exists) {
+      await memberRef.delete(); // Leave
+      setState(() {
+        _joinedCommunities.remove(komunitasId);
+      });
+    } else {
+      await memberRef.set({
+        'displayName': displayName,
+        'joinedAt': FieldValue.serverTimestamp(),
+      });
+      setState(() {
+        _joinedCommunities.add(komunitasId);
+      });
+    }
+  }
+
+  Future<bool> isUserJoined(String komunitasId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    final doc = await FirebaseFirestore.instance
+        .collection('komunitas')
+        .doc(komunitasId)
+        .collection('members')
+        .doc(user.uid)
+        .get();
+    return doc.exists;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: softCream,
       appBar: AppBar(
-        backgroundColor: primaryBlue,
+        backgroundColor: Colors.white,
         elevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          child: Material(
-            color: Colors.white.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                  (route) => false,
-                );
-              },
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.black87,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
+        iconTheme: const IconThemeData(color: primaryBlue),
         title: Text(
           'Community',
           style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w800,
-            fontSize: _getResponsiveFontSize(20),
-            color: Colors.white,
+            color: primaryBlue,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
           ),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.all(8),
-            child: Material(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: _setDisplayName,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    _displayName.isEmpty
-                        ? Icons.person_add_rounded
-                        : Icons.person_rounded,
-                    color: Colors.black87,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        centerTitle: true,
+        
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
-                _buildSearchSection(),
-                _buildStatsHeader(),
-                const SizedBox(height: 16),
-                _buildCategoryChips(),
-                const SizedBox(height: 16),
-                _buildCommunityList(),
-                const SizedBox(height: 100), // Space for bottom nav
-              ],
-            ),
-          ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            _buildSearchSection(),
+            const SizedBox(height: 16),
+            _buildStatsHeader(),
+            const SizedBox(height: 16),
+            _buildCategoryChips(),
+            const SizedBox(height: 16),
+            _buildCommunityList(),
+            const SizedBox(height: 24),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),

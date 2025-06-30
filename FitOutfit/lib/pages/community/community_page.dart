@@ -9,7 +9,7 @@ import '../home/home_page.dart';
 import 'community_detail_page.dart';
 
 class CommunityPage extends StatefulWidget {
-  const CommunityPage({Key? key}) : super(key: key);
+  const CommunityPage({super.key});
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -23,7 +23,6 @@ class _CommunityPageState extends State<CommunityPage>
   final TextEditingController _searchController = TextEditingController();
 
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   final List<Map<String, dynamic>> _communities = [
     {
@@ -163,7 +162,6 @@ class _CommunityPageState extends State<CommunityPage>
     },
   ];
 
-  final Map<String, List<Map<String, dynamic>>> _posts = {};
   final Set<String> _joinedCommunities = {};
   String _searchQuery = '';
   String _selectedCategory = 'All';
@@ -172,7 +170,6 @@ class _CommunityPageState extends State<CommunityPage>
   // Consistent colors
   static const Color primaryBlue = Color(0xFF4A90E2);
   static const Color accentYellow = Color(0xFFF5A623);
-  static const Color accentRed = Color(0xFFD0021B);
   static const Color darkGray = Color(0xFF2C3E50);
   static const Color mediumGray = Color(0xFF6B7280);
   static const Color lightGray = Color(0xFFF8F9FA);
@@ -190,9 +187,6 @@ class _CommunityPageState extends State<CommunityPage>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
   }
@@ -222,46 +216,6 @@ class _CommunityPageState extends State<CommunityPage>
     return 20.0;
   }
 
-  void _joinCommunity(String community) {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _joinedCommunities.add(community);
-      _selectedCommunity = community;
-      _posts.putIfAbsent(community, () => []);
-    });
-
-    // Navigate to community detail page
-    final communityData = _communities.firstWhere(
-      (c) => c['name'] == community,
-    );
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => CommunityDetailPage(
-              community: communityData,
-              displayName: _displayName,
-            ),
-      ),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Successfully joined $community!',
-          style: GoogleFonts.poppins(
-            fontSize: _getResponsiveFontSize(14),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: primaryBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.all(_getHorizontalPadding()),
-      ),
-    );
-  }
-
   void _setDisplayName() async {
     HapticFeedback.lightImpact();
     await showDialog(
@@ -277,7 +231,7 @@ class _CommunityPageState extends State<CommunityPage>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.1),
+                    color: primaryBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -317,7 +271,7 @@ class _CommunityPageState extends State<CommunityPage>
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: mediumGray.withOpacity(0.3),
+                        color: mediumGray.withValues(alpha: 0.3),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -351,7 +305,7 @@ class _CommunityPageState extends State<CommunityPage>
                     _displayName = _displayNameController.text.trim();
                   });
                   Navigator.pop(context);
-                  if (_displayName.isNotEmpty) {
+                  if (_displayName.isNotEmpty && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -422,7 +376,7 @@ class _CommunityPageState extends State<CommunityPage>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: primaryBlue.withOpacity(0.08),
+                  color: primaryBlue.withValues(alpha: 0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -463,40 +417,12 @@ class _CommunityPageState extends State<CommunityPage>
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, userSnapshot) {
-        final user = userSnapshot.data;
-        if (user == null) {
-          return _buildStatsRow(joinedCount: 0);
-        }
-        return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('komunitas').snapshots(),
-          builder: (context, komunitasSnapshot) {
-            if (!komunitasSnapshot.hasData) {
-              return _buildStatsRow(joinedCount: 0);
-            }
-            final komunitasDocs = komunitasSnapshot.data!.docs;
-            return FutureBuilder<List<DocumentSnapshot>>(
-              future: Future.wait(
-                komunitasDocs.map((doc) =>
-                  doc.reference.collection('members').doc(user.uid).get()
-                ),
-              ),
-              builder: (context, memberSnapshot) {
-                if (!memberSnapshot.hasData) {
-                  return _buildStatsRow(joinedCount: 0);
-                }
-                final joinedCount = memberSnapshot.data!
-                    .where((doc) => doc.exists)
-                    .length;
-                return _buildStatsRow(joinedCount: joinedCount);
-              },
-            );
-          },
-        );
+        return _buildStatsRow();
       },
     );
   }
 
-  Widget _buildStatsRow({required int joinedCount}) {
+  Widget _buildStatsRow() {
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: _getHorizontalPadding(),
@@ -508,12 +434,12 @@ class _CommunityPageState extends State<CommunityPage>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            primaryBlue.withOpacity(0.1),
-            accentYellow.withOpacity(0.05),
+            primaryBlue.withValues(alpha: 0.1),
+            accentYellow.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryBlue.withOpacity(0.1)),
+        border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -525,15 +451,6 @@ class _CommunityPageState extends State<CommunityPage>
               primaryBlue,
             ),
           ),
-          // _buildDivider(),
-          // Expanded(
-          //   child: _buildStatItem(
-          //     'Joined',
-          //     '$joinedCount',
-          //     Icons.check_circle_rounded,
-          //     accentRed,
-          //   ),
-          // ),
           _buildDivider(),
           Expanded(
             child: _buildStatItem(
@@ -559,7 +476,7 @@ class _CommunityPageState extends State<CommunityPage>
         Container(
           padding: EdgeInsets.all(_isSmallScreen() ? 8 : 10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: color, size: _isSmallScreen() ? 20 : 22),
@@ -590,7 +507,7 @@ class _CommunityPageState extends State<CommunityPage>
       height: _isSmallScreen() ? 50 : 55,
       width: 1,
       margin: EdgeInsets.symmetric(horizontal: _isSmallScreen() ? 12 : 16),
-      color: mediumGray.withOpacity(0.2),
+      color: mediumGray.withValues(alpha: 0.2),
     );
   }
 
@@ -644,7 +561,7 @@ class _CommunityPageState extends State<CommunityPage>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? primaryBlue : primaryBlue.withOpacity(0.3),
+                  color: isSelected ? primaryBlue : primaryBlue.withValues(alpha: 0.3),
                 ),
               ),
               onSelected: (selected) {
@@ -685,7 +602,7 @@ class _CommunityPageState extends State<CommunityPage>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: primaryBlue.withOpacity(0.1),
+                  color: primaryBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -723,17 +640,17 @@ class _CommunityPageState extends State<CommunityPage>
         boxShadow: [
           BoxShadow(
             color: isSelected
-                ? community['color'].withOpacity(0.15)
-                : primaryBlue.withOpacity(0.05),
+                ? community['color'].withValues(alpha: 0.15)
+                : primaryBlue.withValues(alpha: 0.05),
             blurRadius: isSelected ? 12 : 8,
             offset: const Offset(0, 4),
           ),
         ],
         border: Border.all(
           color: isSelected
-              ? community['color'].withOpacity(0.3)
+              ? community['color'].withValues(alpha: 0.3)
               : joined
-              ? primaryBlue.withOpacity(0.2)
+              ? primaryBlue.withValues(alpha: 0.2)
               : Colors.transparent,
           width: isSelected ? 2 : 1,
         ),
@@ -743,27 +660,31 @@ class _CommunityPageState extends State<CommunityPage>
         onTap: () async {
           HapticFeedback.lightImpact();
           final isJoined = await isUserJoined(community['name']);
-          if (isJoined) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CommunityDetailPage(
-                  community: community,
-                  displayName: _displayName,
+          if (mounted) {
+            if (isJoined) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CommunityDetailPage(
+                    community: community,
+                    displayName: _displayName,
+                  ),
                 ),
-              ),
-            );
-          } else {
-            await toggleJoinCommunity(community['name']);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CommunityDetailPage(
-                  community: community,
-                  displayName: _displayName,
-                ),
-              ),
-            );
+              );
+            } else {
+              await toggleJoinCommunity(community['name']);
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CommunityDetailPage(
+                      community: community,
+                      displayName: _displayName,
+                    ),
+                  ),
+                );
+              }
+            }
           }
         },
         leading: Container(
@@ -773,7 +694,7 @@ class _CommunityPageState extends State<CommunityPage>
             gradient: LinearGradient(
               colors: [
                 community['color'],
-                community['color'].withOpacity(0.8),
+                community['color'].withValues(alpha: 0.8),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
@@ -799,7 +720,7 @@ class _CommunityPageState extends State<CommunityPage>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: community['color'].withOpacity(0.1),
+                color: community['color'].withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -849,10 +770,10 @@ class _CommunityPageState extends State<CommunityPage>
                         .map((tag) => Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: community['color'].withOpacity(0.08),
+                                color: community['color'].withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: community['color'].withOpacity(0.2),
+                                  color: community['color'].withValues(alpha: 0.2),
                                   width: 0.5,
                                 ),
                               ),
@@ -890,12 +811,12 @@ class _CommunityPageState extends State<CommunityPage>
               vertical: _isSmallScreen() ? 5 : 6,
             ),
             decoration: BoxDecoration(
-              color: isJoined ? primaryBlue : community['color'].withOpacity(0.1),
+              color: isJoined ? primaryBlue : community['color'].withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isJoined
-                    ? primaryBlue.withOpacity(0.3)
-                    : community['color'].withOpacity(0.3),
+                    ? primaryBlue.withValues(alpha: 0.3)
+                    : community['color'].withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -932,7 +853,7 @@ class _CommunityPageState extends State<CommunityPage>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: mediumGray.withOpacity(0.1),
+              color: mediumGray.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Icon(Icons.search_off_rounded, size: 48, color: mediumGray),
@@ -966,7 +887,7 @@ class _CommunityPageState extends State<CommunityPage>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -8),
           ),
@@ -1053,9 +974,11 @@ class _CommunityPageState extends State<CommunityPage>
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Semua komunitas berhasil disimpan ke Firestore!'))
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Semua komunitas berhasil disimpan ke Firestore!'))
+      );
+    }
   }
 
   Future<void> toggleJoinCommunity(String komunitasId) async {
@@ -1078,17 +1001,21 @@ class _CommunityPageState extends State<CommunityPage>
 
     if (memberDoc.exists) {
       await memberRef.delete(); // Leave
-      setState(() {
-        _joinedCommunities.remove(komunitasId);
-      });
+      if (mounted) {
+        setState(() {
+          _joinedCommunities.remove(komunitasId);
+        });
+      }
     } else {
       await memberRef.set({
         'displayName': displayName,
         'joinedAt': FieldValue.serverTimestamp(),
       });
-      setState(() {
-        _joinedCommunities.add(komunitasId);
-      });
+      if (mounted) {
+        setState(() {
+          _joinedCommunities.add(komunitasId);
+        });
+      }
     }
   }
 
@@ -1121,7 +1048,13 @@ class _CommunityPageState extends State<CommunityPage>
           ),
         ),
         centerTitle: true,
-        
+        actions: [
+          IconButton(
+            icon: Icon(Icons.person_add_rounded, color: primaryBlue),
+            onPressed: _setDisplayName,
+            tooltip: 'Set Display Name',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

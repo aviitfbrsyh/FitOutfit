@@ -5,6 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CommunityDetailPage extends StatefulWidget {
   final Map<String, dynamic> community;
@@ -120,22 +123,37 @@ class _CommunityDetailPageState extends State<CommunityDetailPage>
     }
   }
 
-  void _createPost() {
+  Future<void> _createPost() async {
     if (_postController.text.trim().isEmpty) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    final newPost = {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'author': widget.displayName.isNotEmpty ? widget.displayName : 'You',
+    final komunitasId = widget.community['id'] ?? widget.community['name'];
+    final displayName = widget.displayName.isNotEmpty
+        ? widget.displayName
+        : (user.displayName?.isNotEmpty == true
+            ? user.displayName
+            : (user.email?.split('@').first ?? 'Anon'));
+
+    String? imageUrl;
+    if (_selectedImage != null || _webImage != null) {
+      imageUrl = await _uploadImageToStorage(komunitasId);
+    }
+
+    await FirebaseFirestore.instance
+        .collection('komunitas')
+        .doc(komunitasId)
+        .collection('posts')
+        .add({
+      'authorId': user.uid,
+      'authorName': displayName,
       'content': _postController.text.trim(),
-      'image': _selectedImage?.path,
-      'webImage': _webImage,
+      'imageUrl': imageUrl ?? '',
+      'createdAt': FieldValue.serverTimestamp(),
       'likes': 0,
-      'timestamp': DateTime.now(),
-      'isOwner': true,
-    };
+    });
 
     setState(() {
-      _posts.insert(0, newPost);
       _postController.clear();
       _selectedImage = null;
       _webImage = null;
@@ -470,46 +488,99 @@ class _CommunityDetailPageState extends State<CommunityDetailPage>
   }
 
   Widget _buildFYPFeed() {
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: _posts.length,
-      itemBuilder: (context, index) => _buildPostCard(_posts[index]),
+    final komunitasId = widget.community['id'] ?? widget.community['name'];
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('komunitas')
+          .doc(komunitasId)
+          .collection('posts')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text('No posts yet', style: GoogleFonts.poppins()),
+          );
+        }
+        final posts = snapshot.data!.docs;
+        return ListView.builder(
+          padding: EdgeInsets.all(16),
+          itemCount: posts.length,
+          itemBuilder: (context, index) {
+            final data = posts[index].data() as Map<String, dynamic>;
+            final postId = posts[index].id;
+            return _buildFirestorePostCard(data, postId);
+          },
+        );
+      },
     );
   }
 
-  Widget _buildMyPosts() {
-    final myPosts = _posts.where((post) => post['isOwner'] == true).toList();
-
-    if (myPosts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.post_add_rounded, size: 64, color: mediumGray),
-            SizedBox(height: 16),
-            Text(
-              'No posts yet',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: darkGray,
+Widget _buildMyPosts() {
+  return StreamBuilder<User?>(
+    stream: FirebaseAuth.instance.authStateChanges(),
+    builder: (context, userSnapshot) {
+      if (userSnapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator());
+      }
+      final user = userSnapshot.data;
+      if (user == null) {
+        return Center(child: Text('Not logged in', style: GoogleFonts.poppins()));
+      }
+      final komunitasId = widget.community['id'] ?? widget.community['name'];
+      return StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('komunitas')
+            .doc(komunitasId)
+            .collection('posts')
+            .where('authorId', isEqualTo: user.uid)
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.post_add_rounded, size: 64, color: mediumGray),
+                  SizedBox(height: 16),
+                  Text(
+                    'No posts yet',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: darkGray,
+                    ),
+                  ),
+                  Text(
+                    'Create your first post to get started!',
+                    style: GoogleFonts.poppins(fontSize: 14, color: mediumGray),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              'Create your first post to get started!',
-              style: GoogleFonts.poppins(fontSize: 14, color: mediumGray),
-            ),
-          ],
-        ),
+            );
+          }
+          final posts = snapshot.data!.docs;
+          return ListView.builder(
+            padding: EdgeInsets.all(16),
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final data = posts[index].data() as Map<String, dynamic>;
+              final postId = posts[index].id;
+              return _buildFirestorePostCard(data, postId);
+            },
+          );
+        },
       );
-    }
-
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: myPosts.length,
-      itemBuilder: (context, index) => _buildPostCard(myPosts[index]),
-    );
-  }
+    },
+  );
+}
 
   Widget _buildPostCard(Map<String, dynamic> post) {
     final isLiked = _likedPosts.contains(post['id']);
@@ -766,6 +837,128 @@ class _CommunityDetailPageState extends State<CommunityDetailPage>
     );
   }
 
+  Widget _buildFirestorePostCard(Map<String, dynamic> post, String postId) {
+  final isOwner = FirebaseAuth.instance.currentUser?.uid == post['authorId'];
+  final imageUrl = post['imageUrl'] ?? '';
+  return Container(
+    margin: EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: primaryBlue.withOpacity(0.08),
+          blurRadius: 15,
+          offset: Offset(0, 6),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: widget.community['color'],
+                child: Text(
+                  (post['authorName'] ?? 'U')[0].toUpperCase(),
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      post['authorName'] ?? '',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: darkGray,
+                      ),
+                    ),
+                    Text(
+                      post['createdAt'] != null && post['createdAt'] is Timestamp
+                          ? _formatTimestamp((post['createdAt'] as Timestamp).toDate())
+                          : '',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: mediumGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isOwner)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'delete') _deleteFirestorePost(postId);
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_rounded, color: accentRed, size: 20),
+                          SizedBox(width: 8),
+                          Text('Delete'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+        // Content
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            post['content'] ?? '',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: darkGray,
+              height: 1.5,
+            ),
+          ),
+        ),
+        // Image
+        if (imageUrl.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => Dialog(
+                    child: Image.network(imageUrl, fit: BoxFit.cover),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
   Widget _buildCreatePostFAB() {
     return FloatingActionButton.extended(
       onPressed: () {
@@ -946,4 +1139,47 @@ class _CommunityDetailPageState extends State<CommunityDetailPage>
       return 'Just now';
     }
   }
+
+  Future<String?> _uploadImageToStorage(String komunitasId) async {
+  if (_selectedImage == null && _webImage == null) return null;
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return null;
+
+  final fileName = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+  final ref = FirebaseStorage.instance
+      .ref()
+      .child('komunitas')
+      .child(komunitasId)
+      .child('posts')
+      .child(fileName);
+
+  UploadTask uploadTask;
+  if (kIsWeb && _webImage != null) {
+    uploadTask = ref.putData(_webImage!);
+  } else if (_selectedImage != null) {
+    uploadTask = ref.putFile(_selectedImage!);
+  } else {
+    return null;
+  }
+
+  final snapshot = await uploadTask.whenComplete(() {});
+  return await snapshot.ref.getDownloadURL();
+}
+
+Future<void> _deleteFirestorePost(String postId) async {
+  final komunitasId = widget.community['id'] ?? widget.community['name'];
+  await FirebaseFirestore.instance
+      .collection('komunitas')
+      .doc(komunitasId)
+      .collection('posts')
+      .doc(postId)
+      .delete();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Post deleted successfully!'),
+      backgroundColor: accentRed,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+} 
 }

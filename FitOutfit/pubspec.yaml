@@ -54,7 +54,7 @@ dependencies:
     # ✅ TAMBAHAN UNTUK AI STYLE QUIZ
   shared_preferences: ^2.2.2  # Untuk save user data & quiz results
   flutter_staggered_animations: ^1.1.1  # Untuk animasi yang smooth
-
+  flutter_cache_manager: ^3.3.1  # ✅ TAMBAH INI
   
 dev_dependencies:
   flutter_test:

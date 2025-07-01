@@ -757,7 +757,7 @@ void _showCategoriesBottomSheet() {
                 final itemCount = category == 'All'
                     ? _wardrobeItems.length
                     : _wardrobeItems
-                        .where((item) => item['category'] == category)
+                        .where((item) => item.category == category)
                         .length;
 
                 return Container(
@@ -860,9 +860,7 @@ void _showFilterBottomSheet() {
   // COLLECT ALL UNIQUE TAGS FROM WARDROBE ITEMS
   Set<String> allTags = {};
   for (var item in _wardrobeItems) {
-    if (item['tags'] != null) {
-      allTags.addAll((item['tags'] as List<dynamic>).cast<String>());
-    }
+    allTags.addAll(item.tags);
   }
   
   List<String> sortedTags = allTags.toList()..sort();
@@ -1070,7 +1068,7 @@ void _showFilterBottomSheet() {
                         children: sortedTags.map((tag) {
                           final isSelected = _selectedTags.contains(tag);
                           final itemCount = _wardrobeItems.where((item) => 
-                            (item['tags'] as List).contains(tag)
+                            item.tags.contains(tag)
                           ).length;
                           
                           return Material(
@@ -1268,45 +1266,31 @@ int _getFilteredItemsCount() {
   if (_selectedTags.isEmpty) return _wardrobeItems.length;
   
   return _wardrobeItems.where((item) {
-    final itemTags = (item['tags'] as List<dynamic>).cast<String>();
-    return _selectedTags.every((selectedTag) => itemTags.contains(selectedTag));
+    return _selectedTags.every((selectedTag) => item.tags.contains(selectedTag));
   }).length;
 }
 
 Widget _buildEnhancedWardrobeGrid() {
-  List<Map<String, dynamic>> filteredItems = _wardrobeItems;
+  List<WardrobeItem> filteredItems = _wardrobeItems;
 
   // Filter by category
   if (_selectedCategory != 'All') {
     filteredItems = filteredItems
-        .where((item) => item['category'] == _selectedCategory)
+        .where((item) => item.category == _selectedCategory)
         .toList();
   }
 
   // Filter by selected tags
   if (_selectedTags.isNotEmpty) {
     filteredItems = filteredItems.where((item) {
-      final itemTags = (item['tags'] as List<dynamic>).cast<String>();
-      return _selectedTags.every((selectedTag) => itemTags.contains(selectedTag));
+      return _selectedTags.every((selectedTag) => item.tags.contains(selectedTag));
     }).toList();
   }
 
   // Filter by search query
   if (_searchQuery.isNotEmpty) {
     filteredItems = filteredItems.where((item) {
-      final name = item['name'].toString().toLowerCase();
-      final brand = (item['brand'] ?? '').toString().toLowerCase();
-      final category = item['category'].toString().toLowerCase();
-      final color = item['color'].toString().toLowerCase();
-      final description = item['description'].toString().toLowerCase();
-      final tags = (item['tags'] as List).join(' ').toLowerCase();
-
-      return name.contains(_searchQuery) ||
-          brand.contains(_searchQuery) ||
-          category.contains(_searchQuery) ||
-          color.contains(_searchQuery) ||
-          description.contains(_searchQuery) ||
-          tags.contains(_searchQuery);
+      return item.matchesSearch(_searchQuery);
     }).toList();
   }
 
@@ -1349,7 +1333,7 @@ Widget _buildEnhancedWardrobeGrid() {
           Expanded(
             child: _buildCompactStatCard(
               'Favorites',
-              '${_wardrobeItems.where((item) => item['favorite'] == true).length}',
+              '${_wardrobeItems.where((item) => item.favorite).length}',
               Icons.favorite_rounded,
               accentRed,
             ),
@@ -1472,7 +1456,7 @@ Widget _buildEnhancedWardrobeGrid() {
                     category == 'All'
                         ? _wardrobeItems.length
                         : _wardrobeItems
-                            .where((item) => item['category'] == category)
+                            .where((item) => item.category == category)
                             .length;
 
                 return Container(
@@ -1563,8 +1547,8 @@ Widget _buildEnhancedWardrobeGrid() {
     );
   }
 
-// Update _buildEnhancedWardrobeItem dengan better error handling:
-Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
+// Update _buildEnhancedWardrobeItem method to work with WardrobeItem:
+Widget _buildEnhancedWardrobeItem(WardrobeItem item) {
   return Container(
     decoration: BoxDecoration(
       color: pureWhite,
@@ -1650,11 +1634,11 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                               ],
                             ),
                             child: Icon(
-                              item['favorite']
+                              item.favorite
                                   ? Icons.favorite_rounded
                                   : Icons.favorite_border_rounded,
                               size: 14,
-                              color: item['favorite'] ? accentRed : mediumGray,
+                              color: item.favorite ? accentRed : mediumGray,
                             ),
                           ),
                         ),
@@ -1670,7 +1654,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getColorFromName(item['color']),
+                          color: _getColorFromName(item.color),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: pureWhite, width: 2),
                           boxShadow: [
@@ -1682,12 +1666,12 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                           ],
                         ),
                         child: Text(
-                          item['color'],
+                          item.color,
                           style: GoogleFonts.poppins(
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
                             color: _getTextColorForBackground(
-                              _getColorFromName(item['color']),
+                              _getColorFromName(item.color),
                             ),
                           ),
                         ),
@@ -1706,7 +1690,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['name'],
+                      item.name,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -1718,16 +1702,8 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    if (item['brand'] != null &&
-                        item['brand'].toString().isNotEmpty)
-                      Text(
-                        item['brand'],
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: mediumGray,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    // Remove brand section since WardrobeItem doesn't have brand field
+                    // Remove brand section since WardrobeItem doesn't have brand field
                     const Spacer(),
                     Row(
                       children: [
@@ -1746,7 +1722,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            item['category'],
+                            item.category,
                             style: GoogleFonts.poppins(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -1764,7 +1740,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              item['lastWorn'],
+                              item.formattedLastWorn,
                               style: GoogleFonts.poppins(
                                 fontSize: 8,
                                 color: mediumGray,
@@ -1786,17 +1762,15 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
   );
 }
 
-// Replace _buildItemImage method completely
-Widget _buildItemImage(Map<String, dynamic> item) {
-  final imageUrl = item['image'];
+// Update _buildItemImage method to work with WardrobeItem:
+Widget _buildItemImage(WardrobeItem item) {
+  final imageUrl = item.imageUrl;
   
-  print('🔍 DEBUG: Building image for item ${item['name']}');
+  print('🔍 DEBUG: Building image for item ${item.name}');
   print('🔍 DEBUG: Image URL: $imageUrl');
   print('🔍 DEBUG: Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}');
   
-  if (imageUrl != null && 
-      imageUrl.toString().trim().isNotEmpty && 
-      imageUrl.toString() != 'null') {
+  if (item.hasImage) {
     
     print('✅ DEBUG: Loading image: $imageUrl');
     
@@ -1807,7 +1781,7 @@ Widget _buildItemImage(Map<String, dynamic> item) {
       ),
       child: kIsWeb 
           ? Image.network(  
-              imageUrl.toString().trim(),
+              imageUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
@@ -1819,30 +1793,30 @@ Widget _buildItemImage(Map<String, dynamic> item) {
                 return _buildLoadingPlaceholder(loadingProgress);
               },
               errorBuilder: (context, error, stackTrace) {
-                print('❌ WEB Image error for ${item['name']}: $error');
+                print('❌ WEB Image error for ${item.name}: $error');
                 print('❌ Stack trace: $stackTrace');
                 print('❌ Failed URL: $imageUrl');
                 // Return fallback icon instead of success placeholder
-                return _buildFallbackIcon(item['category']);
+                return _buildFallbackIcon(item.category);
               },
             )
           : CachedNetworkImage(  
-              imageUrl: imageUrl.toString().trim(),
+              imageUrl: imageUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
               placeholder: (context, url) => _buildLoadingPlaceholder(null),
               errorWidget: (context, url, error) {
-                print('❌ Mobile image error for ${item['name']}: $error');
+                print('❌ Mobile image error for ${item.name}: $error');
                 print('❌ Failed URL: $url');
                 // Return fallback icon instead of success placeholder
-                return _buildFallbackIcon(item['category']);
+                return _buildFallbackIcon(item.category);
               },
             ),
     );
   } else {
-    print('⚠️ No valid image URL for item: ${item['name']}');
-    return _buildFallbackIcon(item['category']);
+    print('⚠️ No valid image URL for item: ${item.name}');
+    return _buildFallbackIcon(item.category);
   }
 }
 
@@ -2601,11 +2575,7 @@ Future<void> _generateAIRecommendations() async {
   }
 
   // ✅ FILTER ITEMS YANG PUNYA GAMBAR VALID
-  final itemsWithImages = _wardrobeItems.where((item) => 
-    item['image'] != null && 
-    item['image'].toString().trim().isNotEmpty && 
-    item['image'].toString() != 'null'
-  ).toList();
+  final itemsWithImages = _wardrobeItems.where((item) => item.hasImage).toList();
 
   if (itemsWithImages.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -2701,10 +2671,8 @@ Future<void> _generateAIRecommendations() async {
   );
 
   try {
-    // ✅ CONVERT WARDROBE ITEMS TO WARDROBEITEM MODEL
-    final wardrobeItems = itemsWithImages
-        .map((item) => WardrobeItem.fromMap(item))
-        .toList();
+    // ✅ itemsWithImages IS ALREADY List<WardrobeItem>
+    final wardrobeItems = itemsWithImages;
 
     print('🤖 Sending ${wardrobeItems.length} items to AI:');
     for (var item in wardrobeItems) {
@@ -2899,7 +2867,7 @@ Future<void> _addNewItem(Map<String, dynamic> newItem) async {
     );
   }
 
-  void _showItemDetails(Map<String, dynamic> item) {
+  void _showItemDetails(WardrobeItem item) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -3818,7 +3786,7 @@ void _saveItem() async {
 }
 
 class _ItemDetailsBottomSheet extends StatelessWidget {
-  final Map<String, dynamic> item;
+  final WardrobeItem item;
 
   const _ItemDetailsBottomSheet({required this.item});
 
@@ -3864,7 +3832,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          item['name'] ?? '',
+                          item.name,
                           style: GoogleFonts.poppins(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -3879,26 +3847,15 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          item['favorite'] == true
+                          item.favorite
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          color: item['favorite'] == true ? accentRed : mediumGray,
+                          color: item.favorite ? accentRed : mediumGray,
                         ),
                       ),
                     ],
                   ),
-                  if (item['brand'] != null &&
-                      item['brand'].toString().isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      item['brand'],
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: mediumGray,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  // Remove brand section since WardrobeItem doesn't have brand
                   const SizedBox(height: 24),
                   // Image or placeholder
                   Container(
@@ -3914,11 +3871,11 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
-                      child: (item['image'] != null && (item['image'] as String).isNotEmpty)
+                      child: item.hasImage
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(16),
                               child: Image.network(
-                                item['image'],
+                                item.imageUrl!,
                                 width: 160,
                                 height: 160,
                                 fit: BoxFit.cover,
@@ -3938,11 +3895,10 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   // Details section
-                  _buildDetailRow('Category', item['category']),
-                  _buildDetailRow('Color', item['color']),
-                  if (item['brand'] != null && item['brand'].toString().isNotEmpty)
-                    _buildDetailRow('Brand', item['brand']),
-                  _buildDetailRow('Last Worn', item['lastWorn']),
+                  _buildDetailRow('Category', item.category),
+                  _buildDetailRow('Color', item.color),
+                  // Remove brand section since WardrobeItem doesn't have brand
+                  _buildDetailRow('Last Worn', item.formattedLastWorn),
                   
                   const SizedBox(height: 20),
                   // Description
@@ -3956,7 +3912,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    item['description'] ?? 'No description available',
+                    item.description.isNotEmpty ? item.description : 'No description available',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: mediumGray,
@@ -3966,7 +3922,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                   
                   const SizedBox(height: 20),
                   // Tags
-                  if (item['tags'] != null && (item['tags'] as List).isNotEmpty) ...[
+                  if (item.tags.isNotEmpty) ...[
                     Text(
                       'Tags',
                       style: GoogleFonts.poppins(
@@ -3979,7 +3935,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: (item['tags'] as List)
+                      children: item.tags
                           .map<Widget>(
                             (tag) => Container(
                               padding: const EdgeInsets.symmetric(
@@ -3995,7 +3951,7 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                tag.toString(),
+                                tag,
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color: primaryBlue,

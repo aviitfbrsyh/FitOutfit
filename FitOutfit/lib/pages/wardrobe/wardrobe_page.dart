@@ -9,7 +9,8 @@ import '../../services/gpt_vision_service.dart';
 import 'outfit_result_page.dart';
 import '../../models/wardrobe_item.dart'; // ✅ PASTIKAN INI ADA
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/firebase_storage_service.dart'; 
+import '../../services/firebase_storage_service.dart';
+import '../../services/wardrobe_service.dart'; // ✅ ADD WARDROBE SERVICE 
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -88,8 +89,10 @@ class _WardrobePageState extends State<WardrobePage>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-// Make _wardrobeItems final but keep the list mutable
-final List<Map<String, dynamic>> _wardrobeItems = [];
+  // ✅ FIRESTORE STATE MANAGEMENT
+  List<WardrobeItem> _wardrobeItems = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -126,6 +129,9 @@ final List<Map<String, dynamic>> _wardrobeItems = [];
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+
+    // ✅ LOAD WARDROBE ITEMS FROM FIRESTORE
+    _loadWardrobeItems();
   }
 
   @override
@@ -135,6 +141,47 @@ final List<Map<String, dynamic>> _wardrobeItems = [];
     _headerController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // ✅ LOAD WARDROBE ITEMS FROM FIRESTORE
+  Future<void> _loadWardrobeItems() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final items = await WardrobeService.getUserWardrobeItems();
+      
+      setState(() {
+        _wardrobeItems = items;
+        _isLoading = false;
+      });
+      
+      print('✅ Loaded ${items.length} wardrobe items from Firestore');
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load wardrobe items: $e';
+      });
+      
+      print('❌ Error loading wardrobe items: $e');
+      
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load wardrobe items. Please try again.'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _loadWardrobeItems,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -1588,7 +1635,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () => _toggleFavorite(item['id']),
+                          onTap: () => _toggleFavorite(item.id),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -2730,33 +2777,67 @@ Future<void> _generateAIRecommendations() async {
   }
 }
 
-// Replace _addNewItem method dengan debugging
-void _addNewItem(Map<String, dynamic> newItem) {
-  print('🎯 DEBUG: Adding new item to wardrobe');
+// ✅ UPDATED _addNewItem METHOD WITH FIRESTORE INTEGRATION
+Future<void> _addNewItem(Map<String, dynamic> newItem) async {
+  print('🎯 DEBUG: Adding new item to Firestore');
   print('🎯 DEBUG: Item data: $newItem');
   print('🎯 DEBUG: Item image URL: ${newItem['image']}');
   
-  final imageUrl = newItem['image']?.toString() ?? '';
-  if (imageUrl.isNotEmpty) {
-    print('🎯 DEBUG: URL length: ${imageUrl.length}');
-    print('🎯 DEBUG: URL starts with: ${imageUrl.substring(0, imageUrl.length > 50 ? 50 : imageUrl.length)}');
-    print('🎯 DEBUG: Contains firebasestorage: ${imageUrl.contains('firebasestorage')}');
-    print('🎯 DEBUG: Contains fitoutfit-f47ae: ${imageUrl.contains('fitoutfit-f47ae')}');
-  }
-  
-  setState(() {
-    final newId = _wardrobeItems.isEmpty 
-        ? '1' 
-        : (int.parse(_wardrobeItems.last['id']) + 1).toString();
-    newItem['id'] = newId;
-    newItem['lastWorn'] = 'Never';
-    newItem['favorite'] = false;
+  try {
+    // Show loading state
+    setState(() {
+      _isLoading = true;
+    });
 
-    _wardrobeItems.add(newItem);
+    // Create WardrobeItem from map data
+    final wardrobeItem = WardrobeItem(
+      id: '', // Will be set by Firestore
+      name: newItem['name'] ?? '',
+      category: newItem['category'] ?? '',
+      color: newItem['color'] ?? '',
+      description: newItem['description'] ?? '',
+      imageUrl: newItem['image']?.toString(),
+      tags: List<String>.from(newItem['tags'] ?? []),
+      userId: '', // Will be set by WardrobeService
+      createdAt: DateTime.now(),
+      favorite: false,
+    );
+
+    // Add to Firestore
+    final docId = await WardrobeService.addWardrobeItem(wardrobeItem);
     
-    print('🎯 DEBUG: Item added successfully. Total items: ${_wardrobeItems.length}');
-    print('🎯 DEBUG: Last item image URL: ${_wardrobeItems.last['image']}');
-  });
+    // Reload items from Firestore to get the updated list
+    await _loadWardrobeItems();
+    
+    print('✅ Item added successfully with ID: $docId');
+    
+    // Show success message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 Item added to your wardrobe!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+    
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });
+    
+    print('❌ Error adding item: $e');
+    
+    // Show error message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add item. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }
 
   void _showAddItemDialog() {
@@ -2769,6 +2850,44 @@ void _addNewItem(Map<String, dynamic> newItem) {
   }
 
   Widget _buildEnhancedWardrobeTab() {
+    // ✅ SHOW LOADING INDICATOR
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading your wardrobe...'),
+          ],
+        ),
+      );
+    }
+
+    // ✅ SHOW ERROR STATE
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red),
+            SizedBox(height: 16),
+            Text(
+              'Failed to load wardrobe',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 8),
+            Text(_errorMessage!),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadWardrobeItems,
+              child: Text('Try Again'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         _buildSearchAndActions(),
@@ -2865,16 +2984,57 @@ void _addNewItem(Map<String, dynamic> newItem) {
         : Colors.white;
   }
 
-  void _toggleFavorite(String itemId) {
-    setState(() {
+  // ✅ UPDATED _toggleFavorite METHOD WITH FIRESTORE INTEGRATION
+  Future<void> _toggleFavorite(String itemId) async {
+    try {
+      // Find the item in the local list
       final itemIndex = _wardrobeItems.indexWhere(
-        (item) => item['id'] == itemId,
+        (item) => item.id == itemId,
       );
-      if (itemIndex != -1) {
-        _wardrobeItems[itemIndex]['favorite'] =
-            !_wardrobeItems[itemIndex]['favorite'];
+      
+      if (itemIndex == -1) {
+        print('❌ Item not found: $itemId');
+        return;
       }
-    });
+
+      final currentItem = _wardrobeItems[itemIndex];
+      final newFavoriteStatus = !currentItem.favorite;
+
+      // Optimistically update the local state first for immediate UI feedback
+      setState(() {
+        _wardrobeItems[itemIndex] = currentItem.copyWith(favorite: newFavoriteStatus);
+      });
+
+      // Update Firestore
+      await WardrobeService.toggleFavorite(itemId, newFavoriteStatus);
+      
+      print('✅ Favorite status updated for item: $itemId');
+
+    } catch (e) {
+      print('❌ Error toggling favorite: $e');
+      
+      // Revert the local state if Firestore update failed
+      final itemIndex = _wardrobeItems.indexWhere(
+        (item) => item.id == itemId,
+      );
+      
+      if (itemIndex != -1) {
+        setState(() {
+          final currentItem = _wardrobeItems[itemIndex];
+          _wardrobeItems[itemIndex] = currentItem.copyWith(favorite: !currentItem.favorite);
+        });
+      }
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite status. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

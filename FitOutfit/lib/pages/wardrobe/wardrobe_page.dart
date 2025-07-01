@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,9 +6,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart'; 
 import '../../services/gpt_vision_service.dart';
 import 'outfit_result_page.dart';
-import '../../models/wardrobe_item.dart'; // ✅ PASTIKAN INI ADA
+import '../../models/wardrobe_item.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/firebase_storage_service.dart'; 
+import 'package:flutter_cache_manager/flutter_cache_manager.dart'; // ✅ TAMBAH INI
+import '../../services/firebase_storage_service.dart';
+import '../../services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -91,42 +93,77 @@ class _WardrobePageState extends State<WardrobePage>
 // Make _wardrobeItems final but keep the list mutable
 final List<Map<String, dynamic>> _wardrobeItems = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _fabController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _headerController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fabController, curve: Curves.elasticOut),
-    );
-    _headerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _headerController, curve: Curves.easeOutQuart),
-    );
+@override
+void initState() {
+  super.initState();
+  _tabController = TabController(length: 2, vsync: this);
+  _fabController = AnimationController(
+    duration: const Duration(milliseconds: 400),
+    vsync: this,
+  );
+  _headerController = AnimationController(
+    duration: const Duration(milliseconds: 600),
+    vsync: this,
+  );
+  _fabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _fabController, curve: Curves.elasticOut),
+  );
+  _headerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    CurvedAnimation(parent: _headerController, curve: Curves.easeOutQuart),
+  );
 
-    _fabController.forward();
-    _headerController.forward();
+  _fabController.forward();
+  _headerController.forward();
 
-    // Add listener to tab controller to rebuild when tab changes
-    _tabController.addListener(() {
-      setState(() {
-        // This will trigger a rebuild and update the FAB visibility
-      });
+  _tabController.addListener(() {
+    setState(() {});
+  });
+
+  _searchController.addListener(() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase();
     });
+  });
 
-    // Add search listener
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
+  // ✅ TAMBAH INI
+  _loadWardrobeData();
+}
+
+
+// ✅ TAMBAH METHOD INI
+Future<void> _loadWardrobeData() async {
+  if (FirebaseAuth.instance.currentUser == null) {
+    print('❌ User not authenticated');
+    setState(() => _isLoading = false);
+    return;
   }
+
+  try {
+    print('🔥 Loading wardrobe data...');
+    final items = await FirestoreService.loadWardrobeItems();
+    
+    setState(() {
+      _wardrobeItems.clear();
+      _wardrobeItems.addAll(items);
+      _isLoading = false;
+    });
+    
+    print('✅ Loaded ${items.length} items');
+  } catch (e) {
+    print('❌ Error loading wardrobe: $e');
+    setState(() => _isLoading = false);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load wardrobe: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
 
   @override
   void dispose() {
@@ -374,7 +411,7 @@ Widget _buildEnhancedSliverAppBar() {
                                                   SizedBox(width: 8),
                                                   Expanded(
                                                     child: Text(
-                                                      'Updated 2025-06-13 19:29',
+                                                      'Updated real-time',
                                                       style: GoogleFonts.poppins(
                                                         fontSize: screenWidth > 400 ? 14 : 12,
                                                         color: pureWhite.withValues(alpha: 0.9),
@@ -1216,6 +1253,9 @@ void _showFilterBottomSheet() {
 // ADD THIS TO CLASS VARIABLES
 final Set<String> _selectedTags = {};
 
+// ✅ TAMBAH INI
+bool _isLoading = true;
+
 // HELPER FUNCTION UNTUK COUNT FILTERED ITEMS
 int _getFilteredItemsCount() {
   if (_selectedTags.isEmpty) return _wardrobeItems.length;
@@ -1285,42 +1325,46 @@ Widget _buildEnhancedWardrobeGrid() {
 
 
 
-  Widget _buildEnhancedStatsCards() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildCompactStatCard(
-              'Items',
-              '${_wardrobeItems.length}',
-              Icons.inventory_rounded,
-              primaryBlue,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildCompactStatCard(
-              'Favorites',
-              '${_wardrobeItems.where((item) => item['favorite'] == true).length}',
-              Icons.favorite_rounded,
-              accentRed,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildCompactStatCard(
-              'Categories',
-              '${_categories.length - 1}',
-              Icons.category_rounded,
-              accentYellow,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+// Replace _buildEnhancedStatsCards method (around line 560-600)
 
+Widget _buildEnhancedStatsCards() {
+  // ✅ SAFE FAVORITE COUNT
+  final favoriteCount = _wardrobeItems.where((item) => item['favorite'] == true).length;
+  
+  return Container(
+    margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: _buildCompactStatCard(
+            'Items',
+            '${_wardrobeItems.length}',
+            Icons.inventory_rounded,
+            primaryBlue,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildCompactStatCard(
+            'Favorites',
+            '$favoriteCount', // ✅ Use safe count
+            Icons.favorite_rounded,
+            accentRed,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildCompactStatCard(
+            'Categories',
+            '${_categories.length - 1}',
+            Icons.category_rounded,
+            accentYellow,
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Widget _buildCompactStatCard(
     String title,
     String value,
@@ -1516,8 +1560,12 @@ Widget _buildEnhancedWardrobeGrid() {
     );
   }
 
-// Update _buildEnhancedWardrobeItem dengan better error handling:
+// Replace _buildEnhancedWardrobeItem method (around line 1040-1140)
+
 Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
+  // ✅ SAFE BOOLEAN HANDLING
+  final bool isFavorite = item['favorite'] == true; // ✅ Handle null safely
+  
   return Container(
     decoration: BoxDecoration(
       color: pureWhite,
@@ -1544,7 +1592,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ IMPROVED IMAGE SECTION
+            // Image section
             Expanded(
               flex: 3,
               child: Container(
@@ -1565,7 +1613,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                 ),
                 child: Stack(
                   children: [
-                    // ✅ MAIN IMAGE/ICON CONTAINER WITH BETTER ERROR HANDLING
+                    // Main image
                     Center(
                       child: Container(
                         width: double.infinity,
@@ -1588,7 +1636,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () => _toggleFavorite(item['id']),
+                          onTap: () => _toggleFavorite(item['id'] ?? ''),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -1603,11 +1651,11 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                               ],
                             ),
                             child: Icon(
-                              item['favorite']
+                              isFavorite // ✅ Use safe boolean
                                   ? Icons.favorite_rounded
                                   : Icons.favorite_border_rounded,
                               size: 14,
-                              color: item['favorite'] ? accentRed : mediumGray,
+                              color: isFavorite ? accentRed : mediumGray,
                             ),
                           ),
                         ),
@@ -1623,7 +1671,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getColorFromName(item['color']),
+                          color: _getColorFromName(item['color'] ?? 'Gray'),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: pureWhite, width: 2),
                           boxShadow: [
@@ -1635,12 +1683,12 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                           ],
                         ),
                         child: Text(
-                          item['color'],
+                          item['color'] ?? 'Gray',
                           style: GoogleFonts.poppins(
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
                             color: _getTextColorForBackground(
-                              _getColorFromName(item['color']),
+                              _getColorFromName(item['color'] ?? 'Gray'),
                             ),
                           ),
                         ),
@@ -1659,7 +1707,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['name'],
+                      item['name'] ?? 'Unnamed Item',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -1699,7 +1747,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            item['category'],
+                            item['category'] ?? 'Other',
                             style: GoogleFonts.poppins(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -1717,7 +1765,7 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              item['lastWorn'],
+                              item['lastWorn'] ?? 'Never',
                               style: GoogleFonts.poppins(
                                 fontSize: 8,
                                 color: mediumGray,
@@ -1739,17 +1787,19 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
   );
 }
 
-// Replace _buildItemImage method completely
+// Replace _buildItemImage method
+
 Widget _buildItemImage(Map<String, dynamic> item) {
   final imageUrl = item['image'];
   
   print('🔍 DEBUG: Building image for item ${item['name']}');
   print('🔍 DEBUG: Image URL: $imageUrl');
-  print('🔍 DEBUG: Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}');
   
+  // ✅ IMPROVED URL VALIDATION
   if (imageUrl != null && 
       imageUrl.toString().trim().isNotEmpty && 
-      imageUrl.toString() != 'null') {
+      imageUrl.toString() != 'null' &&
+      imageUrl.toString().startsWith('http')) {
     
     print('✅ DEBUG: Loading image: $imageUrl');
     
@@ -1758,45 +1808,129 @@ Widget _buildItemImage(Map<String, dynamic> item) {
         topLeft: Radius.circular(24),
         topRight: Radius.circular(24),
       ),
-      child: kIsWeb 
-          ? Image.network(  
-              imageUrl.toString().trim(),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) {
-                  print('✅ WEB Image loaded successfully: $imageUrl');
-                  return child;  // ✅ Return actual image
-                }
-                return _buildLoadingPlaceholder(loadingProgress);
-              },
-              errorBuilder: (context, error, stackTrace) {
-                print('❌ WEB Image error for ${item['name']}: $error');
-                print('❌ Stack trace: $stackTrace');
-                print('❌ Failed URL: $imageUrl');
-                // Return fallback icon instead of success placeholder
-                return _buildFallbackIcon(item['category']);
-              },
-            )
-          : CachedNetworkImage(  
-              imageUrl: imageUrl.toString().trim(),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              placeholder: (context, url) => _buildLoadingPlaceholder(null),
-              errorWidget: (context, url, error) {
-                print('❌ Mobile image error for ${item['name']}: $error');
-                print('❌ Failed URL: $url');
-                // Return fallback icon instead of success placeholder
-                return _buildFallbackIcon(item['category']);
-              },
-            ),
+      child: CachedNetworkImage(  // ✅ Use CachedNetworkImage for both Web and Mobile
+        imageUrl: imageUrl.toString().trim(),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (context, url) => _buildLoadingPlaceholder(null),
+        errorWidget: (context, url, error) {
+          print('❌ CachedNetworkImage error: $error');
+          print('❌ Error URL: $url');
+          
+          // ✅ Try fallback with different approach
+          return _buildImageFallback(imageUrl.toString());
+        },
+        // ✅ Add HTTP headers for CORS
+        httpHeaders: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+        },
+        // ✅ Add cache options
+        cacheManager: DefaultCacheManager(),
+        fadeInDuration: Duration(milliseconds: 300),
+        fadeOutDuration: Duration(milliseconds: 100),
+      ),
     );
   } else {
-    print('⚠️ No valid image URL for item: ${item['name']}');
+    print('⚠️ Invalid image URL for item: ${item['name']}');
+    print('⚠️ URL value: $imageUrl');
     return _buildFallbackIcon(item['category']);
   }
+}
+
+// ✅ ADD FALLBACK IMAGE WIDGET
+Widget _buildImageFallback(String imageUrl) {
+  return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          primaryBlue.withValues(alpha: 0.1),
+          accentYellow.withValues(alpha: 0.05),
+          Colors.white,
+        ],
+      ),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: primaryBlue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: primaryBlue.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.image_not_supported_rounded,
+                size: 32,
+                color: primaryBlue,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Image Load Failed',
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: primaryBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'CORS Error on Web',
+                style: GoogleFonts.poppins(
+                  fontSize: 8,
+                  color: mediumGray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // ✅ ADD RETRY BUTTON
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              // Force refresh the widget
+              if (mounted) {
+                setState(() {});
+              }
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: primaryBlue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: primaryBlue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: primaryBlue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // ✅ ADD SUCCESS PLACEHOLDER FOR WEB IMAGES
@@ -2730,33 +2864,36 @@ Future<void> _generateAIRecommendations() async {
   }
 }
 
-// Replace _addNewItem method dengan debugging
-void _addNewItem(Map<String, dynamic> newItem) {
-  print('🎯 DEBUG: Adding new item to wardrobe');
-  print('🎯 DEBUG: Item data: $newItem');
-  print('🎯 DEBUG: Item image URL: ${newItem['image']}');
-  
-  final imageUrl = newItem['image']?.toString() ?? '';
-  if (imageUrl.isNotEmpty) {
-    print('🎯 DEBUG: URL length: ${imageUrl.length}');
-    print('🎯 DEBUG: URL starts with: ${imageUrl.substring(0, imageUrl.length > 50 ? 50 : imageUrl.length)}');
-    print('🎯 DEBUG: Contains firebasestorage: ${imageUrl.contains('firebasestorage')}');
-    print('🎯 DEBUG: Contains fitoutfit-f47ae: ${imageUrl.contains('fitoutfit-f47ae')}');
-  }
-  
-  setState(() {
-    final newId = _wardrobeItems.isEmpty 
-        ? '1' 
-        : (int.parse(_wardrobeItems.last['id']) + 1).toString();
-    newItem['id'] = newId;
+// ✅ GANTI METHOD INI (ganti yang ada di line 2772-2799)
+Future<void> _addNewItem(Map<String, dynamic> newItem) async {
+  try {
+    print('🔥 Adding new item to Firestore...');
+    
+    // Save to Firestore and get document ID
+    final docId = await FirestoreService.saveWardrobeItem(newItem);
+    
+    // Add to local list with Firestore ID
+    newItem['id'] = docId;
     newItem['lastWorn'] = 'Never';
     newItem['favorite'] = false;
-
-    _wardrobeItems.add(newItem);
     
-    print('🎯 DEBUG: Item added successfully. Total items: ${_wardrobeItems.length}');
-    print('🎯 DEBUG: Last item image URL: ${_wardrobeItems.last['image']}');
-  });
+    setState(() {
+      _wardrobeItems.insert(0, newItem); // Add to beginning
+    });
+    
+    print('✅ Item added successfully with ID: $docId');
+  } catch (e) {
+    print('❌ Error adding item: $e');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save item: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }
 
   void _showAddItemDialog() {
@@ -2768,27 +2905,90 @@ void _addNewItem(Map<String, dynamic> newItem) {
     );
   }
 
-  Widget _buildEnhancedWardrobeTab() {
-    return Column(
+// ...existing code...
+
+Widget _buildEnhancedWardrobeTab() {
+  return Column(
+    children: [
+      _buildSearchAndActions(),
+      _buildEnhancedStatsCards(),
+      _buildEnhancedCategoryFilter(),
+      const SizedBox(height: 16),
+      Expanded(
+        child: _isLoading 
+            ? _buildLoadingState()  // ✅ Use _isLoading here
+            : _buildEnhancedWardrobeGrid()
+      ),
+    ],
+  );
+}
+
+// ✅ Add this loading state widget
+Widget _buildLoadingState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildSearchAndActions(),
-        _buildEnhancedStatsCards(),
-        _buildEnhancedCategoryFilter(),
-        const SizedBox(height: 16),
-        Expanded(child: _buildEnhancedWardrobeGrid()),
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                primaryBlue.withValues(alpha: 0.1),
+                accentYellow.withValues(alpha: 0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor,
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: CircularProgressIndicator(
+            color: primaryBlue,
+            strokeWidth: 3,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Loading your wardrobe...',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: darkGray,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Please wait while we fetch your items',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: mediumGray,
+          ),
+        ),
       ],
-    );
-  }
+    ),
+  );
+}
 
-  void _showItemDetails(Map<String, dynamic> item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ItemDetailsBottomSheet(item: item),
-    );
-  }
+// ...existing code...
 
+// Ganti method _showItemDetails yang ada dengan ini:
+
+void _showItemDetails(Map<String, dynamic> item) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => _ItemDetailsBottomSheet(
+      item: item,
+      onDeleteItem: _deleteItem, // ✅ Pass callback function
+    ),
+  );
+}
   // Helper methods
   IconData _getCategoryIcon(String category) {
     switch (category) {
@@ -2865,20 +3065,198 @@ void _addNewItem(Map<String, dynamic> newItem) {
         : Colors.white;
   }
 
-  void _toggleFavorite(String itemId) {
+// ✅ GANTI METHOD _toggleFavorite YANG ADA (lines 2910-2921)
+Future<void> _toggleFavorite(String itemId) async {
+  try {
+    final itemIndex = _wardrobeItems.indexWhere((item) => item['id'] == itemId);
+    if (itemIndex == -1) return;
+
+    final currentFavorite = _wardrobeItems[itemIndex]['favorite'] ?? false;
+    final newFavorite = !currentFavorite;
+
+    // Update locally first for immediate UI response
     setState(() {
-      final itemIndex = _wardrobeItems.indexWhere(
-        (item) => item['id'] == itemId,
-      );
-      if (itemIndex != -1) {
-        _wardrobeItems[itemIndex]['favorite'] =
-            !_wardrobeItems[itemIndex]['favorite'];
-      }
+      _wardrobeItems[itemIndex]['favorite'] = newFavorite;
     });
+
+    // Update in Firestore
+    await FirestoreService.toggleFavorite(itemId, newFavorite);
+    
+    print('✅ Favorite toggled successfully');
+  } catch (e) {
+    print('❌ Error toggling favorite: $e');
+    
+    // Revert local change if Firestore update fails
+    final itemIndex = _wardrobeItems.indexWhere((item) => item['id'] == itemId);
+    if (itemIndex != -1) {
+      setState(() {
+        _wardrobeItems[itemIndex]['favorite'] = !_wardrobeItems[itemIndex]['favorite'];
+      });
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update favorite: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 
+// ...existing code...
 
+// ✅ PERBAIKI METHOD _deleteItem
+Future<void> _deleteItem(String itemId, String itemName) async {
+  print('🗑️ Attempting to delete item: $itemId ($itemName)');
+  
+print('🔍 DEBUG: Current wardrobe items count: ${_wardrobeItems.length}');
+print('🔍 DEBUG: Looking for item with ID: $itemId');
+print('🔍 DEBUG: All item IDs: ${_wardrobeItems.map((e) => e['id']).toList()}');
+  // Show confirmation dialog
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(Icons.warning_rounded, color: accentRed, size: 24),
+          const SizedBox(width: 12),
+          Text(
+            'Delete Item?',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w700,
+              color: darkGray,
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        'Are you sure you want to permanently delete "$itemName" from your wardrobe?',
+        style: GoogleFonts.poppins(color: mediumGray),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(
+            'Cancel',
+            style: GoogleFonts.poppins(
+              color: mediumGray,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: accentRed,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            'Delete',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    try {
+      print('🗑️ User confirmed deletion');
+      
+      // Show loading snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text('Deleting "$itemName"...'),
+            ],
+          ),
+          backgroundColor: primaryBlue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Delete from Firestore
+      await FirestoreService.deleteWardrobeItem(itemId);
+      print('✅ Successfully deleted from Firestore');
+      
+      // Remove from local list
+      setState(() {
+        _wardrobeItems.removeWhere((item) => item['id'] == itemId);
+      });
+      print('✅ Successfully removed from local list');
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('✅ "$itemName" deleted successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error deleting item: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('❌ Failed to delete: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: accentRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  } else {
+    print('🚫 User cancelled deletion');
+  }
+}
+
+}
+
+
+// Method _deleteItem dipindah ke dalam class _WardrobePageState
+
+// ✅ Pindahkan class keluar dari _WardrobePageState
 class _AddItemBottomSheet extends StatefulWidget {
   final Function(Map<String, dynamic>) onItemAdded;
 
@@ -2886,7 +3264,9 @@ class _AddItemBottomSheet extends StatefulWidget {
 
   @override
   State<_AddItemBottomSheet> createState() => _AddItemBottomSheetState();
+  
 }
+
 
 class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
   static const Color primaryBlue = Color(0xFF4A90E2);
@@ -3101,7 +3481,7 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
           child: _selectedImage != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: _buildSelectedImage(), // Helper method untuk handle web/mobile
+                  child: _buildSelectedImage(),
                 )
               : Material(
                   color: Colors.transparent,
@@ -3148,10 +3528,8 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
     );
   }
 
-  // Helper method untuk handle web vs mobile image display
   Widget _buildSelectedImage() {
     if (kIsWeb) {
-      // Web: gunakan Image.memory
       return Image.memory(
         _selectedImage as Uint8List,
         fit: BoxFit.cover,
@@ -3159,7 +3537,6 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
         height: double.infinity,
       );
     } else {
-      // Mobile: gunakan Image.file
       return Image.file(
         _selectedImage as File,
         fit: BoxFit.cover,
@@ -3437,55 +3814,53 @@ class _AddItemBottomSheetState extends State<_AddItemBottomSheet> {
     );
   }
 
-// Update the _buildSaveButton method to use _isUploading:
-
-Widget _buildSaveButton() {
-  return Container(
-    width: double.infinity,
-    height: 56,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [primaryBlue, primaryBlue.withValues(alpha: 0.8)],
-      ),
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: primaryBlue.withValues(alpha: 0.4),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
+  Widget _buildSaveButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryBlue, primaryBlue.withValues(alpha: 0.8)],
         ),
-      ],
-    ),
-    child: ElevatedButton.icon(
-      onPressed: _isUploading ? null : _saveItem, // Disable when uploading
-      icon: _isUploading 
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
-          : Icon(Icons.save_rounded, color: Colors.white, size: 20),
-      label: Text(
-        _isUploading ? 'Uploading...' : 'Save Item', // Change text when uploading
-        style: GoogleFonts.poppins(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: primaryBlue.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: _isUploading ? null : _saveItem,
+        icon: _isUploading 
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Icon(Icons.save_rounded, color: Colors.white, size: 20),
+        label: Text(
+          _isUploading ? 'Uploading...' : 'Save Item',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Color _getColorValue(String colorName) {
     switch (colorName.toLowerCase()) {
@@ -3558,21 +3933,17 @@ Widget _buildSaveButton() {
     );
   }
 
-  
-  // Helper method untuk pick image dengan web support
   Future<void> _pickImageFromSource(ImageSource source) async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: source);
     
     if (image != null) {
       if (kIsWeb) {
-        // Web: convert ke Uint8List
         final bytes = await image.readAsBytes();
         setState(() {
           _selectedImage = bytes;
         });
       } else {
-        // Mobile: gunakan File
         setState(() {
           _selectedImage = File(image.path);
         });
@@ -3580,87 +3951,85 @@ Widget _buildSaveButton() {
     }
   }
 
-
-// Replace _saveItem method dengan ini
-void _saveItem() async {
-  if (_formKey.currentState!.validate()) {
-    if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please add a photo!')),
-      );
-      return;
-    }
-    
-    setState(() => _isUploading = true);
-
-    try {
-      // ✅ GET BYTES FOR FIREBASE UPLOAD
-      Uint8List bytes;
-      if (kIsWeb) {
-        bytes = _selectedImage as Uint8List;
-      } else {
-        bytes = await (_selectedImage as File).readAsBytes();
+  void _saveItem() async {
+    if (_formKey.currentState!.validate()) {
+      if (_selectedImage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please add a photo!')),
+        );
+        return;
       }
       
-      print('🔥 DEBUG: Starting Firebase upload');
-      print('🔥 DEBUG: Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}');
-      print('🔥 DEBUG: Image size: ${bytes.length} bytes');
+      setState(() => _isUploading = true);
 
-      // ✅ USE FIREBASE STORAGE INSTEAD OF IMGBB
-      final fileName = FirebaseStorageService.generateFileName('wardrobe_item');
-      print('🔥 DEBUG: Generated filename: $fileName');
-      
-      final imageUrl = await FirebaseStorageService.uploadImage(
-        imageBytes: bytes,
-        fileName: fileName,
-        folder: 'wardrobe_items',
-      );
+      try {
+        Uint8List bytes;
+        if (kIsWeb) {
+          bytes = _selectedImage as Uint8List;
+        } else {
+          bytes = await (_selectedImage as File).readAsBytes();
+        }
+        
+        print('🔥 DEBUG: Starting Firebase upload');
+        print('🔥 DEBUG: Platform: ${kIsWeb ? 'WEB' : 'MOBILE'}');
+        print('🔥 DEBUG: Image size: ${bytes.length} bytes');
 
-      print('🔥 DEBUG: Firebase upload successful!');
-      print('🔥 DEBUG: Image URL: $imageUrl');
+        final fileName = FirebaseStorageService.generateFileName('wardrobe_item');
+        print('🔥 DEBUG: Generated filename: $fileName');
+        
+        final imageUrl = await FirebaseStorageService.uploadImage(
+          imageBytes: bytes,
+          fileName: fileName,
+          folder: 'wardrobe_items',
+        );
 
-      setState(() => _isUploading = false);
+        print('🔥 DEBUG: Firebase upload successful!');
+        print('🔥 DEBUG: Image URL: $imageUrl');
 
-      // ✅ CREATE NEW ITEM WITH FIREBASE URL
-      final newItem = {
-        'name': _nameController.text.trim(),
-        'category': _selectedCategory,
-        'color': _selectedColor,
-        'brand': '',
-        'description': _descriptionController.text.trim(),
-        'image': imageUrl, // ✅ Firebase Storage URL
-        'tags': List<String>.from(_selectedTags),
-      };
+        setState(() => _isUploading = false);
 
-      print('🔥 DEBUG: New item created: $newItem');
+        final newItem = {
+          'name': _nameController.text.trim(),
+          'category': _selectedCategory,
+          'color': _selectedColor,
+          'brand': '',
+          'description': _descriptionController.text.trim(),
+          'image': imageUrl,
+          'tags': List<String>.from(_selectedTags),
+        };
 
-      widget.onItemAdded(newItem);
-      Navigator.pop(context);
+        print('🔥 DEBUG: New item created: $newItem');
 
-      // Success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-         content: Text('🎉 Yay! Successfully added to your wardrobe collection.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      print('❌ Firebase upload error: $e');
-      setState(() => _isUploading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Firebase upload failed: $e')),
-      );
+        widget.onItemAdded(newItem);
+        Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+           content: Text('🎉 Yay! Successfully added to your wardrobe collection.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        print('❌ Firebase upload error: $e');
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Firebase upload failed: $e')),
+        );
+      }
     }
   }
 }
-// Replace from line 3373 onwards with this complete, corrected code:
 
-}
+// Ganti class _ItemDetailsBottomSheet yang ada dengan ini:
 
 class _ItemDetailsBottomSheet extends StatelessWidget {
   final Map<String, dynamic> item;
+  final Function(String, String) onDeleteItem; // ✅ Tambah callback untuk delete
 
-  const _ItemDetailsBottomSheet({required this.item});
+  const _ItemDetailsBottomSheet({
+    required this.item,
+    required this.onDeleteItem, // ✅ Require callback
+  });
 
   static const Color primaryBlue = Color(0xFF4A90E2);
   static const Color accentYellow = Color(0xFFF5A623);
@@ -3671,6 +4040,9 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ SAFE BOOLEAN HANDLING
+    final bool isFavorite = item['favorite'] == true;
+    
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: const BoxDecoration(
@@ -3699,16 +4071,17 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // Header with name and favorite
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          item['name'] ?? '',
+                          item['name'] ?? 'Unnamed Item',
                           style: GoogleFonts.poppins(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
                             color: darkGray,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ),
@@ -3717,18 +4090,27 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: lightGray,
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Icon(
-                          item['favorite'] == true
+                          isFavorite 
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          color: item['favorite'] == true ? accentRed : mediumGray,
+                          color: isFavorite ? accentRed : mediumGray,
+                          size: 20,
                         ),
                       ),
                     ],
                   ),
-                  if (item['brand'] != null &&
-                      item['brand'].toString().isNotEmpty) ...[
+                  
+                  // Brand if available
+                  if (item['brand'] != null && item['brand'].toString().isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
                       item['brand'],
@@ -3739,83 +4121,244 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                       ),
                     ),
                   ],
+                  
                   const SizedBox(height: 24),
-                  // Image or placeholder
+                  
+                  // Image section
                   Container(
                     width: double.infinity,
-                    height: 200,
+                    height: 240,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         colors: [
-                          primaryBlue.withValues(alpha: 0.1),
-                          accentYellow.withValues(alpha: 0.1),
+                          primaryBlue.withValues(alpha: 0.08),
+                          accentYellow.withValues(alpha: 0.06),
+                          Colors.white,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: primaryBlue.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
                     child: Center(
-                      child: (item['image'] != null && (item['image'] as String).isNotEmpty)
+                      child: (item['image'] != null && 
+                              item['image'].toString().trim().isNotEmpty &&
+                              item['image'].toString() != 'null' &&
+                              item['image'].toString().startsWith('http'))
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: Image.network(
-                                item['image'],
-                                width: 160,
-                                height: 160,
+                              child: CachedNetworkImage(
+                                imageUrl: item['image'],
+                                width: 180,
+                                height: 180,
                                 fit: BoxFit.cover,
-                                errorBuilder: (ctx, e, s) => Icon(
-                                  Icons.checkroom_rounded,
-                                  size: 64,
-                                  color: primaryBlue.withValues(alpha: 0.6),
+                                placeholder: (context, url) => Container(
+                                  width: 180,
+                                  height: 180,
+                                  decoration: BoxDecoration(
+                                    color: primaryBlue.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: CircularProgressIndicator(
+                                          color: primaryBlue,
+                                          strokeWidth: 3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Loading image...',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: primaryBlue,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                                errorWidget: (context, url, error) => Container(
+                                  width: 180,
+                                  height: 180,
+                                  decoration: BoxDecoration(
+                                    color: primaryBlue.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: primaryBlue.withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.image_not_supported_rounded,
+                                        size: 48,
+                                        color: primaryBlue.withValues(alpha: 0.6),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Image Load Failed',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: primaryBlue,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'CORS Error on Web',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10,
+                                          color: mediumGray,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                httpHeaders: {
+                                  'Access-Control-Allow-Origin': '*',
+                                  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                                  'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
+                                },
                               ),
                             )
-                          : Icon(
-                              Icons.checkroom_rounded,
-                              size: 64,
-                              color: primaryBlue.withValues(alpha: 0.6),
+                          : Container(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: primaryBlue.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: primaryBlue.withValues(alpha: 0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.checkroom_rounded,
+                                      size: 64,
+                                      color: primaryBlue.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No Image Available',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: mediumGray,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Add a photo to this item',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: mediumGray.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Details section
-                  _buildDetailRow('Category', item['category']),
-                  _buildDetailRow('Color', item['color']),
-                  if (item['brand'] != null && item['brand'].toString().isNotEmpty)
-                    _buildDetailRow('Brand', item['brand']),
-                  _buildDetailRow('Last Worn', item['lastWorn']),
                   
-                  const SizedBox(height: 20),
-                  // Description
+                  const SizedBox(height: 32),
+                  
+                  // Details section
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: lightGray.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: primaryBlue.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildDetailRow('Category', item['category']),
+                        _buildDetailRow('Color', item['color']),
+                        if (item['brand'] != null && item['brand'].toString().isNotEmpty)
+                          _buildDetailRow('Brand', item['brand']),
+                        _buildDetailRow('Last Worn', item['lastWorn'] ?? 'Never'),
+                        _buildDetailRow('Status', isFavorite ? 'Favorite ❤️' : 'Regular'),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Description section
                   Text(
                     'Description',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: darkGray,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item['description'] ?? 'No description available',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: mediumGray,
-                      height: 1.5,
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: lightGray,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      item['description']?.toString().isNotEmpty == true
+                          ? item['description']
+                          : 'No description available for this item.',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: mediumGray,
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   
-                  const SizedBox(height: 20),
-                  // Tags
+                  const SizedBox(height: 24),
+                  
+                  // Tags section
                   if (item['tags'] != null && (item['tags'] as List).isNotEmpty) ...[
                     Text(
                       'Tags',
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: darkGray,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -3824,30 +4367,130 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
                             (tag) => Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
-                                vertical: 6,
+                                vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: primaryBlue.withValues(alpha: 0.1),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    primaryBlue.withValues(alpha: 0.1),
+                                    primaryBlue.withValues(alpha: 0.05),
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: primaryBlue.withValues(alpha: 0.3),
                                   width: 1,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primaryBlue.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                              child: Text(
-                                tag.toString(),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: primaryBlue,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_offer_rounded,
+                                    size: 12,
+                                    color: primaryBlue,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    tag.toString(),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: primaryBlue,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           )
                           .toList(),
                     ),
+                    const SizedBox(height: 24),
                   ],
-                  const SizedBox(height: 40),
+                  
+                  // ✅ ACTION BUTTONS SECTION
+                  const SizedBox(height: 16),
+                  Text(
+                    'Actions',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: darkGray,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // ✅ Delete button - GUNAKAN CALLBACK
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [accentRed, accentRed.withValues(alpha: 0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentRed.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Close detail popup first
+                        Navigator.pop(context);
+                        
+                        // ✅ GUNAKAN CALLBACK UNTUK DELETE
+                        onDeleteItem(
+                          item['id']?.toString() ?? '', 
+                          item['name']?.toString() ?? 'Unknown Item'
+                        );
+                      },
+                      icon: Icon(
+                        Icons.delete_forever_rounded, 
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      label: Text(
+                        'Delete Item Permanently',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Additional spacing at bottom
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -3857,14 +4500,15 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
     );
   }
 
+  // ✅ HELPER METHOD UNTUK DETAIL ROW
   Widget _buildDetailRow(String label, dynamic value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 90,
             child: Text(
               label,
               style: GoogleFonts.poppins(
@@ -3880,8 +4524,9 @@ class _ItemDetailsBottomSheet extends StatelessWidget {
               value?.toString() ?? 'Not specified',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: darkGray,
+                letterSpacing: -0.1,
               ),
             ),
           ),

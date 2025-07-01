@@ -3008,7 +3008,7 @@ Future<void> _addNewItem(Map<String, dynamic> newItem) async {
 
 
 class _AddItemBottomSheet extends StatefulWidget {
-  final Function(Map<String, dynamic>) onItemAdded;
+  final Future<void> Function(Map<String, dynamic>) onItemAdded;
 
   const _AddItemBottomSheet({required this.onItemAdded});
 
@@ -3762,7 +3762,7 @@ void _saveItem() async {
 
       print('🔥 DEBUG: New item created: $newItem');
 
-      widget.onItemAdded(newItem);
+      await widget.onItemAdded(newItem);
       Navigator.pop(context);
 
       // Success message

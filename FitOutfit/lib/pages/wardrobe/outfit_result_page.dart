@@ -1411,18 +1411,18 @@ Widget _buildOutfitPreviewSection() {
             ),
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.8,
-            ),
-            itemCount: components.length,
-            itemBuilder: (context, index) => _buildOutfitItemCard(components[index]),
-          ),
+GridView.builder(
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+    crossAxisSpacing: 12, // ✅ Spacing yang lebih besar
+    mainAxisSpacing: 12,  // ✅ Spacing yang lebih besar
+    childAspectRatio: 0.65, // ✅ UBAH DARI 0.8 KE 0.65 (lebih tinggi untuk gambar besar)
+  ),
+  itemCount: components.length,
+  itemBuilder: (context, index) => _buildOutfitItemCard(components[index]),
+),
       ],
     ),
   );
@@ -1459,15 +1459,16 @@ Widget _buildOutfitItemCard(Map<String, dynamic> item) {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => _showOutfitItemDetails(item),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ✅ CATEGORY BADGE DI ATAS
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 3,
+                  horizontal: 8,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1481,99 +1482,190 @@ Widget _buildOutfitItemCard(Map<String, dynamic> item) {
                 child: Text(
                   item['category']?.toString() ?? 'Item',
                   style: GoogleFonts.poppins(
-                    fontSize: 7,
+                    fontSize: 8,
                     fontWeight: FontWeight.w800,
                     color: colors['pureWhite'],
                     letterSpacing: 0.3,
                   ),
                 ),
               ),
-              SizedBox(height: 8),
-              Expanded(
-                child: Center(
+            ),
+            
+            // ✅ GAMBAR YANG LEBIH BESAR - MENGAMBIL SEBAGIAN BESAR SPACE
+            Expanded(
+              flex: 5, // ✅ Berikan lebih banyak space untuk gambar
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: categoryColor.withValues(alpha: 0.05),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
                   child: (item['imageUrl'] != null && item['imageUrl'] != "")
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            item['imageUrl'],
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, e, s) => Icon(
-                              _getCategoryIconData(item['category']),
-                              size: 28,
-                              color: categoryColor.withValues(alpha: 0.8),
-                            ),
+                      ? Image.network(
+                          item['imageUrl'],
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover, // ✅ Cover untuk mengisi seluruh area
+                          errorBuilder: (ctx, e, s) => _buildFallbackIcon(
+                            item['category'], 
+                            categoryColor,
+                            isLarge: true, // ✅ Tambah parameter untuk icon besar
                           ),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return _buildLoadingWidget(categoryColor);
+                          },
                         )
-                      : Icon(
-                          _getCategoryIconData(item['category']),
-                          size: 28,
-                          color: categoryColor.withValues(alpha: 0.8),
+                      : _buildFallbackIcon(
+                          item['category'], 
+                          categoryColor,
+                          isLarge: true, // ✅ Icon besar untuk fallback
                         ),
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                item['name']?.toString() ?? 'Item',
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: colors['darkGray'],
-                  height: 1.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (item['price'] != null) ...[
-                SizedBox(height: 2),
-                Text(
-                  item['price'].toString(),
-                  style: GoogleFonts.poppins(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: colors['accentRed'],
-                  ),
-                ),
-              ],
-              SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: categoryColor.withValues(alpha: 0.2),
-                    width: 0.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+            ),
+            
+            // ✅ INFO SECTION DI BAWAH - LEBIH COMPACT
+            Expanded(
+              flex: 2, // ✅ Space lebih kecil untuk text
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      Icons.touch_app_rounded,
-                      size: 8,
-                      color: categoryColor.withValues(alpha: 0.8),
-                    ),
-                    SizedBox(width: 2),
+                    // Item name
                     Text(
-                      'Tap for detail',
+                      item['name']?.toString() ?? 'Item',
                       style: GoogleFonts.poppins(
-                        fontSize: 7,
-                        fontWeight: FontWeight.w600,
-                        color: categoryColor.withValues(alpha: 0.8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: colors['darkGray'],
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    // ✅ TAP INDICATOR - LEBIH KECIL DAN SUBTLE
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: categoryColor.withValues(alpha: 0.2),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.touch_app_rounded,
+                            size: 8,
+                            color: categoryColor.withValues(alpha: 0.8),
+                          ),
+                          SizedBox(width: 2),
+                          Text(
+                            'Details',
+                            style: GoogleFonts.poppins(
+                              fontSize: 7,
+                              fontWeight: FontWeight.w600,
+                              color: categoryColor.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    ),
+  );
+}
+
+// ✅ TAMBAH HELPER METHOD UNTUK FALLBACK ICON YANG BISA BESAR/KECIL
+Widget _buildFallbackIcon(String? category, Color categoryColor, {bool isLarge = false}) {
+  return Container(
+    width: double.infinity,
+    height: double.infinity,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          categoryColor.withValues(alpha: 0.1),
+          categoryColor.withValues(alpha: 0.05),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          _getCategoryIconData(category),
+          size: isLarge ? 48 : 28, // ✅ Icon size yang responsif
+          color: categoryColor.withValues(alpha: 0.8),
+        ),
+        if (isLarge) ...[
+          SizedBox(height: 8),
+          Text(
+            category?.toString() ?? 'Item',
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: categoryColor.withValues(alpha: 0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+// ✅ TAMBAH LOADING WIDGET YANG BAGUS
+Widget _buildLoadingWidget(Color categoryColor) {
+  return Container(
+    width: double.infinity,
+    height: double.infinity,
+    decoration: BoxDecoration(
+      color: categoryColor.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(
+            color: categoryColor,
+            strokeWidth: 3,
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          'Loading...',
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: categoryColor.withValues(alpha: 0.8),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     ),
   );
 }

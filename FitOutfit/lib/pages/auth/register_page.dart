@@ -21,11 +21,13 @@ class _RegisterPageState extends State<RegisterPage>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _birthDateController = TextEditingController(); // ✅ NEW: Birth date controller
 
   final _fullNameFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
+  final _birthDateFocusNode = FocusNode(); // ✅ NEW: Birth date focus node
 
   late AnimationController _logoController;
   late AnimationController _formController;
@@ -38,6 +40,7 @@ class _RegisterPageState extends State<RegisterPage>
   bool _isGoogleLoading = false;
   bool _acceptTerms = false;
   PasswordStrength _passwordStrength = PasswordStrength.weak;
+  DateTime? _selectedBirthDate; // ✅ NEW: Selected birth date
 
   @override
   void initState() {
@@ -105,11 +108,43 @@ class _RegisterPageState extends State<RegisterPage>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _birthDateController.dispose(); // ✅ NEW: Dispose birth date controller
     _fullNameFocusNode.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
+    _birthDateFocusNode.dispose(); // ✅ NEW: Dispose birth date focus node
     super.dispose();
+  }
+
+  // ✅ NEW: Birth date picker
+  Future<void> _selectBirthDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // Default to 18 years ago
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now().subtract(const Duration(days: 365 * 13)), // Minimum 13 years old
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4A90E2),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedBirthDate) {
+      setState(() {
+        _selectedBirthDate = picked;
+        _birthDateController.text = "${picked.day}/${picked.month}/${picked.year}";
+      });
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -120,13 +155,20 @@ class _RegisterPageState extends State<RegisterPage>
       return;
     }
 
+    if (_selectedBirthDate == null) {
+      _showErrorSnackBar('Please select your birth date');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
+      // ✅ UPDATED: Pass birth date to registration
       await AuthService.signUpWithEmailPassword(
         email: _emailController.text,
         password: _passwordController.text,
         fullName: _fullNameController.text,
+        birthDate: _selectedBirthDate!, // ✅ NEW: Pass birth date
       );
       if (mounted) {
         setState(() => _isLoading = false);
@@ -335,8 +377,11 @@ class _RegisterPageState extends State<RegisterPage>
                 isEmail: true,
                 validator: Validators.validateEmail,
                 textInputAction: TextInputAction.next,
-                onEditingComplete: () => _passwordFocusNode.requestFocus(),
+                onEditingComplete: () => _birthDateFocusNode.requestFocus(), // ✅ UPDATED: Focus to birth date
               ),
+              const SizedBox(height: 20),
+              // ✅ NEW: Birth Date Field
+              _buildBirthDateField(),
               const SizedBox(height: 20),
               CustomTextField(
                 label: 'Password',
@@ -391,6 +436,96 @@ class _RegisterPageState extends State<RegisterPage>
         ),
       ),
     );
+  }
+
+  // ✅ NEW: Build birth date field
+  Widget _buildBirthDateField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Birth Date',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _birthDateController,
+          focusNode: _birthDateFocusNode,
+          readOnly: true,
+          onTap: _selectBirthDate,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select your birth date';
+            }
+            return null;
+          },
+          decoration: InputDecoration(
+            hintText: 'Select your birth date',
+            hintStyle: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+            suffixIcon: const Icon(
+              Icons.calendar_today,
+              color: Color(0xFF4A90E2),
+              size: 20,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFD0021B), width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFD0021B), width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[800],
+          ),
+        ),
+        if (_selectedBirthDate != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Age: ${_calculateAge(_selectedBirthDate!)} years old',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ✅ NEW: Calculate age helper
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month || 
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
   }
 
   Widget _buildPasswordStrengthIndicator() {

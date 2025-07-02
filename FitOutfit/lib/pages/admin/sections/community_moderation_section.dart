@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CommunityModerationSection {
   // FitOutfit Brand Colors
@@ -11,7 +13,13 @@ class CommunityModerationSection {
 
   static Widget buildCommunityModeration(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final verticalPadding = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final verticalPadding =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
     return SingleChildScrollView(
       child: Column(
@@ -19,7 +27,7 @@ class CommunityModerationSection {
         children: [
           _buildPageHeader(
             context,
-            'Community Moderation', 
+            'Community Moderation',
             'Monitor and manage user interactions and community content',
             Icons.forum_rounded,
           ),
@@ -27,7 +35,7 @@ class CommunityModerationSection {
           _buildModerationOverviewCards(context),
           SizedBox(height: verticalPadding),
           if (isMobile) ...[
-            _buildRecentReports(context),
+            _buildCommunityManagement(context),
             SizedBox(height: verticalPadding),
             _buildQuickActions(context),
             SizedBox(height: verticalPadding),
@@ -40,7 +48,7 @@ class CommunityModerationSection {
                   flex: 2,
                   child: Column(
                     children: [
-                      _buildRecentReports(context),
+                      _buildCommunityManagement(context),
                       SizedBox(height: verticalPadding),
                       _buildActivityChart(context),
                     ],
@@ -63,9 +71,16 @@ class CommunityModerationSection {
     );
   }
 
-  static Widget _buildPageHeader(BuildContext context, String title, String subtitle, IconData icon) {
+  static Widget _buildPageHeader(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+  ) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final isTablet = MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
+    final isTablet =
+        MediaQuery.of(context).size.width >= 768 &&
+        MediaQuery.of(context).size.width < 1024;
     final cardPadding = isMobile ? 16.0 : (isTablet ? 20.0 : 24.0);
     final borderRadius = isMobile ? 12.0 : (isTablet ? 16.0 : 20.0);
 
@@ -82,99 +97,112 @@ class CommunityModerationSection {
           ),
         ],
       ),
-      child: isMobile 
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      child:
+          isMobile
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [primaryLavender, softBlue],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: darkPurple, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: darkPurple,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              )
+              : Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.poppins(
+                            fontSize: isTablet ? 24 : 28,
+                            fontWeight: FontWeight.w700,
+                            color: darkPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(isTablet ? 16 : 20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [primaryLavender, softBlue],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(icon, color: darkPurple, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: darkPurple,
-                      ),
+                    child: Icon(
+                      icon,
+                      color: darkPurple,
+                      size: isTablet ? 28 : 36,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                subtitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          )
-        : Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.poppins(
-                        fontSize: isTablet ? 24 : 28,
-                        fontWeight: FontWeight.w700,
-                        color: darkPurple,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.all(isTablet ? 16 : 20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [primaryLavender, softBlue],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  color: darkPurple,
-                  size: isTablet ? 28 : 36,
-                ),
-              ),
-            ],
-          ),
     );
   }
 
   static Widget _buildModerationOverviewCards(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final horizontalPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
-    final verticalPadding = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final horizontalPadding =
+        isMobile
+            ? 16.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 20.0
+                : 24.0);
+    final verticalPadding =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
     return GridView.count(
       shrinkWrap: true,
@@ -184,132 +212,186 @@ class CommunityModerationSection {
       mainAxisSpacing: verticalPadding,
       childAspectRatio: isMobile ? 1.2 : 1.3,
       children: [
-        _buildModerationCard(
-          context,
-          'Pending Reports',
-          '12',
-          'reports awaiting review',
-          Icons.flag_rounded,
-          const Color(0xFFEF4444),
-          'Urgent attention needed',
-        ),
-        _buildModerationCard(
+        _buildRealtimeModerationCard(
           context,
           'Active Users',
-          '2,847',
-          'users online today',
           Icons.people_rounded,
           const Color(0xFF10B981),
-          '+5.2% from yesterday',
+          'users online',
+          FirebaseAuth.instance.authStateChanges().map(
+            (user) => user != null ? 1 : 0,
+          ),
         ),
-        _buildModerationCard(
+        _buildRealtimeModerationCard(
           context,
           'Community Posts',
-          '428',
-          'posts today',
           Icons.forum_rounded,
           const Color(0xFF0EA5E9),
-          '+12 posts this hour',
+          'total posts',
+          FirebaseFirestore.instance
+              .collectionGroup('posts')
+              .snapshots()
+              .map((snapshot) => snapshot.docs.length),
         ),
-        _buildModerationCard(
+        _buildRealtimeModerationCard(
           context,
-          'Content Removed',
-          '8',
-          'violations this week',
-          Icons.remove_circle_rounded,
+          'Communities',
+          Icons.groups_rounded,
+          const Color(0xFF6B46C1),
+          'active communities',
+          FirebaseFirestore.instance
+              .collection('komunitas')
+              .snapshots()
+              .map((snapshot) => snapshot.docs.length),
+        ),
+        _buildRealtimeModerationCard(
+          context,
+          'Total Members',
+          Icons.group_add_rounded,
           const Color(0xFFF59E0B),
-          '-3 from last week',
+          'community members',
+          FirebaseFirestore.instance
+              .collectionGroup('members')
+              .snapshots()
+              .map((snapshot) => snapshot.docs.length),
         ),
       ],
     );
   }
 
-  static Widget _buildModerationCard(BuildContext context, String title, String value, String subtitle, IconData icon, Color color, String trend) {
+  static Widget _buildRealtimeModerationCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    String subtitle,
+    Stream<int> dataStream,
+  ) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
-    final borderRadius = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final cardPadding =
+        isMobile
+            ? 16.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 20.0
+                : 24.0);
+    final borderRadius =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
-    return Container(
-      padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+    return StreamBuilder<int>(
+      stream: dataStream,
+      builder: (context, snapshot) {
+        final value = snapshot.hasData ? snapshot.data.toString() : '...';
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+
+        return Container(
+          padding: EdgeInsets.all(cardPadding),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isMobile ? 8 : 10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: color, size: isMobile ? 16 : 20),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.poppins(
+                        fontSize: isMobile ? 11 : 13,
+                        fontWeight: FontWeight.w600,
+                        color: darkPurple,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: isMobile ? 8 : 12),
+              isLoading
+                  ? SizedBox(
+                    height: isMobile ? 20 : 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  )
+                  : Text(
+                    value,
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? 20 : 24,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.poppins(
+                  fontSize: isMobile ? 8 : 10,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const Spacer(),
               Container(
-                padding: EdgeInsets.all(isMobile ? 8 : 10),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: isMobile ? 16 : 20),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
                 child: Text(
-                  title,
+                  'Real-time',
                   style: GoogleFonts.poppins(
-                    fontSize: isMobile ? 11 : 13,
-                    fontWeight: FontWeight.w600,
-                    color: darkPurple,
+                    fontSize: isMobile ? 7 : 9,
+                    fontWeight: FontWeight.w500,
+                    color: color,
                   ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: isMobile ? 8 : 12),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: GoogleFonts.poppins(
-              fontSize: isMobile ? 8 : 10,
-              color: Colors.grey[600],
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              trend,
-              style: GoogleFonts.poppins(
-                fontSize: isMobile ? 7 : 9,
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  static Widget _buildRecentReports(BuildContext context) {
+  static Widget _buildCommunityManagement(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
-    final borderRadius = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final cardPadding =
+        isMobile
+            ? 16.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 20.0
+                : 24.0);
+    final borderRadius =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -330,7 +412,7 @@ class CommunityModerationSection {
           Row(
             children: [
               Text(
-                'Recent Reports',
+                'Community Management',
                 style: GoogleFonts.poppins(
                   fontSize: isMobile ? 16 : 18,
                   fontWeight: FontWeight.w600,
@@ -341,75 +423,62 @@ class CommunityModerationSection {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '12 Pending',
+                  'Active',
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFFEF4444),
+                    color: const Color(0xFF10B981),
                   ),
                 ),
               ),
             ],
           ),
           SizedBox(height: isMobile ? 16 : 20),
-          ...List.generate(5, (index) => _buildReportItem(context, index)),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('komunitas')
+                    .limit(5)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No communities found',
+                    style: GoogleFonts.poppins(color: Colors.grey[600]),
+                  ),
+                );
+              }
+
+              return Column(
+                children:
+                    snapshot.data!.docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _buildCommunityItem(context, data, doc.id);
+                    }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  static Widget _buildReportItem(BuildContext context, int index) {
+  static Widget _buildCommunityItem(
+    BuildContext context,
+    Map<String, dynamic> community,
+    String communityId,
+  ) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    
-    final reports = [
-      {
-        'user': '@fashionista_maya',
-        'type': 'Inappropriate Content',
-        'content': 'Posted revealing outfit photo',
-        'time': '2 hours ago',
-        'severity': 'High',
-        'status': 'Pending',
-      },
-      {
-        'user': '@style_guru_alex',
-        'type': 'Spam',
-        'content': 'Excessive promotional posts',
-        'time': '4 hours ago',
-        'severity': 'Medium',
-        'status': 'Under Review',
-      },
-      {
-        'user': '@trendy_sarah',
-        'type': 'Harassment',
-        'content': 'Bullying other users in comments',
-        'time': '6 hours ago',
-        'severity': 'High',
-        'status': 'Pending',
-      },
-      {
-        'user': '@casual_david',
-        'type': 'Copyright',
-        'content': 'Using copyrighted fashion images',
-        'time': '8 hours ago',
-        'severity': 'Medium',
-        'status': 'Resolved',
-      },
-      {
-        'user': '@elegant_emma',
-        'type': 'Fake Profile',
-        'content': 'Impersonating fashion influencer',
-        'time': '1 day ago',
-        'severity': 'High',
-        'status': 'Pending',
-      },
-    ];
 
-    final report = reports[index];
-    
     return Container(
       margin: EdgeInsets.only(bottom: isMobile ? 12 : 16),
       padding: EdgeInsets.all(isMobile ? 12 : 16),
@@ -423,13 +492,20 @@ class CommunityModerationSection {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: isMobile ? 16 : 20,
-                backgroundColor: _getSeverityColor(report['severity']!).withValues(alpha: 0.1),
+              Container(
+                width: isMobile ? 40 : 48,
+                height: isMobile ? 40 : 48,
+                decoration: BoxDecoration(
+                  color: Color(community['color'] ?? 0xFF6B46C1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(
-                  Icons.person_rounded,
-                  color: _getSeverityColor(report['severity']!),
-                  size: isMobile ? 16 : 20,
+                  IconData(
+                    community['icon'] ?? 0xe7ff,
+                    fontFamily: 'MaterialIcons',
+                  ),
+                  color: Colors.white,
+                  size: isMobile ? 20 : 24,
                 ),
               ),
               SizedBox(width: isMobile ? 8 : 12),
@@ -437,37 +513,17 @@ class CommunityModerationSection {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          report['user']!,
-                          style: GoogleFonts.poppins(
-                            fontSize: isMobile ? 12 : 14,
-                            fontWeight: FontWeight.w600,
-                            color: darkPurple,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _getReportTypeColor(report['type']!).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            report['type']!,
-                            style: GoogleFonts.poppins(
-                              fontSize: isMobile ? 8 : 10,
-                              fontWeight: FontWeight.w600,
-                              color: _getReportTypeColor(report['type']!),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      community['name'] ?? 'Unknown Community',
+                      style: GoogleFonts.poppins(
+                        fontSize: isMobile ? 12 : 14,
+                        fontWeight: FontWeight.w600,
+                        color: darkPurple,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      report['content']!,
+                      community['desc'] ?? 'No description',
                       style: GoogleFonts.poppins(
                         fontSize: isMobile ? 10 : 12,
                         color: Colors.grey[600],
@@ -486,49 +542,71 @@ class CommunityModerationSection {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getSeverityColor(report['severity']!).withValues(alpha: 0.1),
+                  color: Color(
+                    community['color'] ?? 0xFF6B46C1,
+                  ).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${report['severity']} Priority',
+                  community['category'] ?? 'General',
                   style: GoogleFonts.poppins(
                     fontSize: isMobile ? 8 : 10,
                     fontWeight: FontWeight.w600,
-                    color: _getSeverityColor(report['severity']!),
+                    color: Color(community['color'] ?? 0xFF6B46C1),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                report['time']!,
-                style: GoogleFonts.poppins(
-                  fontSize: isMobile ? 8 : 10,
-                  color: Colors.grey[500],
-                ),
+              StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('komunitas')
+                        .doc(communityId)
+                        .collection('members')
+                        .snapshots(),
+                builder: (context, memberSnapshot) {
+                  final memberCount =
+                      memberSnapshot.hasData
+                          ? memberSnapshot.data!.docs.length
+                          : 0;
+                  return Text(
+                    '$memberCount members',
+                    style: GoogleFonts.poppins(
+                      fontSize: isMobile ? 8 : 10,
+                      color: Colors.grey[500],
+                    ),
+                  );
+                },
               ),
               const Spacer(),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => _reviewReport(context, report),
-                    icon: Icon(Icons.visibility_rounded, size: isMobile ? 16 : 18),
-                    style: IconButton.styleFrom(
-                      backgroundColor: softBlue,
-                      foregroundColor: const Color(0xFF0EA5E9),
-                      minimumSize: Size(isMobile ? 28 : 32, isMobile ? 28 : 32),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    onPressed: () => _takeAction(context, report),
-                    icon: Icon(Icons.gavel_rounded, size: isMobile ? 16 : 18),
-                    style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFFFEF3C7),
-                      foregroundColor: const Color(0xFFF59E0B),
-                      minimumSize: Size(isMobile ? 28 : 32, isMobile ? 28 : 32),
-                    ),
-                  ),
-                ],
+              StreamBuilder<QuerySnapshot>(
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('komunitas')
+                        .doc(communityId)
+                        .collection('posts')
+                        .snapshots(),
+                builder: (context, postSnapshot) {
+                  final postCount =
+                      postSnapshot.hasData ? postSnapshot.data!.docs.length : 0;
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.forum_rounded,
+                        size: isMobile ? 12 : 14,
+                        color: Colors.grey[500],
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '$postCount posts',
+                        style: GoogleFonts.poppins(
+                          fontSize: isMobile ? 8 : 10,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -539,8 +617,20 @@ class CommunityModerationSection {
 
   static Widget _buildQuickActions(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
-    final borderRadius = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final cardPadding =
+        isMobile
+            ? 16.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 20.0
+                : 24.0);
+    final borderRadius =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -569,47 +659,54 @@ class CommunityModerationSection {
           SizedBox(height: isMobile ? 16 : 20),
           _buildActionButton(
             context,
-            'Ban User',
-            'Permanently ban a user account',
-            Icons.block_rounded,
-            const Color(0xFFEF4444),
-            () => _showBanUserDialog(context),
+            'Create Community',
+            'Add a new community category',
+            Icons.add_circle_rounded,
+            const Color(0xFF10B981),
+            () => _showCreateCommunityDialog(context),
           ),
           SizedBox(height: isMobile ? 12 : 16),
           _buildActionButton(
             context,
-            'Remove Content',
-            'Delete inappropriate posts or comments',
-            Icons.delete_rounded,
-            const Color(0xFFF59E0B),
-            () => _showRemoveContentDialog(context),
-          ),
-          SizedBox(height: isMobile ? 12 : 16),
-          _buildActionButton(
-            context,
-            'Send Warning',
-            'Issue warning to community members',
-            Icons.warning_rounded,
-            const Color(0xFF6B46C1),
-            () => _showWarningDialog(context),
-          ),
-          SizedBox(height: isMobile ? 12 : 16),
-          _buildActionButton(
-            context,
-            'Community Guidelines',
-            'Update and manage community rules',
-            Icons.rule_rounded,
+            'Manage Posts',
+            'Moderate community posts and content',
+            Icons.forum_rounded,
             const Color(0xFF0EA5E9),
-            () => _showGuidelinesDialog(context),
+            () => _showManagePostsDialog(context),
+          ),
+          SizedBox(height: isMobile ? 12 : 16),
+          _buildActionButton(
+            context,
+            'Community Analytics',
+            'View detailed community statistics',
+            Icons.analytics_rounded,
+            const Color(0xFF6B46C1),
+            () => _showAnalyticsDialog(context),
+          ),
+          SizedBox(height: isMobile ? 12 : 16),
+          _buildActionButton(
+            context,
+            'Member Management',
+            'Manage community members and roles',
+            Icons.group_rounded,
+            const Color(0xFFF59E0B),
+            () => _showMemberManagementDialog(context),
           ),
         ],
       ),
     );
   }
 
-  static Widget _buildActionButton(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onPressed) {
+  static Widget _buildActionButton(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    
+
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(12),
@@ -667,8 +764,20 @@ class CommunityModerationSection {
 
   static Widget _buildCommunityStats(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
-    final borderRadius = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final cardPadding =
+        isMobile
+            ? 16.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 20.0
+                : 24.0);
+    final borderRadius =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -687,7 +796,7 @@ class CommunityModerationSection {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Community Health',
+            'Community Statistics',
             style: GoogleFonts.poppins(
               fontSize: isMobile ? 16 : 18,
               fontWeight: FontWeight.w600,
@@ -695,16 +804,64 @@ class CommunityModerationSection {
             ),
           ),
           SizedBox(height: isMobile ? 16 : 20),
-          _buildStatItem('Report Resolution Rate', '94%', const Color(0xFF10B981)),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance.collection('komunitas').snapshots(),
+            builder: (context, snapshot) {
+              final communityCount =
+                  snapshot.hasData ? snapshot.data!.docs.length : 0;
+              return _buildStatItem(
+                'Total Communities',
+                '$communityCount',
+                const Color(0xFF10B981),
+              );
+            },
+          ),
           SizedBox(height: isMobile ? 12 : 16),
-          _buildStatItem('Average Response Time', '2.3h', const Color(0xFF0EA5E9)),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance.collectionGroup('posts').snapshots(),
+            builder: (context, snapshot) {
+              final postCount =
+                  snapshot.hasData ? snapshot.data!.docs.length : 0;
+              return _buildStatItem(
+                'Total Posts',
+                '$postCount',
+                const Color(0xFF0EA5E9),
+              );
+            },
+          ),
           SizedBox(height: isMobile ? 12 : 16),
-          _buildStatItem('Community Satisfaction', '87%', const Color(0xFFF59E0B)),
+          StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collectionGroup('members')
+                    .snapshots(),
+            builder: (context, snapshot) {
+              final memberCount =
+                  snapshot.hasData ? snapshot.data!.docs.length : 0;
+              return _buildStatItem(
+                'Total Members',
+                '$memberCount',
+                const Color(0xFFF59E0B),
+              );
+            },
+          ),
           SizedBox(height: isMobile ? 12 : 16),
-          _buildStatItem('Active Moderators', '6', const Color(0xFF6B46C1)),
+          StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              final activeUsers = snapshot.hasData ? 1 : 0;
+              return _buildStatItem(
+                'Active Users',
+                '$activeUsers',
+                const Color(0xFF6B46C1),
+              );
+            },
+          ),
           SizedBox(height: isMobile ? 16 : 20),
-          
-          // Violation Types Breakdown
+
+          // Community Categories Breakdown
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -715,7 +872,7 @@ class CommunityModerationSection {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Violation Types This Week',
+                  'Popular Categories',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -723,16 +880,73 @@ class CommunityModerationSection {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildViolationItem('Spam', '45%', const Color(0xFFEF4444)),
-                _buildViolationItem('Inappropriate Content', '30%', const Color(0xFFF59E0B)),
-                _buildViolationItem('Harassment', '15%', const Color(0xFF6B46C1)),
-                _buildViolationItem('Copyright', '10%', const Color(0xFF0EA5E9)),
+                StreamBuilder<QuerySnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('komunitas')
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const CircularProgressIndicator();
+                    }
+
+                    // Count categories
+                    Map<String, int> categoryCount = {};
+                    for (var doc in snapshot.data!.docs) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final category = data['category'] ?? 'Other';
+                      categoryCount[category] =
+                          (categoryCount[category] ?? 0) + 1;
+                    }
+
+                    // Sort by count and take top 4
+                    final sortedCategories =
+                        categoryCount.entries.toList()
+                          ..sort((a, b) => b.value.compareTo(a.value));
+
+                    final topCategories = sortedCategories.take(4).toList();
+                    final total = snapshot.data!.docs.length;
+
+                    return Column(
+                      children:
+                          topCategories.map((entry) {
+                            final percentage =
+                                total > 0
+                                    ? ((entry.value / total) * 100)
+                                        .toStringAsFixed(0)
+                                    : '0';
+                            return _buildViolationItem(
+                              entry.key,
+                              '$percentage%',
+                              _getCategoryColor(entry.key),
+                            );
+                          }).toList(),
+                    );
+                  },
+                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  static Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'style':
+        return const Color(0xFF6B46C1);
+      case 'street':
+        return const Color(0xFFEF4444);
+      case 'formal':
+        return const Color(0xFF0EA5E9);
+      case 'boho':
+        return const Color(0xFF8E44AD);
+      case 'sport':
+        return const Color(0xFF27AE60);
+      default:
+        return const Color(0xFFF59E0B);
+    }
   }
 
   static Widget _buildStatItem(String label, String value, Color color) {
@@ -759,7 +973,11 @@ class CommunityModerationSection {
     );
   }
 
-  static Widget _buildViolationItem(String type, String percentage, Color color) {
+  static Widget _buildViolationItem(
+    String type,
+    String percentage,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -767,19 +985,13 @@ class CommunityModerationSection {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               type,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                color: Colors.grey[700],
-              ),
+              style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[700]),
             ),
           ),
           Text(
@@ -797,8 +1009,20 @@ class CommunityModerationSection {
 
   static Widget _buildActivityChart(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final cardPadding = isMobile ? 16.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 20.0 : 24.0);
-    final borderRadius = isMobile ? 12.0 : (MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024 ? 16.0 : 20.0);
+    final cardPadding =
+        isMobile
+            ? 16.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 20.0
+                : 24.0);
+    final borderRadius =
+        isMobile
+            ? 12.0
+            : (MediaQuery.of(context).size.width >= 768 &&
+                    MediaQuery.of(context).size.width < 1024
+                ? 16.0
+                : 20.0);
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -843,13 +1067,34 @@ class CommunityModerationSection {
         titlesData: const FlTitlesData(show: false),
         borderData: FlBorderData(show: false),
         barGroups: [
-          BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 8, color: const Color(0xFFEF4444))]),
-          BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 12, color: const Color(0xFFF59E0B))]),
-          BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 6, color: const Color(0xFF10B981))]),
-          BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 15, color: const Color(0xFF6B46C1))]),
-          BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: 9, color: const Color(0xFF0EA5E9))]),
-          BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: 11, color: const Color(0xFFEF4444))]),
-          BarChartGroupData(x: 6, barRods: [BarChartRodData(toY: 7, color: const Color(0xFF10B981))]),
+          BarChartGroupData(
+            x: 0,
+            barRods: [BarChartRodData(toY: 8, color: const Color(0xFFEF4444))],
+          ),
+          BarChartGroupData(
+            x: 1,
+            barRods: [BarChartRodData(toY: 12, color: const Color(0xFFF59E0B))],
+          ),
+          BarChartGroupData(
+            x: 2,
+            barRods: [BarChartRodData(toY: 6, color: const Color(0xFF10B981))],
+          ),
+          BarChartGroupData(
+            x: 3,
+            barRods: [BarChartRodData(toY: 15, color: const Color(0xFF6B46C1))],
+          ),
+          BarChartGroupData(
+            x: 4,
+            barRods: [BarChartRodData(toY: 9, color: const Color(0xFF0EA5E9))],
+          ),
+          BarChartGroupData(
+            x: 5,
+            barRods: [BarChartRodData(toY: 11, color: const Color(0xFFEF4444))],
+          ),
+          BarChartGroupData(
+            x: 6,
+            barRods: [BarChartRodData(toY: 7, color: const Color(0xFF10B981))],
+          ),
         ],
         gridData: const FlGridData(show: false),
       ),
@@ -857,54 +1102,296 @@ class CommunityModerationSection {
   }
 
   // Helper Methods
-  static Color _getSeverityColor(String severity) {
-    switch (severity) {
-      case 'High':
-        return const Color(0xFFEF4444);
-      case 'Medium':
-        return const Color(0xFFF59E0B);
-      case 'Low':
-        return const Color(0xFF10B981);
-      default:
-        return Colors.grey;
-    }
+  static void _showCreateCommunityDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descController = TextEditingController();
+    final TextEditingController categoryController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_rounded,
+                        color: darkPurple,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Create New Community',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: darkPurple,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Community Name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descController,
+                    decoration: InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: categoryController,
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (nameController.text.isNotEmpty &&
+                                descController.text.isNotEmpty) {
+                              await FirebaseFirestore.instance
+                                  .collection('komunitas')
+                                  .add({
+                                    'name': nameController.text,
+                                    'desc': descController.text,
+                                    'category': categoryController.text,
+                                    'color': const Color(0xFF6B46C1).value,
+                                    'icon': Icons.group_rounded.codePoint,
+                                    'tags': [categoryController.text],
+                                    'members': 0,
+                                    'createdAt': FieldValue.serverTimestamp(),
+                                  });
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Community "${nameController.text}" created successfully',
+                                  ),
+                                  backgroundColor: darkPurple,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: darkPurple,
+                          ),
+                          child: const Text('Create Community'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
-  static Color _getReportTypeColor(String type) {
-    switch (type) {
-      case 'Inappropriate Content':
-        return const Color(0xFFEF4444);
-      case 'Spam':
-        return const Color(0xFFF59E0B);
-      case 'Harassment':
-        return const Color(0xFF6B46C1);
-      case 'Copyright':
-        return const Color(0xFF0EA5E9);
-      case 'Fake Profile':
-        return const Color(0xFFEC4899);
-      default:
-        return Colors.grey;
-    }
+  static void _showManagePostsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              height: MediaQuery.of(context).size.height * 0.6,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.forum_rounded, color: darkPurple, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Manage Community Posts',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: darkPurple,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collectionGroup('posts')
+                              .limit(10)
+                              .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(child: Text('No posts found'));
+                        }
+
+                        return ListView.builder(
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (context, index) {
+                            final post = snapshot.data!.docs[index];
+                            final data = post.data() as Map<String, dynamic>;
+
+                            return ListTile(
+                              title: Text(data['content'] ?? 'No content'),
+                              subtitle: Text(
+                                'By: ${data['authorName'] ?? 'Unknown'}',
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () async {
+                                  await post.reference.delete();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Post deleted'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
-  static void _reviewReport(BuildContext context, Map<String, String> report) {
+  static void _showAnalyticsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Community Analytics',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StreamBuilder<QuerySnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('komunitas')
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    final communityCount =
+                        snapshot.hasData ? snapshot.data!.docs.length : 0;
+                    return Text('Total Communities: $communityCount');
+                  },
+                ),
+                const SizedBox(height: 16),
+                StreamBuilder<QuerySnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collectionGroup('posts')
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    final postCount =
+                        snapshot.hasData ? snapshot.data!.docs.length : 0;
+                    return Text('Total Posts: $postCount');
+                  },
+                ),
+                const SizedBox(height: 16),
+                StreamBuilder<QuerySnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collectionGroup('members')
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    final memberCount =
+                        snapshot.hasData ? snapshot.data!.docs.length : 0;
+                    return Text('Total Members: $memberCount');
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  static void _showMemberManagementDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.7,
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.visibility_rounded, color: darkPurple, size: 24),
+                  Icon(Icons.group_rounded, color: darkPurple, size: 24),
                   const SizedBox(width: 8),
                   Text(
-                    'Review Report',
+                    'Member Management',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -919,45 +1406,180 @@ class CommunityModerationSection {
                 ],
               ),
               const SizedBox(height: 20),
-              Text(
-                'Report Details:',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: darkPurple,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'User: ${report['user']}\nType: ${report['type']}\nContent: ${report['content']}\nTime: ${report['time']}',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[700],
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Report reviewed: ${report['user']}'),
-                            backgroundColor: darkPurple,
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('komunitas')
+                      .snapshots(),
+                  builder: (context, communitySnapshot) {
+                    if (communitySnapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!communitySnapshot.hasData || communitySnapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('No communities found'));
+                    }
+
+                    return ListView.builder(
+                      itemCount: communitySnapshot.data!.docs.length,
+                      itemBuilder: (context, communityIndex) {
+                        final community = communitySnapshot.data!.docs[communityIndex];
+                        final communityData = community.data() as Map<String, dynamic>;
+                        final communityId = community.id;
+                        
+                        return ExpansionTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Color(communityData['color'] ?? 0xFF6B46C1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              IconData(
+                                communityData['icon'] ?? 0xe7ff,
+                                fontFamily: 'MaterialIcons',
+                              ),
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
+                          title: Text(
+                            communityData['name'] ?? 'Unknown Community',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: darkPurple,
+                            ),
+                          ),
+                          subtitle: StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('komunitas')
+                                .doc(communityId)
+                                .collection('members')
+                                .snapshots(),
+                            builder: (context, memberSnapshot) {
+                              final memberCount = memberSnapshot.hasData 
+                                  ? memberSnapshot.data!.docs.length 
+                                  : 0;
+                              return Text(
+                                '$memberCount members',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              );
+                            },
+                          ),
+                          children: [
+                            StreamBuilder<QuerySnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('komunitas')
+                                  .doc(communityId)
+                                  .collection('members')
+                                  .snapshots(),
+                              builder: (context, memberSnapshot) {
+                                if (memberSnapshot.connectionState == ConnectionState.waiting) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+
+                                if (!memberSnapshot.hasData || memberSnapshot.data!.docs.isEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Center(
+                                      child: Text(
+                                        'No members in this community',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    children: memberSnapshot.data!.docs.map((member) {
+                                      final memberData = member.data() as Map<String, dynamic>;
+                                      final memberId = member.id;
+                                      
+                                      return ListTile(
+                                        dense: true,
+                                        leading: CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: Color(communityData['color'] ?? 0xFF6B46C1),
+                                          child: Text(
+                                            (memberData['displayName'] ?? 'U')[0].toUpperCase(),
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                        title: Text(
+                                          memberData['displayName'] ?? 'Unknown User',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Member ID: $memberId',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 10,
+                                                color: Colors.grey[500],
+                                              ),
+                                            ),
+                                            Text(
+                                              'Joined: ${_formatDate(memberData['joinedAt'])}',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 10,
+                                                color: Colors.grey[500],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        trailing: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Color(communityData['color'] ?? 0xFF6B46C1).withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            communityData['category'] ?? 'General',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(communityData['color'] ?? 0xFF6B46C1),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                          ],
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: darkPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Mark as Reviewed'),
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -966,255 +1588,17 @@ class CommunityModerationSection {
     );
   }
 
-  static void _takeAction(BuildContext context, Map<String, String> report) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Take Action',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('What action would you like to take for ${report['user']}?'),
-            const SizedBox(height: 16),
-            Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showWarningDialog(context);
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
-                    child: const Text('Send Warning'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showBanUserDialog(context);
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
-                    child: const Text('Ban User'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static void _showBanUserDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Ban User',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Username or Email',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Reason for Ban',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('User has been banned successfully'),
-                  backgroundColor: Color(0xFFEF4444),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
-            child: const Text('Ban User'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static void _showRemoveContentDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Remove Content',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Content ID or URL',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Reason for Removal',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Content has been removed successfully'),
-                  backgroundColor: Color(0xFFF59E0B),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B)),
-            child: const Text('Remove Content'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static void _showWarningDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Send Warning',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Username or Email',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Warning Message',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Warning sent successfully'),
-                  backgroundColor: darkPurple,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: darkPurple),
-            child: const Text('Send Warning'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static void _showGuidelinesDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Community Guidelines',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('1. Be respectful to all community members'),
-              SizedBox(height: 8),
-              Text('2. No inappropriate or revealing content'),
-              SizedBox(height: 8),
-              Text('3. No spam or excessive promotional posts'),
-              SizedBox(height: 8),
-              Text('4. Respect copyright and intellectual property'),
-              SizedBox(height: 8),
-              Text('5. No harassment or bullying'),
-              SizedBox(height: 16),
-              Text('Guidelines can be updated through the admin panel.'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Guidelines updated successfully'),
-                  backgroundColor: darkPurple,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: darkPurple),
-            child: const Text('Update Guidelines'),
-          ),
-        ],
-      ),
-    );
+  // Helper method untuk format tanggal
+  static String _formatDate(dynamic timestamp) {
+    if (timestamp == null) return 'Unknown';
+    try {
+      if (timestamp is Timestamp) {
+        final date = timestamp.toDate();
+        return '${date.day}/${date.month}/${date.year}';
+      }
+      return 'Unknown';
+    } catch (e) {
+      return 'Unknown';
+    }
   }
 }

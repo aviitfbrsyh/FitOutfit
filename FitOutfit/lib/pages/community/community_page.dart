@@ -24,144 +24,7 @@ class _CommunityPageState extends State<CommunityPage>
 
   late AnimationController _animationController;
 
-  final List<Map<String, dynamic>> _communities = [
-    {
-      'name': 'Minimalist Style',
-      'desc': 'Clean, simple, and timeless fashion statements',
-      'color': const Color(0xFF4A90E2),
-      'icon': Icons.auto_awesome_outlined,
-      'tags': ['Simple', 'Clean', 'Timeless'],
-      'category': 'Style',
-      'members': 1250,
-    },
-    {
-      'name': 'Streetwear Lovers',
-      'desc': 'Urban, bold, and trendy street fashion culture',
-      'color': const Color(0xFFD0021B),
-      'icon': Icons.sports_basketball_rounded,
-      'tags': ['Urban', 'Bold', 'Trendy'],
-      'category': 'Street',
-      'members': 2430,
-    },
-    {
-      'name': 'Vintage Finds',
-      'desc': 'Retro and classic fashion treasures from the past',
-      'color': const Color(0xFFF5A623),
-      'icon': Icons.history_rounded,
-      'tags': ['Retro', 'Classic', 'Unique'],
-      'category': 'Vintage',
-      'members': 890,
-    },
-    {
-      'name': 'Formal Fashion',
-      'desc': 'Elegant and professional looks for every occasion',
-      'color': const Color(0xFF2C3E50),
-      'icon': Icons.business_center_rounded,
-      'tags': ['Elegant', 'Professional', 'Classy'],
-      'category': 'Formal',
-      'members': 1680,
-    },
-    {
-      'name': 'Sporty Squad',
-      'desc': 'Activewear and athleisure lifestyle enthusiasts',
-      'color': const Color(0xFF27AE60),
-      'icon': Icons.fitness_center_rounded,
-      'tags': ['Active', 'Sporty', 'Healthy'],
-      'category': 'Sport',
-      'members': 3200,
-    },
-    {
-      'name': 'Color Pop',
-      'desc': 'Vibrant colors and bold fashion combinations',
-      'color': const Color(0xFFE74C3C),
-      'icon': Icons.palette_rounded,
-      'tags': ['Colorful', 'Vibrant', 'Bold'],
-      'category': 'Style',
-      'members': 750,
-    },
-    {
-      'name': 'Bohemian Vibes',
-      'desc': 'Free-spirited, artistic and unconventional fashion',
-      'color': const Color(0xFF8E44AD),
-      'icon': Icons.nature_people_rounded,
-      'tags': ['Boho', 'Artistic', 'Free-spirit'],
-      'category': 'Boho',
-      'members': 920,
-    },
-    {
-      'name': 'K-Fashion Hub',
-      'desc': 'Korean fashion trends and K-pop inspired outfits',
-      'color': const Color(0xFFFF6B9D),
-      'icon': Icons.favorite_rounded,
-      'tags': ['Korean', 'K-pop', 'Trendy'],
-      'category': 'Asian',
-      'members': 4500,
-    },
-    {
-      'name': 'Cottagecore Aesthetic',
-      'desc': 'Romantic, countryside inspired fashion and lifestyle',
-      'color': const Color(0xFF7CB342),
-      'icon': Icons.local_florist_rounded,
-      'tags': ['Romantic', 'Countryside', 'Soft'],
-      'category': 'Aesthetic',
-      'members': 1100,
-    },
-    {
-      'name': 'Gothic Fashion',
-      'desc': 'Dark, mysterious and alternative fashion styles',
-      'color': const Color(0xFF424242),
-      'icon': Icons.nightlife_rounded,
-      'tags': ['Dark', 'Alternative', 'Mysterious'],
-      'category': 'Alternative',
-      'members': 680,
-    },
-    {
-      'name': 'Sustainable Style',
-      'desc': 'Eco-friendly and ethical fashion choices',
-      'color': const Color(0xFF4CAF50),
-      'icon': Icons.eco_rounded,
-      'tags': ['Eco-friendly', 'Sustainable', 'Ethical'],
-      'category': 'Sustainable',
-      'members': 1580,
-    },
-    {
-      'name': 'Plus Size Fashion',
-      'desc': 'Stylish and confident looks for all body sizes',
-      'color': const Color(0xFFFF9800),
-      'icon': Icons.favorite_border_rounded,
-      'tags': ['Inclusive', 'Body-positive', 'Confident'],
-      'category': 'Inclusive',
-      'members': 2200,
-    },
-    {
-      'name': 'Luxury Brands',
-      'desc': 'High-end designer fashion and luxury lifestyle',
-      'color': const Color(0xFF9C27B0),
-      'icon': Icons.diamond_rounded,
-      'tags': ['Designer', 'Luxury', 'High-end'],
-      'category': 'Luxury',
-      'members': 890,
-    },
-    {
-      'name': 'Budget Fashion',
-      'desc': 'Affordable style tips and budget-friendly finds',
-      'color': const Color(0xFF00BCD4),
-      'icon': Icons.savings_rounded,
-      'tags': ['Affordable', 'Budget', 'Thrifty'],
-      'category': 'Budget',
-      'members': 3100,
-    },
-    {
-      'name': 'Punk & Grunge',
-      'desc': 'Edgy, rebellious and alternative fashion styles',
-      'color': const Color(0xFF795548),
-      'icon': Icons.music_note_rounded,
-      'tags': ['Edgy', 'Rebellious', 'Grunge'],
-      'category': 'Alternative',
-      'members': 540,
-    },
-  ];
-
+  // Remove the hardcoded _communities list and replace with Firestore stream
   final Set<String> _joinedCommunities = {};
   String _searchQuery = '';
   String _selectedCategory = 'All';
@@ -175,10 +38,19 @@ class _CommunityPageState extends State<CommunityPage>
   static const Color lightGray = Color(0xFFF8F9FA);
   static const Color softCream = Color(0xFFFAF9F7);
 
-  List<String> get _categories {
-    final categories = _communities.map((c) => c['category'] as String).toSet().toList();
-    categories.sort();
-    return ['All', ...categories];
+  // Get categories from Firestore communities
+  Stream<List<String>> get _categoriesStream {
+    return FirebaseFirestore.instance
+        .collection('komunitas')
+        .snapshots()
+        .map((snapshot) {
+      final categories = snapshot.docs
+          .map((doc) => (doc.data()['category'] as String?) ?? 'Other')
+          .toSet()
+          .toList();
+      categories.sort();
+      return ['All', ...categories];
+    });
   }
 
   @override
@@ -417,12 +289,18 @@ class _CommunityPageState extends State<CommunityPage>
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, userSnapshot) {
-        return _buildStatsRow();
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('komunitas').snapshots(),
+          builder: (context, snapshot) {
+            final communityCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+            return _buildStatsRow(communityCount);
+          },
+        );
       },
     );
   }
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow([int communityCount = 0]) {
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: _getHorizontalPadding(),
@@ -446,7 +324,7 @@ class _CommunityPageState extends State<CommunityPage>
           Expanded(
             child: _buildStatItem(
               'Communities',
-              '${_communities.length}',
+              '$communityCount',
               Icons.groups_rounded,
               primaryBlue,
             ),
@@ -511,125 +389,162 @@ class _CommunityPageState extends State<CommunityPage>
     );
   }
 
-  List<Map<String, dynamic>> get _filteredCommunities {
-    var filtered = _communities.where((c) {
-      // Category filter
-      if (_selectedCategory != 'All' && c['category'] != _selectedCategory) {
-        return false;
-      }
-      
-      // Search filter
-      if (_searchQuery.isEmpty) return true;
-      
-      final query = _searchQuery.toLowerCase();
-      return c['name']!.toLowerCase().contains(query) ||
-             c['desc']!.toLowerCase().contains(query) ||
-             c['category']!.toLowerCase().contains(query) ||
-             (c['tags'] as List<String>).any((tag) => tag.toLowerCase().contains(query));
-    }).toList();
-    
-    // Sort by members count (popular first)
-    filtered.sort((a, b) => (b['members'] as int).compareTo(a['members'] as int));
-    return filtered;
-  }
-
   Widget _buildCategoryChips() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final isSelected = _selectedCategory == category;
-          
-          return Container(
-            margin: const EdgeInsets.only(right: 12),
-            child: FilterChip(
-              selected: isSelected,
-              label: Text(
-                category,
-                style: GoogleFonts.poppins(
-                  fontSize: _getResponsiveFontSize(13),
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : primaryBlue,
+    return StreamBuilder<List<String>>(
+      stream: _categoriesStream,
+      builder: (context, snapshot) {
+        final categories = snapshot.data ?? ['All'];
+        
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              final isSelected = _selectedCategory == category;
+              
+              return Container(
+                margin: const EdgeInsets.only(right: 12),
+                child: FilterChip(
+                  selected: isSelected,
+                  label: Text(
+                    category,
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(13),
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : primaryBlue,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  selectedColor: primaryBlue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: isSelected ? primaryBlue : primaryBlue.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  onSelected: (selected) {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                  },
                 ),
-              ),
-              backgroundColor: Colors.white,
-              selectedColor: primaryBlue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected ? primaryBlue : primaryBlue.withValues(alpha: 0.3),
-                ),
-              ),
-              onSelected: (selected) {
-                HapticFeedback.lightImpact();
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
   Widget _buildCommunityList() {
-    final communities = _filteredCommunities;
-    if (communities.isEmpty) {
-      return _buildEmptyState();
-    }
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('komunitas').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: CircularProgressIndicator(color: primaryBlue),
+            ),
+          );
+        }
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // Convert Firestore data to community list
+        final communities = snapshot.data!.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': doc.id, // Add document ID for reference
+            'name': data['name'] ?? 'Unknown Community',
+            'desc': data['desc'] ?? 'No description',
+            'color': Color(data['color'] ?? 0xFF4A90E2),
+            'icon': IconData(data['icon'] ?? Icons.group.codePoint, fontFamily: 'MaterialIcons'),
+            'tags': List<String>.from(data['tags'] ?? []),
+            'category': data['category'] ?? 'Other',
+            'members': data['members'] ?? 0,
+          };
+        }).toList();
+
+        // Apply filters
+        final filteredCommunities = communities.where((c) {
+          // Category filter
+          if (_selectedCategory != 'All' && c['category'] != _selectedCategory) {
+            return false;
+          }
+          
+          // Search filter
+          if (_searchQuery.isEmpty) return true;
+          
+          final query = _searchQuery.toLowerCase();
+          return c['name']!.toLowerCase().contains(query) ||
+                 c['desc']!.toLowerCase().contains(query) ||
+                 c['category']!.toLowerCase().contains(query) ||
+                 (c['tags'] as List<String>).any((tag) => tag.toLowerCase().contains(query));
+        }).toList();
+        
+        // Sort by members count (popular first)
+        filteredCommunities.sort((a, b) => (b['members'] as int).compareTo(a['members'] as int));
+
+        if (filteredCommunities.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _selectedCategory == 'All' ? 'All Communities' : '$_selectedCategory Communities',
-                style: GoogleFonts.poppins(
-                  fontSize: _getResponsiveFontSize(18),
-                  fontWeight: FontWeight.w800,
-                  color: darkGray,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: primaryBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '${communities.length} found',
-                  style: GoogleFonts.poppins(
-                    fontSize: _getResponsiveFontSize(11),
-                    fontWeight: FontWeight.w700,
-                    color: primaryBlue,
+              Row(
+                children: [
+                  Text(
+                    _selectedCategory == 'All' ? 'All Communities' : '$_selectedCategory Communities',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(18),
+                      fontWeight: FontWeight.w800,
+                      color: darkGray,
+                    ),
                   ),
-                ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${filteredCommunities.length} found',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(11),
+                        fontWeight: FontWeight.w700,
+                        color: primaryBlue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredCommunities.length,
+                itemBuilder: (context, index) => _buildCommunityListItem(filteredCommunities[index]),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: communities.length,
-            itemBuilder: (context, index) => _buildCommunityListItem(communities[index]),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildCommunityListItem(Map<String, dynamic> community) {
-    final joined = _joinedCommunities.contains(community['name']);
+    final joined = _joinedCommunities.contains(community['id']);
     final isSelected = _selectedCommunity == community['name'];
 
     return Container(
@@ -659,7 +574,7 @@ class _CommunityPageState extends State<CommunityPage>
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         onTap: () async {
           HapticFeedback.lightImpact();
-          final isJoined = await isUserJoined(community['name']);
+          final isJoined = await isUserJoined(community['id']);
           if (mounted) {
             if (isJoined) {
               Navigator.push(
@@ -672,7 +587,7 @@ class _CommunityPageState extends State<CommunityPage>
                 ),
               );
             } else {
-              await toggleJoinCommunity(community['name']);
+              await toggleJoinCommunity(community['id']);
               if (mounted) {
                 Navigator.push(
                   context,
@@ -751,15 +666,29 @@ class _CommunityPageState extends State<CommunityPage>
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.people_rounded, size: 14, color: mediumGray),
-                const SizedBox(width: 4),
-                Text(
-                  '${community['members']} members',
-                  style: GoogleFonts.poppins(
-                    fontSize: _getResponsiveFontSize(11),
-                    color: mediumGray,
-                    fontWeight: FontWeight.w500,
-                  ),
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('komunitas')
+                      .doc(community['id'])
+                      .collection('members')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    final memberCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                    return Row(
+                      children: [
+                        Icon(Icons.people_rounded, size: 14, color: mediumGray),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$memberCount members',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(11),
+                            color: mediumGray,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -793,7 +722,7 @@ class _CommunityPageState extends State<CommunityPage>
             ),
           ],
         ),
-        trailing: _buildJoinButton(community, community['name']),
+        trailing: _buildJoinButton(community, community['id']),
       ),
     );
   }
@@ -959,26 +888,6 @@ class _CommunityPageState extends State<CommunityPage>
         ),
       ),
     );
-  }
-
-  Future<void> saveAllCommunitiesToFirestore() async {
-    for (final community in _communities) {
-      await FirebaseFirestore.instance.collection('komunitas').add({
-        'name': community['name'],
-        'desc': community['desc'],
-        'color': community['color'].value,
-        'icon': community['icon'].codePoint,
-        'tags': community['tags'],
-        'category': community['category'],
-        'members': community['members'],
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Semua komunitas berhasil disimpan ke Firestore!'))
-      );
-    }
   }
 
   Future<void> toggleJoinCommunity(String komunitasId) async {

@@ -138,121 +138,187 @@ class AdminDataService {
     }
   }
 
-  // Get all users for user management
+  // ✅ UPDATED: Method untuk mengambil distribusi usia dari field 'tanggal_lahir'
+  Future<Map<String, int>> getAgeDistribution() async {
+    try {
+      final snapshot = await _firestore.collection('users').get();
+      
+      final Map<String, int> ageGroups = {
+        '13-17': 0,
+        '18-24': 0,
+        '25-34': 0,
+        '35-44': 0,
+        '45+': 0,
+      };
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final tanggalLahir = data['tanggal_lahir']; // ✅ Ubah dari 'usia' ke 'tanggal_lahir'
+        
+        if (tanggalLahir != null) {
+          DateTime? birthDate;
+          
+          // Handle different date formats
+          if (tanggalLahir is Timestamp) {
+            birthDate = tanggalLahir.toDate();
+          } else if (tanggalLahir is String) {
+            // Try to parse string date (format: "YYYY-MM-DD" or "DD/MM/YYYY")
+            try {
+              if (tanggalLahir.contains('/')) {
+                final parts = tanggalLahir.split('/');
+                if (parts.length == 3) {
+                  birthDate = DateTime(
+                    int.parse(parts[2]), // year
+                    int.parse(parts[1]), // month
+                    int.parse(parts[0]), // day
+                  );
+                }
+              } else if (tanggalLahir.contains('-')) {
+                birthDate = DateTime.parse(tanggalLahir);
+              }
+            } catch (e) {
+              print('Error parsing date: $tanggalLahir');
+            }
+          }
+          
+          if (birthDate != null) {
+            final age = _calculateAge(birthDate);
+            
+            if (age >= 13 && age <= 17) {
+              ageGroups['13-17'] = ageGroups['13-17']! + 1;
+            } else if (age >= 18 && age <= 24) {
+              ageGroups['18-24'] = ageGroups['18-24']! + 1;
+            } else if (age >= 25 && age <= 34) {
+              ageGroups['25-34'] = ageGroups['25-34']! + 1;
+            } else if (age >= 35 && age <= 44) {
+              ageGroups['35-44'] = ageGroups['35-44']! + 1;
+            } else if (age >= 45) {
+              ageGroups['45+'] = ageGroups['45+']! + 1;
+            }
+          }
+        }
+      }
+
+      return ageGroups;
+    } catch (e) {
+      print('Error getting age distribution: $e');
+      return {
+        '13-17': 0,
+        '18-24': 0,
+        '25-34': 0,
+        '35-44': 0,
+        '45+': 0,
+      };
+    }
+  }
+
+  // ✅ ADDED: Helper method untuk menghitung usia dari tanggal lahir
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month || 
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  // ✅ Method untuk mengambil semua users dengan stream
   Stream<List<Map<String, dynamic>>> getAllUsers() {
-    return _firestore.collection('users').snapshots().map((snapshot) {
+    return _firestore
+        .collection('users')
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        data['id'] = doc.id; // Add document ID
+        data['id'] = doc.id; // Tambahkan document ID
         return data;
       }).toList();
     });
   }
 
-  // Update user status (activate/deactivate)
+  // ✅ Method untuk statistik users
+  Future<Map<String, int>> getUserStats() async {
+    try {
+      final snapshot = await _firestore.collection('users').get();
+      int total = snapshot.docs.length;
+      int active = 0;
+      int inactive = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final isActive = data['isActive'] ?? true;
+        if (isActive) {
+          active++;
+        } else {
+          inactive++;
+        }
+      }
+
+      return {
+        'total': total,
+        'active': active,
+        'inactive': inactive,
+      };
+    } catch (e) {
+      print('Error getting user stats: $e');
+      return {'total': 0, 'active': 0, 'inactive': 0};
+    }
+  }
+
+  // ✅ Method untuk update status user
   Future<void> updateUserStatus(String userId, bool isActive) async {
     try {
       await _firestore.collection('users').doc(userId).update({
         'isActive': isActive,
-        'lastModified': FieldValue.serverTimestamp(),
-        'modifiedBy': 'admin',
-      });
-
-      // Log the action
-      await _firestore.collection('admin_logs').add({
-        'action': 'user_status_updated',
-        'userId': userId,
-        'newStatus': isActive ? 'active' : 'inactive',
-        'timestamp': FieldValue.serverTimestamp(),
-        'adminUser': 'aviitfbrsyh',
+        'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      developer.log('Failed to update user status: $e');
-      rethrow;
+      throw Exception('Failed to update user status: $e');
     }
   }
 
-  // Delete user
+  // ✅ Method untuk delete user
   Future<void> deleteUser(String userId) async {
     try {
-      // Get user data before deletion for logging
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-      final userData = userDoc.data();
-
       // Delete user document
       await _firestore.collection('users').doc(userId).delete();
-
-      // Log the deletion
-      await _firestore.collection('admin_logs').add({
-        'action': 'user_deleted',
-        'userId': userId,
-        'deletedUserEmail': userData?['email'] ?? 'unknown',
-        'deletedUserName': userData?['name'] ?? 'unknown',
-        'timestamp': FieldValue.serverTimestamp(),
-        'adminUser': 'aviitfbrsyh',
-      });
-
-      // Optionally delete related data (outfits, posts, etc.)
-      await _deleteUserRelatedData(userId);
-    } catch (e) {
-      developer.log('Failed to delete user: $e');
-      rethrow;
-    }
-  }
-
-  // Helper method to delete user's related data
-  Future<void> _deleteUserRelatedData(String userId) async {
-    try {
+      
       // Delete user's outfits
-      final outfitsQuery =
-          await _firestore
-              .collection('outfits')
-              .where('userId', isEqualTo: userId)
-              .get();
-
-      for (var doc in outfitsQuery.docs) {
+      final outfitsSnapshot = await _firestore
+          .collection('outfits')
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      for (final doc in outfitsSnapshot.docs) {
         await doc.reference.delete();
       }
-
-      // Delete user's community posts
-      final postsQuery =
-          await _firestore
-              .collection('community_posts')
-              .where('userId', isEqualTo: userId)
-              .get();
-
-      for (var doc in postsQuery.docs) {
-        await doc.reference.delete();
+      
+      // Delete user's posts from communities
+      final communitiesSnapshot = await _firestore.collection('komunitas').get();
+      for (final communityDoc in communitiesSnapshot.docs) {
+        final postsSnapshot = await communityDoc.reference
+            .collection('posts')
+            .where('authorId', isEqualTo: userId)
+            .get();
+        
+        for (final postDoc in postsSnapshot.docs) {
+          await postDoc.reference.delete();
+        }
+        
+        // Remove user from community members
+        final memberDoc = await communityDoc.reference
+            .collection('members')
+            .doc(userId)
+            .get();
+        
+        if (memberDoc.exists) {
+          await memberDoc.reference.delete();
+        }
       }
-
-      developer.log('Deleted related data for user: $userId');
+      
     } catch (e) {
-      developer.log('Failed to delete user related data: $e');
-      // Don't rethrow here as this is cleanup, main deletion should still succeed
-    }
-  }
-
-  // Get user statistics for admin dashboard
-  Future<Map<String, int>> getUserStats() async {
-    try {
-      final usersSnapshot = await _firestore.collection('users').get();
-      final totalUsers = usersSnapshot.docs.length;
-
-      final activeUsers =
-          usersSnapshot.docs
-              .where((doc) => doc.data()['isActive'] != false)
-              .length;
-
-      final inactiveUsers = totalUsers - activeUsers;
-
-      return {
-        'total': totalUsers,
-        'active': activeUsers,
-        'inactive': inactiveUsers,
-      };
-    } catch (e) {
-      developer.log('Failed to get user stats: $e');
-      return {'total': 0, 'active': 0, 'inactive': 0};
+      throw Exception('Failed to delete user: $e');
     }
   }
 }

@@ -31,14 +31,14 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Sample outfit events data
+  // Real outfit events data - no sample data
   final Map<DateTime, List<OutfitEvent>> _outfitEvents = {};
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _loadSampleEvents();
+    // Sample data removed - app now works with real user data only
   }
 
   void _initializeAnimations() {
@@ -64,28 +64,7 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
     _slideController.forward();
   }
 
-  void _loadSampleEvents() {
-    // Add sample events for demonstration
-    final today = DateTime.now();
-    _outfitEvents[today] = [
-      OutfitEvent(
-        id: '1',
-        title: 'Work Meeting',
-        outfitName: 'Professional Chic',
-        reminderEmail: 'user@example.com',
-        status: OutfitEventStatus.planned,
-      ),
-    ];
-    _outfitEvents[today.add(const Duration(days: 2))] = [
-      OutfitEvent(
-        id: '2',
-        title: 'Date Night',
-        outfitName: 'Elegant Evening',
-        reminderEmail: 'user@example.com',
-        status: OutfitEventStatus.emailSent,
-      ),
-    ];
-  }
+
 
   @override
   void dispose() {
@@ -389,11 +368,19 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
       dayWidgets.add(_buildDayCell(date));
     }
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 7,
-      children: dayWidgets,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.4,
+      ),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 7,
+        childAspectRatio: 1.0,
+        mainAxisSpacing: 2,
+        crossAxisSpacing: 2,
+        children: dayWidgets,
+      ),
     );
   }
 
@@ -510,28 +497,55 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
   Widget _buildQuickActionsSection() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildQuickActionCard(
-              'Go to Wardrobe',
-              'Browse your items',
-              Icons.checkroom_rounded,
-              primaryBlue,
-              () => _navigateToWardrobe(),
-            ),
-          ),
-          SizedBox(width: _getHorizontalPadding()),
-          Expanded(
-            child: _buildQuickActionCard(
-              'View History',
-              'Past outfits',
-              Icons.history_rounded,
-              accentYellow,
-              () => _navigateToHistory(),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // On very small screens, stack the cards vertically
+          if (constraints.maxWidth < 300) {
+            return Column(
+              children: [
+                _buildQuickActionCard(
+                  'Go to Wardrobe',
+                  'Browse your items',
+                  Icons.checkroom_rounded,
+                  primaryBlue,
+                  () => _navigateToWardrobe(),
+                ),
+                SizedBox(height: _getHorizontalPadding()),
+                _buildQuickActionCard(
+                  'View History',
+                  'Past outfits',
+                  Icons.history_rounded,
+                  accentYellow,
+                  () => _navigateToHistory(),
+                ),
+              ],
+            );
+          }
+          // Normal horizontal layout
+          return Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  'Go to Wardrobe',
+                  'Browse your items',
+                  Icons.checkroom_rounded,
+                  primaryBlue,
+                  () => _navigateToWardrobe(),
+                ),
+              ),
+              SizedBox(width: _getHorizontalPadding()),
+              Expanded(
+                child: _buildQuickActionCard(
+                  'View History',
+                  'Past outfits',
+                  Icons.history_rounded,
+                  accentYellow,
+                  () => _navigateToHistory(),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -562,6 +576,7 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -585,6 +600,8 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                 color: darkGray,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: _getResponsiveHeight(4)),
             Text(
@@ -595,6 +612,8 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -650,8 +669,18 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                   ? mediumGray.withValues(alpha: 0.3)
                   : primaryBlue.withValues(alpha: 0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isPastDate 
+                ? mediumGray.withValues(alpha: 0.1)
+                : primaryBlue.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(16),
@@ -678,18 +707,56 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
               fontWeight: FontWeight.w600,
               color: isPastDate ? mediumGray : darkGray,
             ),
-          ),
-          SizedBox(height: _getResponsiveHeight(8)),
-          Text(
-            isPastDate
-                ? 'You cannot plan outfits for past dates. Select a future date to plan ahead.'
-                : 'Start planning your outfit for this date using the buttons above',
-            style: GoogleFonts.poppins(
-              fontSize: _getResponsiveFontSize(12),
-              color: mediumGray,
-            ),
             textAlign: TextAlign.center,
           ),
+          SizedBox(height: _getResponsiveHeight(8)),
+          Flexible(
+            child: Text(
+              isPastDate
+                  ? 'You cannot plan outfits for past dates. Select a future date to plan ahead.'
+                  : 'Start planning your perfect outfit for this date. Tap the "Plan Outfit" button to get started!',
+              style: GoogleFonts.poppins(
+                fontSize: _getResponsiveFontSize(12),
+                color: mediumGray,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          if (!isPastDate) ...[
+            SizedBox(height: _getResponsiveHeight(16)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: accentYellow.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: accentYellow.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline_rounded,
+                    color: accentYellow.withValues(alpha: 0.8),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Tip: Check your wardrobe first for inspiration',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(11),
+                        color: darkGray,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -748,7 +815,10 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                         fontWeight: FontWeight.w700,
                         color: darkGray,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    SizedBox(height: _getResponsiveHeight(4)),
                     Text(
                       event.outfitName,
                       style: GoogleFonts.poppins(
@@ -756,6 +826,8 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                         color: primaryBlue,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -838,8 +910,11 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
             ),
           ),
           SizedBox(height: _getResponsiveHeight(12)),
-          SizedBox(
-            height: _getResponsiveHeight(120),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: _getResponsiveHeight(120),
+              minHeight: _getResponsiveHeight(100),
+            ),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: upcomingEvents.length,
@@ -855,8 +930,10 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
   }
 
   Widget _buildUpcomingEventCard(DateTime date, OutfitEvent event) {
+    final cardWidth = _isSmallScreen() ? _getScreenWidth() * 0.8 : _getScreenWidth() * 0.7;
+    
     return Container(
-      width: _getScreenWidth() * 0.7,
+      width: cardWidth,
       margin: EdgeInsets.only(right: _getHorizontalPadding()),
       padding: EdgeInsets.all(_getHorizontalPadding()),
       decoration: BoxDecoration(
@@ -877,25 +954,30 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _formatDate(date),
-                  style: GoogleFonts.poppins(
-                    fontSize: _getResponsiveFontSize(10),
-                    fontWeight: FontWeight.w600,
-                    color: primaryBlue,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _formatDate(date),
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(10),
+                      fontWeight: FontWeight.w600,
+                      color: primaryBlue,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Icon(
                 Icons.notifications_active_rounded,
                 color: Colors.white,
@@ -903,26 +985,35 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
               ),
             ],
           ),
-          const Spacer(),
-          Text(
-            event.title,
-            style: GoogleFonts.poppins(
-              fontSize: _getResponsiveFontSize(14),
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+          SizedBox(height: _getResponsiveHeight(8)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  event.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(14),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: _getResponsiveHeight(4)),
+                Text(
+                  event.outfitName,
+                  style: GoogleFonts.poppins(
+                    fontSize: _getResponsiveFontSize(12),
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            event.outfitName,
-            style: GoogleFonts.poppins(
-              fontSize: _getResponsiveFontSize(12),
-              color: Colors.white.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

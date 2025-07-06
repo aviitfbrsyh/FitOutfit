@@ -252,6 +252,8 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                         fontWeight: FontWeight.w800,
                         color: darkGray,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: _getResponsiveHeight(4)),
                     Text(
@@ -261,6 +263,8 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                         color: primaryBlue,
                         fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -286,28 +290,42 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
             ],
           ),
           SizedBox(height: _getResponsiveHeight(16)),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              Icon(Icons.calendar_today_rounded, color: mediumGray, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                '${widget.date.day}/${widget.date.month}/${widget.date.year}',
-                style: GoogleFonts.poppins(
-                  fontSize: _getResponsiveFontSize(14),
-                  color: mediumGray,
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.calendar_today_rounded, color: mediumGray, size: 16),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '${widget.date.day}/${widget.date.month}/${widget.date.year}',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(14),
+                        color: mediumGray,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Icon(Icons.access_time_rounded, color: mediumGray, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'All Day',
-                style: GoogleFonts.poppins(
-                  fontSize: _getResponsiveFontSize(14),
-                  color: mediumGray,
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.access_time_rounded, color: mediumGray, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'All Day',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(14),
+                      color: mediumGray,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

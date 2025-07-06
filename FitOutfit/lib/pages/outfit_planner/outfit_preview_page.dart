@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'outfit_planner_page.dart';
+import '../../models/wardrobe_item.dart';
 
 class OutfitPreviewPage extends StatefulWidget {
   final OutfitEvent outfitEvent;
@@ -507,9 +508,12 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
   }
 
   Widget _buildClothingItems() {
-    final items =
-        widget.outfitEvent.wardrobeItems ??
-        ['Blazer', 'White Shirt', 'Dark Jeans', 'Leather Shoes', 'Watch'];
+    final wardrobeItems = widget.outfitEvent.wardrobeItems ?? [];
+    
+    // Create default items if no wardrobe items are selected
+    final displayItems = wardrobeItems.isNotEmpty 
+        ? wardrobeItems
+        : _getDefaultWardrobeItems();
 
     return Container(
       padding: EdgeInsets.all(_getHorizontalPadding()),
@@ -528,7 +532,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Clothing Items (${items.length})',
+            'Clothing Items (${displayItems.length})',
             style: GoogleFonts.poppins(
               fontSize: _getResponsiveFontSize(18),
               fontWeight: FontWeight.w700,
@@ -539,11 +543,66 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: items.map((item) => _buildClothingChip(item)).toList(),
+            children: displayItems.map((item) => _buildClothingChip(item.name)).toList(),
           ),
         ],
       ),
     );
+  }
+
+  List<WardrobeItem> _getDefaultWardrobeItems() {
+    return [
+      WardrobeItem(
+        id: 'default_1',
+        name: 'Blazer',
+        category: 'Outerwear',
+        color: 'Navy',
+        description: 'Classic navy blazer',
+        tags: [],
+        userId: '',
+        createdAt: DateTime.now(),
+      ),
+      WardrobeItem(
+        id: 'default_2', 
+        name: 'White Shirt',
+        category: 'Tops',
+        color: 'White',
+        description: 'Crisp white dress shirt',
+        tags: [],
+        userId: '',
+        createdAt: DateTime.now(),
+      ),
+      WardrobeItem(
+        id: 'default_3',
+        name: 'Dark Jeans',
+        category: 'Bottoms', 
+        color: 'Dark Blue',
+        description: 'Dark wash denim jeans',
+        tags: [],
+        userId: '',
+        createdAt: DateTime.now(),
+      ),
+      WardrobeItem(
+        id: 'default_4',
+        name: 'Leather Shoes',
+        category: 'Shoes',
+        color: 'Brown',
+        description: 'Classic brown leather shoes',
+        tags: [],
+        userId: '',
+        createdAt: DateTime.now(),
+      ),
+      WardrobeItem(
+        id: 'default_5',
+        name: 'Watch',
+        category: 'Accessories',
+        color: 'Silver',
+        description: 'Silver wristwatch',
+        tags: [],
+        userId: '',
+        createdAt: DateTime.now(),
+      ),
+    ];
   }
 
   Widget _buildClothingChip(String item) {

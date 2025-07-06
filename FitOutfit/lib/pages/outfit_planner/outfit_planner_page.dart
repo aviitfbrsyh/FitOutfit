@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'outfit_planning_form.dart' as OutfitForm;
 import 'outfit_history_page.dart';
 import '../wardrobe/wardrobe_page.dart';
+import '../../models/wardrobe_item.dart';
 
 class OutfitPlannerPage extends StatefulWidget {
   const OutfitPlannerPage({super.key});
@@ -1109,7 +1110,7 @@ class OutfitEvent {
   final String reminderEmail;
   final OutfitEventStatus status;
   final String? notes;
-  final List<String>? wardrobeItems;
+  final List<WardrobeItem>? wardrobeItems;
 
   OutfitEvent({
     required this.id,

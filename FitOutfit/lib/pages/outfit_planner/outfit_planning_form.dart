@@ -88,6 +88,10 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final padding = isSmallScreen ? 16.0 : 20.0;
+    
     return Scaffold(
       backgroundColor: softCream,
       appBar: AppBar(
@@ -108,7 +112,7 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(padding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -318,36 +322,50 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
     required Function(String) onSelected,
     required Color color,
   }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: items.map((item) {
-        final isSelected = selectedItem == item;
-        return GestureDetector(
-          onTap: () => onSelected(item),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: isSelected ? color : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected ? color : color.withValues(alpha: 0.3),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: items.map((item) {
+            final isSelected = selectedItem == item;
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: constraints.maxWidth * 0.45, // Ensure chips don't overflow
               ),
-            ),
-            child: Text(
-              item,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : color,
+              child: GestureDetector(
+                onTap: () => onSelected(item),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? color : color.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    item,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : color,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
+    );
+  }
     );
   }
 
@@ -357,44 +375,56 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
     required Function(List<String>) onSelectionChanged,
     required Color color,
   }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: items.map((item) {
-        final isSelected = selectedItems.contains(item);
-        return GestureDetector(
-          onTap: () {
-            List<String> newSelection = List.from(selectedItems);
-            if (isSelected) {
-              newSelection.remove(item);
-            } else {
-              newSelection.add(item);
-            }
-            onSelectionChanged(newSelection);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: isSelected ? color : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected ? color : color.withValues(alpha: 0.3),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: items.map((item) {
+            final isSelected = selectedItems.contains(item);
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: constraints.maxWidth * 0.45, // Ensure chips don't overflow
               ),
-            ),
-            child: Text(
-              item,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : color,
+              child: GestureDetector(
+                onTap: () {
+                  List<String> newSelection = List.from(selectedItems);
+                  if (isSelected) {
+                    newSelection.remove(item);
+                  } else {
+                    newSelection.add(item);
+                  }
+                  onSelectionChanged(newSelection);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected ? color : color.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    item,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : color,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 

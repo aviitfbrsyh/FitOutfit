@@ -107,6 +107,10 @@ class _OutfitHistoryPageState extends State<OutfitHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final padding = isSmallScreen ? 16.0 : 20.0;
+    
     return Scaffold(
       backgroundColor: softCream,
       appBar: AppBar(
@@ -125,7 +129,7 @@ class _OutfitHistoryPageState extends State<OutfitHistoryPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

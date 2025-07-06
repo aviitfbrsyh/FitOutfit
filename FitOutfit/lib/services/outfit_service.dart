@@ -3,14 +3,14 @@ import '../models/outfit_suggestion.dart';
 
 class OutfitService {
   OutfitSuggestion suggestOutfit(UserPersonalization user, String destination) {
-    // Simple logic for demonstration
+    // Logic for outfit suggestion based on user preferences and destination
     if (destination.toLowerCase().contains('beach')) {
       return OutfitSuggestion(
         top: 'Light Linen Shirt',
         bottom: 'Shorts',
         shoes: 'Sandals',
         accessory: 'Sunglasses',
-        imageAsset: 'assets/outfits/beach.png',
+        imageAsset: null, // Remove hardcoded asset paths
       );
     }
     if (user.bodyShape == 'Hourglass' && user.personalColor == 'Spring') {
@@ -19,16 +19,16 @@ class OutfitService {
         bottom: 'High-waisted Jeans',
         shoes: 'Ballet Flats',
         accessory: 'Pastel Scarf',
-        imageAsset: 'assets/outfits/spring_hourglass.png',
+        imageAsset: null, // Remove hardcoded asset paths
       );
     }
-    // Add more rules as needed
+    // Default suggestion - no hardcoded assets
     return OutfitSuggestion(
       top: 'Basic Tee',
       bottom: 'Jeans',
       shoes: 'Sneakers',
       accessory: 'Watch',
-      imageAsset: 'assets/outfits/default.png',
+      imageAsset: null, // Remove hardcoded asset paths
     );
   }
 }

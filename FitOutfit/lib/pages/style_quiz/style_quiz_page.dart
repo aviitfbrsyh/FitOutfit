@@ -2802,6 +2802,16 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       'deal_hunter': 0,
     };
 
+    // Prevent division by zero and ensure meaningful data
+    if (answers.isEmpty) {
+      return {
+        'smart_saver': 25,
+        'overbudget': 25,
+        'impulse_switcher': 25,
+        'deal_hunter': 25,
+      };
+    }
+
     for (String answer in answers) {
       switch (answer) {
         case 'quality_investment':

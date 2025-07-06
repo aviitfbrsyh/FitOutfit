@@ -497,28 +497,55 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
   Widget _buildQuickActionsSection() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildQuickActionCard(
-              'Go to Wardrobe',
-              'Browse your items',
-              Icons.checkroom_rounded,
-              primaryBlue,
-              () => _navigateToWardrobe(),
-            ),
-          ),
-          SizedBox(width: _getHorizontalPadding()),
-          Expanded(
-            child: _buildQuickActionCard(
-              'View History',
-              'Past outfits',
-              Icons.history_rounded,
-              accentYellow,
-              () => _navigateToHistory(),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // On very small screens, stack the cards vertically
+          if (constraints.maxWidth < 300) {
+            return Column(
+              children: [
+                _buildQuickActionCard(
+                  'Go to Wardrobe',
+                  'Browse your items',
+                  Icons.checkroom_rounded,
+                  primaryBlue,
+                  () => _navigateToWardrobe(),
+                ),
+                SizedBox(height: _getHorizontalPadding()),
+                _buildQuickActionCard(
+                  'View History',
+                  'Past outfits',
+                  Icons.history_rounded,
+                  accentYellow,
+                  () => _navigateToHistory(),
+                ),
+              ],
+            );
+          }
+          // Normal horizontal layout
+          return Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  'Go to Wardrobe',
+                  'Browse your items',
+                  Icons.checkroom_rounded,
+                  primaryBlue,
+                  () => _navigateToWardrobe(),
+                ),
+              ),
+              SizedBox(width: _getHorizontalPadding()),
+              Expanded(
+                child: _buildQuickActionCard(
+                  'View History',
+                  'Past outfits',
+                  Icons.history_rounded,
+                  accentYellow,
+                  () => _navigateToHistory(),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -549,6 +576,7 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -572,6 +600,8 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                 color: darkGray,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             SizedBox(height: _getResponsiveHeight(4)),
             Text(
@@ -582,6 +612,8 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -878,8 +910,11 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
             ),
           ),
           SizedBox(height: _getResponsiveHeight(12)),
-          SizedBox(
-            height: _getResponsiveHeight(120),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: _getResponsiveHeight(120),
+              minHeight: _getResponsiveHeight(100),
+            ),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: upcomingEvents.length,
@@ -895,8 +930,10 @@ class _OutfitPlannerPageState extends State<OutfitPlannerPage>
   }
 
   Widget _buildUpcomingEventCard(DateTime date, OutfitEvent event) {
+    final cardWidth = _isSmallScreen() ? _getScreenWidth() * 0.8 : _getScreenWidth() * 0.7;
+    
     return Container(
-      width: _getScreenWidth() * 0.7,
+      width: cardWidth,
       margin: EdgeInsets.only(right: _getHorizontalPadding()),
       padding: EdgeInsets.all(_getHorizontalPadding()),
       decoration: BoxDecoration(

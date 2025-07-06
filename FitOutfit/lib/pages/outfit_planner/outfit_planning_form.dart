@@ -80,6 +80,11 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
       // Initialize selected wardrobe items if editing
       if (widget.editingEvent!.wardrobeItems != null) {
         _selectedWardrobeItems = List.from(widget.editingEvent!.wardrobeItems!);
+        // Also populate clothing items for the UI
+        _selectedClothingItems = _selectedWardrobeItems
+            .map((item) => item.name)
+            .where((name) => _clothingItems.contains(name))
+            .toList();
       }
     }
   }
@@ -407,6 +412,14 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
 
   void _saveOutfit() {
     if (_formKey.currentState!.validate()) {
+      // Convert selected clothing categories to WardrobeItem objects if _selectedWardrobeItems is empty
+      List<WardrobeItem>? finalWardrobeItems;
+      if (_selectedWardrobeItems.isNotEmpty) {
+        finalWardrobeItems = _selectedWardrobeItems;
+      } else if (_selectedClothingItems.isNotEmpty) {
+        finalWardrobeItems = _convertClothingItemsToWardrobeItems(_selectedClothingItems);
+      }
+      
       final outfitEvent = OutfitEvent(
         id: widget.editingEvent?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         title: _titleController.text,
@@ -414,11 +427,48 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
         reminderEmail: _emailController.text,
         status: OutfitEventStatus.planned,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
-        wardrobeItems: _selectedWardrobeItems.isEmpty ? null : _selectedWardrobeItems,
+        wardrobeItems: finalWardrobeItems,
       );
       
       // Return the outfit event to the previous screen
       Navigator.pop(context, outfitEvent);
+    }
+  }
+
+  List<WardrobeItem> _convertClothingItemsToWardrobeItems(List<String> clothingItems) {
+    return clothingItems.map((item) {
+      return WardrobeItem(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}_${item.toLowerCase().replaceAll(' ', '_')}',
+        name: item,
+        category: _getCategoryForClothingItem(item),
+        color: 'Various',
+        description: 'Selected $item for outfit',
+        tags: [item.toLowerCase()],
+        userId: '', // Will be set when properly integrated with user system
+        createdAt: DateTime.now(),
+      );
+    }).toList();
+  }
+
+  String _getCategoryForClothingItem(String item) {
+    switch (item.toLowerCase()) {
+      case 'blouse':
+      case 't-shirt':
+        return 'Tops';
+      case 'jeans':
+        return 'Bottoms';
+      case 'dress':
+        return 'Dresses';
+      case 'jacket':
+        return 'Outerwear';
+      case 'shoes':
+        return 'Shoes';
+      case 'accessories':
+        return 'Accessories';
+      case 'bag':
+        return 'Accessories';
+      default:
+        return 'Other';
     }
   }
 }

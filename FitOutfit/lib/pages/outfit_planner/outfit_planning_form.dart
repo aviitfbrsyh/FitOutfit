@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'outfit_planner_page.dart';
+import '../../models/wardrobe_item.dart';
 
 class OutfitPlanningForm extends StatefulWidget {
   final DateTime selectedDate;
@@ -34,6 +35,7 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
   String _selectedOccasion = '';
   String _selectedWeather = '';
   List<String> _selectedClothingItems = [];
+  List<WardrobeItem> _selectedWardrobeItems = [];
 
   final List<String> _occasions = [
     'Work Meeting',
@@ -74,6 +76,11 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
       _outfitNameController.text = widget.editingEvent!.outfitName;
       _emailController.text = widget.editingEvent!.reminderEmail;
       _notesController.text = widget.editingEvent!.notes ?? '';
+      
+      // Initialize selected wardrobe items if editing
+      if (widget.editingEvent!.wardrobeItems != null) {
+        _selectedWardrobeItems = List.from(widget.editingEvent!.wardrobeItems!);
+      }
     }
   }
 
@@ -407,7 +414,7 @@ class _OutfitPlanningFormState extends State<OutfitPlanningForm> {
         reminderEmail: _emailController.text,
         status: OutfitEventStatus.planned,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
-        wardrobeItems: _selectedClothingItems.isEmpty ? null : _selectedClothingItems,
+        wardrobeItems: _selectedWardrobeItems.isEmpty ? null : _selectedWardrobeItems,
       );
       
       // Return the outfit event to the previous screen

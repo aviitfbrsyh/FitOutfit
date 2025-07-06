@@ -357,6 +357,8 @@ class _OutfitHistoryPageState extends State<OutfitHistoryPage> {
                           fontWeight: FontWeight.w700,
                           color: darkGray,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Container(
@@ -387,6 +389,8 @@ class _OutfitHistoryPageState extends State<OutfitHistoryPage> {
                     color: primaryBlue,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(

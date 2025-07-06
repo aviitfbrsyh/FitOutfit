@@ -1088,7 +1088,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Creating $_budgetResult outfits for $_currentUser...',
+                'Creating budget-friendly outfits for $_currentUser...',
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
             ),
@@ -1978,6 +1978,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             SizedBox(height: screenSize.height * 0.025),
             _buildMobileTips(screenSize),
             SizedBox(height: screenSize.height * 0.025),
+            _buildBudgetChartsSection(screenSize),
+            SizedBox(height: screenSize.height * 0.025),
             _buildMobileActionButtons(screenSize),
           ],
         ),
@@ -2309,7 +2311,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             onPressed: _navigateToOutfitPlanner,
             icon: Icon(Icons.checkroom_rounded, size: isSmallScreen ? 18 : 20),
             label: Text(
-              'Create AI Outfits',
+              'Create Budget Outfits',
               style: GoogleFonts.poppins(
                 fontSize: isSmallScreen ? 14 : 16,
                 fontWeight: FontWeight.w600,
@@ -2435,5 +2437,467 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
     _slideController.reset();
     _scaleController.reset();
+  }
+
+  // Budget Charts Section
+  Widget _buildBudgetChartsSection(Size screenSize) {
+    final isSmallScreen = screenSize.width < 360;
+    
+    return Column(
+      children: [
+        // Section Header
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(screenSize.width * 0.04),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(isSmallScreen ? 20 : 24),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor,
+                blurRadius: isSmallScreen ? 15 : 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          primaryGreen.withOpacity(0.1),
+                          accentBeige.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
+                      border: Border.all(
+                        color: primaryGreen.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.bar_chart_rounded,
+                      size: isSmallScreen ? 20 : 24,
+                      color: primaryGreen,
+                    ),
+                  ),
+                  SizedBox(width: screenSize.width * 0.03),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Budget Analytics',
+                          style: GoogleFonts.poppins(
+                            fontSize: isSmallScreen ? 16 : 18,
+                            fontWeight: FontWeight.w700,
+                            color: darkGray,
+                          ),
+                        ),
+                        Text(
+                          'Your spending behavior insights',
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: mediumGray,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: screenSize.height * 0.02),
+              
+              // Pie Chart - Budget Personality Distribution
+              Text(
+                'Budget Personality Distribution',
+                style: GoogleFonts.poppins(
+                  fontSize: isSmallScreen ? 14 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: darkGray,
+                ),
+              ),
+              SizedBox(height: screenSize.height * 0.015),
+              Container(
+                height: isSmallScreen ? 200 : 220,
+                child: _buildBudgetPieChart(),
+              ),
+              SizedBox(height: screenSize.height * 0.01),
+              // Pie Chart Legend
+              _buildPieChartLegend(isSmallScreen),
+              
+              SizedBox(height: screenSize.height * 0.025),
+              
+              // Bar Chart - Spending Behavior per Category
+              Text(
+                'Spending Behavior Analysis',
+                style: GoogleFonts.poppins(
+                  fontSize: isSmallScreen ? 14 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: darkGray,
+                ),
+              ),
+              SizedBox(height: screenSize.height * 0.015),
+              Container(
+                height: isSmallScreen ? 180 : 200,
+                child: _buildSpendingBarChart(),
+              ),
+              
+              SizedBox(height: screenSize.height * 0.025),
+              
+              // Line Chart - Fashion Spending Awareness Trends
+              Text(
+                'Spending Awareness Trend',
+                style: GoogleFonts.poppins(
+                  fontSize: isSmallScreen ? 14 : 16,
+                  fontWeight: FontWeight.w600,
+                  color: darkGray,
+                ),
+              ),
+              SizedBox(height: screenSize.height * 0.015),
+              Container(
+                height: isSmallScreen ? 160 : 180,
+                child: _buildSpendingTrendChart(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Pie Chart for Budget Personality Distribution
+  Widget _buildBudgetPieChart() {
+    // Calculate scores from current answers
+    final scores = _calculateBudgetScores();
+    final total = scores.values.fold(0, (sum, score) => sum + score);
+    
+    return PieChart(
+      PieChartData(
+        sectionsSpace: 2,
+        centerSpaceRadius: 40,
+        sections: [
+          PieChartSectionData(
+            color: savingsGreen,
+            value: (scores['smart_saver'] ?? 0) / total * 100,
+            title: '${((scores['smart_saver'] ?? 0) / total * 100).round()}%',
+            radius: 60,
+            titleStyle: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          PieChartSectionData(
+            color: spendingRed,
+            value: (scores['overbudget'] ?? 0) / total * 100,
+            title: '${((scores['overbudget'] ?? 0) / total * 100).round()}%',
+            radius: 60,
+            titleStyle: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          PieChartSectionData(
+            color: impulseBlue,
+            value: (scores['impulse_switcher'] ?? 0) / total * 100,
+            title: '${((scores['impulse_switcher'] ?? 0) / total * 100).round()}%',
+            radius: 60,
+            titleStyle: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          PieChartSectionData(
+            color: dealGold,
+            value: (scores['deal_hunter'] ?? 0) / total * 100,
+            title: '${((scores['deal_hunter'] ?? 0) / total * 100).round()}%',
+            radius: 60,
+            titleStyle: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Bar Chart for Spending Behavior per Category
+  Widget _buildSpendingBarChart() {
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: 10,
+        barTouchData: BarTouchData(enabled: false),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                switch (value.toInt()) {
+                  case 0:
+                    return Text('Saving', style: GoogleFonts.poppins(fontSize: 10));
+                  case 1:
+                    return Text('Spending', style: GoogleFonts.poppins(fontSize: 10));
+                  case 2:
+                    return Text('Deals', style: GoogleFonts.poppins(fontSize: 10));
+                  case 3:
+                    return Text('Impulse', style: GoogleFonts.poppins(fontSize: 10));
+                  default:
+                    return Text('');
+                }
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: [
+          BarChartGroupData(
+            x: 0,
+            barRods: [
+              BarChartRodData(
+                toY: _getBehaviorIntensity('smart_saver'),
+                color: savingsGreen,
+                width: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 1,
+            barRods: [
+              BarChartRodData(
+                toY: _getBehaviorIntensity('overbudget'),
+                color: spendingRed,
+                width: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 2,
+            barRods: [
+              BarChartRodData(
+                toY: _getBehaviorIntensity('deal_hunter'),
+                color: dealGold,
+                width: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 3,
+            barRods: [
+              BarChartRodData(
+                toY: _getBehaviorIntensity('impulse_switcher'),
+                color: impulseBlue,
+                width: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Line Chart for Fashion Spending Awareness Trends
+  Widget _buildSpendingTrendChart() {
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(show: true, drawVerticalLine: false),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                switch (value.toInt()) {
+                  case 0:
+                    return Text('Past', style: GoogleFonts.poppins(fontSize: 10));
+                  case 1:
+                    return Text('Current', style: GoogleFonts.poppins(fontSize: 10));
+                  case 2:
+                    return Text('Future', style: GoogleFonts.poppins(fontSize: 10));
+                  default:
+                    return Text('');
+                }
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: mediumGray.withOpacity(0.2)),
+        ),
+        minX: 0,
+        maxX: 2,
+        minY: 0,
+        maxY: 10,
+        lineBarsData: [
+          LineChartBarData(
+            spots: [
+              FlSpot(0, _getAwarenessLevel('past')),
+              FlSpot(1, _getAwarenessLevel('current')),
+              FlSpot(2, _getAwarenessLevel('future')),
+            ],
+            isCurved: true,
+            color: primaryGreen,
+            barWidth: 3,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                radius: 4,
+                color: primaryGreen,
+                strokeWidth: 2,
+                strokeColor: Colors.white,
+              ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: primaryGreen.withOpacity(0.1),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods for chart data
+  Map<String, int> _calculateBudgetScores() {
+    final answers = _answers.values.toList();
+    Map<String, int> budgetScores = {
+      'smart_saver': 0,
+      'overbudget': 0,
+      'impulse_switcher': 0,
+      'deal_hunter': 0,
+    };
+
+    for (String answer in answers) {
+      switch (answer) {
+        case 'quality_investment':
+        case 'plan_purchases':
+        case 'budget_conscious':
+        case 'practical':
+        case 'save_money':
+          budgetScores['smart_saver'] = budgetScores['smart_saver']! + 3;
+          break;
+        case 'latest_trends':
+        case 'frequent_shopping':
+        case 'expensive_taste':
+        case 'brand_lover':
+          budgetScores['overbudget'] = budgetScores['overbudget']! + 3;
+          break;
+        case 'sales_only':
+        case 'discount_finder':
+        case 'coupon_hunter':
+        case 'promotional':
+          budgetScores['deal_hunter'] = budgetScores['deal_hunter']! + 3;
+          break;
+        case 'mood_dependent':
+        case 'impulse_buyer':
+        case 'mixed_shopping':
+        case 'sometimes_splurge':
+          budgetScores['impulse_switcher'] = budgetScores['impulse_switcher']! + 3;
+          break;
+        default:
+          budgetScores['smart_saver'] = budgetScores['smart_saver']! + 1;
+      }
+    }
+
+    // Ensure at least some value for visual representation
+    budgetScores.forEach((key, value) {
+      if (value == 0) budgetScores[key] = 1;
+    });
+
+    return budgetScores;
+  }
+
+  double _getBehaviorIntensity(String behaviorType) {
+    final scores = _calculateBudgetScores();
+    final score = scores[behaviorType] ?? 0;
+    return (score / 3.0 * 8).clamp(1.0, 10.0);
+  }
+
+  double _getAwarenessLevel(String timeframe) {
+    final scores = _calculateBudgetScores();
+    switch (timeframe) {
+      case 'past':
+        return (scores['overbudget']! + scores['impulse_switcher']!) / 2.0;
+      case 'current':
+        return scores.values.reduce((a, b) => a + b) / scores.length.toDouble();
+      case 'future':
+        return (scores['smart_saver']! + scores['deal_hunter']!) / 2.0;
+      default:
+        return 5.0;
+    }
+  }
+
+  // Pie Chart Legend
+  Widget _buildPieChartLegend(bool isSmallScreen) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      children: [
+        _buildLegendItem('🧾 Smart Saver', savingsGreen, isSmallScreen),
+        _buildLegendItem('💳 Overbudget', spendingRed, isSmallScreen),
+        _buildLegendItem('🔄 Impulse', impulseBlue, isSmallScreen),
+        _buildLegendItem('📦 Deal Hunter', dealGold, isSmallScreen),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color, bool isSmallScreen) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: isSmallScreen ? 10 : 12,
+          height: isSmallScreen ? 10 : 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: isSmallScreen ? 10 : 11,
+            fontWeight: FontWeight.w500,
+            color: darkGray,
+          ),
+        ),
+      ],
+    );
   }
 }

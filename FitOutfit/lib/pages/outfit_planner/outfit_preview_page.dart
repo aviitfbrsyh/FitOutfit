@@ -22,7 +22,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
   // FitOutfit brand colors
   static const Color primaryBlue = Color(0xFF4A90E2);
   static const Color accentYellow = Color(0xFFF5A623);
-  static const Color accentRed = Color(0xFFD0021B);
+  // ✅ REMOVED: accentRed unused field
   static const Color darkGray = Color(0xFF2C3E50);
   static const Color mediumGray = Color(0xFF6B7280);
   static const Color softCream = Color(0xFFFAF9F7);
@@ -31,8 +31,6 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
-  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -103,8 +101,6 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                         _buildOutfitDetails(),
                         SizedBox(height: _getResponsiveHeight(24)),
                         _buildClothingItems(),
-                        SizedBox(height: _getResponsiveHeight(24)),
-                        _buildActionButtons(),
                         SizedBox(height: _getResponsiveHeight(100)),
                       ],
                     ),
@@ -136,41 +132,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
         ),
         onPressed: () => Navigator.pop(context),
       ),
-      actions: [
-        IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              _isFavorite
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: _isFavorite ? accentRed : primaryBlue,
-            ),
-          ),
-          onPressed: () {
-            setState(() {
-              _isFavorite = !_isFavorite;
-            });
-            HapticFeedback.lightImpact();
-          },
-        ),
-        IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.share_rounded, color: primaryBlue),
-          ),
-          onPressed: () => _shareOutfit(),
-        ),
-        SizedBox(width: _getHorizontalPadding()),
-      ],
+      actions: [SizedBox(width: _getHorizontalPadding())],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -195,7 +157,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Outfit Preview',
+                    'Outfit Details',
                     style: GoogleFonts.poppins(
                       fontSize: _getResponsiveFontSize(28),
                       fontWeight: FontWeight.w800,
@@ -203,7 +165,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                     ),
                   ),
                   Text(
-                    'How you\'ll look amazing',
+                    'Complete outfit information',
                     style: GoogleFonts.poppins(
                       fontSize: _getResponsiveFontSize(14),
                       color: Colors.white.withValues(alpha: 0.9),
@@ -333,7 +295,6 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
       ),
       child: Stack(
         children: [
-          // Placeholder for outfit visualization
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -365,7 +326,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                 ),
                 SizedBox(height: _getResponsiveHeight(16)),
                 Text(
-                  'Outfit Visualization',
+                  'Outfit Overview',
                   style: GoogleFonts.poppins(
                     fontSize: _getResponsiveFontSize(18),
                     fontWeight: FontWeight.w700,
@@ -374,33 +335,13 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
                 ),
                 SizedBox(height: _getResponsiveHeight(8)),
                 Text(
-                  'AI-generated outfit preview',
+                  'Complete outfit details below',
                   style: GoogleFonts.poppins(
                     fontSize: _getResponsiveFontSize(12),
                     color: mediumGray,
                   ),
                 ),
               ],
-            ),
-          ),
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: accentYellow,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'PREVIEW',
-                style: GoogleFonts.poppins(
-                  fontSize: _getResponsiveFontSize(10),
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
-                ),
-              ),
             ),
           ),
         ],
@@ -445,12 +386,16 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
             widget.outfitEvent.outfitName,
             Icons.style_rounded,
           ),
-          SizedBox(height: _getResponsiveHeight(12)),
-          _buildDetailRow(
-            'Reminder',
-            widget.outfitEvent.reminderEmail,
-            Icons.email_rounded,
-          ),
+          // Added weather information
+          if (widget.outfitEvent.weather != null &&
+              widget.outfitEvent.weather!.isNotEmpty) ...[
+            SizedBox(height: _getResponsiveHeight(12)),
+            _buildDetailRow(
+              'Weather',
+              widget.outfitEvent.weather!,
+              Icons.wb_sunny_rounded,
+            ),
+          ],
           if (widget.outfitEvent.notes != null &&
               widget.outfitEvent.notes!.isNotEmpty) ...[
             SizedBox(height: _getResponsiveHeight(12)),
@@ -507,9 +452,8 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
   }
 
   Widget _buildClothingItems() {
-    final items =
-        widget.outfitEvent.wardrobeItems ??
-        ['Blazer', 'White Shirt', 'Dark Jeans', 'Leather Shoes', 'Watch'];
+    // ✅ FIXED: Handle WardrobeItem objects properly and remove unused variable
+    final wardrobeItems = widget.outfitEvent.wardrobeItems;
 
     return Container(
       padding: EdgeInsets.all(_getHorizontalPadding()),
@@ -528,7 +472,7 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Clothing Items (${items.length})',
+            'Selected Wardrobe Items (${wardrobeItems?.length ?? 0})',
             style: GoogleFonts.poppins(
               fontSize: _getResponsiveFontSize(18),
               fontWeight: FontWeight.w700,
@@ -536,162 +480,196 @@ class _OutfitPreviewPageState extends State<OutfitPreviewPage>
             ),
           ),
           SizedBox(height: _getResponsiveHeight(16)),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: items.map((item) => _buildClothingChip(item)).toList(),
+
+          // Show items in a more detailed way if they have images
+          if (wardrobeItems?.isNotEmpty == true)
+            _buildItemsGrid(wardrobeItems!)
+          else
+            _buildEmptyItemsMessage(),
+        ],
+      ),
+    );
+  }
+
+  // New method to build items grid with images
+  Widget _buildItemsGrid(List<WardrobeItem> items) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _buildItemPreviewCard(item);
+      },
+    );
+  }
+
+  // New method to build individual item preview card
+  Widget _buildItemPreviewCard(WardrobeItem item) {
+    return Container(
+      decoration: BoxDecoration(
+        color: softCream,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: primaryBlue.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Item Image
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child:
+                    item.imageUrl != null && item.imageUrl!.isNotEmpty
+                        ? Image.network(
+                          item.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) =>
+                                  _buildItemPlaceholder(),
+                        )
+                        : _buildItemPlaceholder(),
+              ),
+            ),
+          ),
+
+          // Item Info
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(12),
+                      fontWeight: FontWeight.w600,
+                      color: darkGray,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      item.category,
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(9),
+                        fontWeight: FontWeight.w600,
+                        color: primaryBlue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildClothingChip(String item) {
+  // Placeholder for items without images
+  Widget _buildItemPlaceholder() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: primaryBlue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryBlue.withValues(alpha: 0.2)),
-      ),
-      child: Text(
-        item,
-        style: GoogleFonts.poppins(
-          fontSize: _getResponsiveFontSize(12),
-          fontWeight: FontWeight.w600,
-          color: primaryBlue,
-        ),
+      width: double.infinity,
+      height: double.infinity,
+      color: primaryBlue.withValues(alpha: 0.1),
+      child: Icon(
+        Icons.checkroom_rounded,
+        size: 32,
+        color: primaryBlue.withValues(alpha: 0.5),
       ),
     );
   }
 
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _tryOnOutfit(),
-                icon: Icon(Icons.camera_alt_rounded),
-                label: Text('Try On'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(
-                    vertical: _getResponsiveHeight(16),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: _getHorizontalPadding()),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _editOutfit(),
-                icon: Icon(Icons.edit_rounded),
-                label: Text('Edit'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: primaryBlue,
-                  side: BorderSide(color: primaryBlue),
-                  padding: EdgeInsets.symmetric(
-                    vertical: _getResponsiveHeight(16),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: _getResponsiveHeight(12)),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _markAsWorn(),
-            icon: Icon(Icons.check_circle_rounded),
-            label: Text('Mark as Worn'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(vertical: _getResponsiveHeight(16)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+  // Message when no items are selected
+  Widget _buildEmptyItemsMessage() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: mediumGray.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.checkroom_rounded, color: mediumGray, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            'No items selected',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(14),
+              fontWeight: FontWeight.w600,
+              color: mediumGray,
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Color _getStatusColor() {
-    switch (widget.outfitEvent.status) {
-      case OutfitEventStatus.planned:
-        return accentYellow;
-      case OutfitEventStatus.emailSent:
-        return Colors.green;
-      case OutfitEventStatus.completed:
-        return primaryBlue;
-    }
-  }
-
-  String _getStatusText() {
-    switch (widget.outfitEvent.status) {
-      case OutfitEventStatus.planned:
-        return 'Planned';
-      case OutfitEventStatus.emailSent:
-        return 'Reminder Sent';
-      case OutfitEventStatus.completed:
-        return 'Completed';
-    }
-  }
-
-  void _shareOutfit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Outfit shared successfully!',
-          style: GoogleFonts.poppins(),
-        ),
-        backgroundColor: primaryBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          const SizedBox(height: 4),
+          Text(
+            'This outfit doesn\'t have any specific items selected',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(12),
+              color: mediumGray,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
-  void _tryOnOutfit() {
-    // Navigate to virtual try-on
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Opening Virtual Try-On...',
-          style: GoogleFonts.poppins(),
-        ),
-        backgroundColor: accentYellow,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+Color _getStatusColor() {
+  switch (widget.outfitEvent.status) {
+    case OutfitEventStatus.planned:
+      return accentYellow;
+    case OutfitEventStatus.emailSent:
+      return Colors.green;
+    case OutfitEventStatus.completed:
+      return primaryBlue;
+    case OutfitEventStatus.expired: // ✅ ADDED
+      return mediumGray;
   }
+}
 
-  void _editOutfit() {
-    Navigator.pop(context);
-  }
 
-  void _markAsWorn() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Outfit marked as worn!', style: GoogleFonts.poppins()),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-    Navigator.pop(context);
+String _getStatusText() {
+  switch (widget.outfitEvent.status) {
+    case OutfitEventStatus.planned:
+      return 'Planned';
+    case OutfitEventStatus.emailSent:
+      return 'Reminder Sent';
+    case OutfitEventStatus.completed:
+      return 'Completed';
+    case OutfitEventStatus.expired: // ✅ ADDED
+      return 'Expired';
   }
+}
 }

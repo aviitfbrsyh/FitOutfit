@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../services/user_service.dart';
 
 class StyleQuizPage extends StatefulWidget {
@@ -16,18 +17,24 @@ class StyleQuizPage extends StatefulWidget {
 
 class _StyleQuizPageState extends State<StyleQuizPage>
     with TickerProviderStateMixin {
-  // FitOutfit Brand Colors
-  static const Color primaryBlue = Color(0xFF4A90E2);
-  static const Color accentYellow = Color(0xFFF5A623);
-  static const Color accentRed = Color(0xFFD0021B);
-  static const Color accentPurple = Color(0xFF7B68EE);
+  // Budget Fashion Quiz Brand Colors - Emerald Green + Beige Theme
+  static const Color primaryGreen = Color(0xFF10B981); // Emerald Green - savings theme
+  static const Color accentBeige = Color(0xFFF5F5DC); // Warm Beige - calm theme
+  static const Color accentOrange = Color(0xFFFF6B35); // Budget alert orange
+  static const Color accentPurple = Color(0xFF7B68EE); // Smart shopping purple
   static const Color darkGray = Color(0xFF2C3E50);
   static const Color mediumGray = Color(0xFF6B7280);
   static const Color lightGray = Color(0xFFF8F9FA);
   static const Color softCream = Color(0xFFFAF9F7);
-  static const Color deepBlue = Color(0xFF1A2B4A);
-  static const Color lightBlue = Color(0xFFE6F0FF);
+  static const Color deepGreen = Color(0xFF047857); // Deep emerald
+  static const Color lightGreen = Color(0xFFD1FAE5); // Light green tint
   static const Color shadowColor = Color(0x1A000000);
+  
+  // Budget-specific colors
+  static const Color savingsGreen = Color(0xFF10B981); // Smart Saver
+  static const Color spendingRed = Color(0xFFEF4444); // Overbudget
+  static const Color impulseBlue = Color(0xFF3B82F6); // Impulse Switcher  
+  static const Color dealGold = Color(0xFFF59E0B); // Deal Hunter
 
   // API Configuration - GANTI API KEY MU DI SINI!
   static const String OPENAI_API_KEY = ("OPENAI_API_KEY");
@@ -55,8 +62,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   bool _isLoading = false;
   bool _isGeneratingQuestions = true;
   bool _showResult = false;
-  String? _styleResult;
-  String? _styleDescription;
+  String? _budgetResult;
+  String? _budgetDescription;
   List<String> _personalizedTips = [];
   String _quizSessionId = '';
 
@@ -154,7 +161,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       });
 
       // Generate questions after loading user data
-      _generateAIQuestions();
+      _generateAIBudgetQuestions();
     } catch (e) {
       print('Failed to load user data: $e');
       // Fallback to default
@@ -162,7 +169,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
         _currentUser = 'Guest';
         _currentUserId = 'guest_user';
       });
-      _generateAIQuestions();
+      _generateAIBudgetQuestions();
     }
   }
 
@@ -180,8 +187,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
         'quiz_${now.millisecondsSinceEpoch}_${_currentUser}_${math.Random().nextInt(10000)}';
   }
 
-  // AI Question Generation
-  Future<void> _generateAIQuestions() async {
+  // AI Budget Question Generation
+  Future<void> _generateAIBudgetQuestions() async {
     setState(() => _isGeneratingQuestions = true);
 
     try {
@@ -234,34 +241,34 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             {
               'role': 'system',
               'content':
-                  '''You are Fitur's AI fashion stylist for user "$_currentUser". Generate exactly 6 unique, personalized style quiz questions for mobile app. 
+                  '''You are FitOutfit's AI budget fashion advisor for user "$_currentUser". Generate exactly 6 unique, personalized budget behavior quiz questions for mobile app. 
               Current context: $dayOfWeek morning ($timeOfDay UTC), late June 2025.
               User: $_currentUser
               
               Make questions fresh, engaging, and different each time. Address the user by name occasionally. 
               
               Generate ALL 6 questions covering:
-              1. Personal style aesthetic 
-              2. Color/pattern preferences
-              3. Lifestyle/occasion needs
-              4. Comfort & fit preferences  
-              5. Shopping/budget habits
-              6. Style inspiration sources
+              1. Budget mindset & spending philosophy
+              2. Shopping frequency & habits  
+              3. Response to sales & discounts
+              4. Value perception & priorities
+              5. Brand vs thrift preferences
+              6. Financial planning for fashion
               
               Return ONLY valid JSON with exactly 6 questions:
               {
                 "questions": [
                   {
                     "id": 1,
-                    "category": "Morning Style",
-                    "question": "How do you want to feel in your clothes this $dayOfWeek, $_currentUser?",
-                    "subtitle": "Weekend energy check",
-                    "icon": "wb_sunny_outlined",
+                    "category": "Budget Mindset",
+                    "question": "When shopping for clothes, what drives your decisions, $_currentUser?",
+                    "subtitle": "Your money mindset",
+                    "icon": "psychology_outlined",
                     "options": [
-                      {"text": "Effortlessly Chic", "subtitle": "Put-together ease", "value": "effortless", "icon": "star_outline", "color": "primaryBlue"},
-                      {"text": "Cozy Comfort", "subtitle": "Relaxed vibes", "value": "cozy", "icon": "home_outlined", "color": "accentYellow"},
-                      {"text": "Bold Statement", "subtitle": "Make an impact", "value": "bold", "icon": "flash_on_outlined", "color": "accentRed"},
-                      {"text": "Classic Grace", "subtitle": "Timeless elegance", "value": "classic", "icon": "diamond_outlined", "color": "deepBlue"}
+                      {"text": "Value for Money", "subtitle": "Quality that lasts", "value": "quality_investment", "icon": "star_outline", "color": "primaryGreen"},
+                      {"text": "Latest Trends", "subtitle": "Must-have styles", "value": "latest_trends", "icon": "trending_up_outlined", "color": "accentOrange"},
+                      {"text": "Great Deals", "subtitle": "Sales & discounts", "value": "sales_only", "icon": "local_offer_outlined", "color": "dealGold"},
+                      {"text": "Mood & Feelings", "subtitle": "Depends how I feel", "value": "mood_dependent", "icon": "mood_outlined", "color": "impulseBlue"}
                     ]
                   },
                   {
@@ -271,10 +278,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     "subtitle": "Your power palette",
                     "icon": "palette_outlined",
                     "options": [
-                      {"text": "Deep & Rich", "subtitle": "Burgundy, navy, emerald", "value": "deep", "icon": "circle_outlined", "color": "deepBlue"},
+                      {"text": "Deep & Rich", "subtitle": "Burgundy, navy, emerald", "value": "deep", "icon": "circle_outlined", "color": "deepGreen"},
                       {"text": "Soft & Neutral", "subtitle": "Beige, cream, blush", "value": "neutral", "icon": "circle_outlined", "color": "mediumGray"},
-                      {"text": "Bright & Bold", "subtitle": "Coral, electric blue, fuchsia", "value": "bright", "icon": "flash_on_outlined", "color": "accentRed"},
-                      {"text": "Earth & Natural", "subtitle": "Olive, rust, camel", "value": "earth", "icon": "nature_people_outlined", "color": "accentYellow"}
+                      {"text": "Bright & Bold", "subtitle": "Coral, electric blue, fuchsia", "value": "bright", "icon": "flash_on_outlined", "color": "accentOrange"},
+                      {"text": "Earth & Natural", "subtitle": "Olive, rust, camel", "value": "earth", "icon": "nature_people_outlined", "color": "accentBeige"}
                     ]
                   },
                   {
@@ -284,10 +291,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     "subtitle": "Fashion meets function",
                     "icon": "directions_run_outlined",
                     "options": [
-                      {"text": "Always On-The-Go", "subtitle": "Active & dynamic", "value": "active", "icon": "directions_run_outlined", "color": "accentRed"},
-                      {"text": "Work-Focused", "subtitle": "Professional first", "value": "professional", "icon": "business_center_outlined", "color": "primaryBlue"},
+                      {"text": "Always On-The-Go", "subtitle": "Active & dynamic", "value": "active", "icon": "directions_run_outlined", "color": "accentOrange"},
+                      {"text": "Work-Focused", "subtitle": "Professional first", "value": "professional", "icon": "business_center_outlined", "color": "primaryGreen"},
                       {"text": "Creative & Flexible", "subtitle": "Artistic projects", "value": "creative", "icon": "palette_outlined", "color": "accentPurple"},
-                      {"text": "Balanced Living", "subtitle": "Mix of everything", "value": "balanced", "icon": "spa_outlined", "color": "accentYellow"}
+                      {"text": "Balanced Living", "subtitle": "Mix of everything", "value": "balanced", "icon": "spa_outlined", "color": "accentBeige"}
                     ]
                   },
                   {
@@ -297,9 +304,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     "subtitle": "Your comfort priority",
                     "icon": "checkroom_outlined",
                     "options": [
-                      {"text": "Perfectly Tailored", "subtitle": "Sharp & structured", "value": "tailored", "icon": "straighten_outlined", "color": "primaryBlue"},
-                      {"text": "Relaxed & Flowy", "subtitle": "Comfortable ease", "value": "relaxed", "icon": "air_outlined", "color": "accentYellow"},
-                      {"text": "Figure-Hugging", "subtitle": "Show your silhouette", "value": "fitted", "icon": "fitness_center_outlined", "color": "accentRed"},
+                      {"text": "Perfectly Tailored", "subtitle": "Sharp & structured", "value": "tailored", "icon": "straighten_outlined", "color": "primaryGreen"},
+                      {"text": "Relaxed & Flowy", "subtitle": "Comfortable ease", "value": "relaxed", "icon": "air_outlined", "color": "accentBeige"},
+                      {"text": "Figure-Hugging", "subtitle": "Show your silhouette", "value": "fitted", "icon": "fitness_center_outlined", "color": "accentOrange"},
                       {"text": "Mix of Both", "subtitle": "Balanced approach", "value": "mixed", "icon": "balance_outlined", "color": "accentPurple"}
                     ]
                   },
@@ -310,10 +317,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     "subtitle": "Your shopping philosophy",
                     "icon": "shopping_bag_outlined",
                     "options": [
-                      {"text": "Quality Investment", "subtitle": "Fewer, better pieces", "value": "quality", "icon": "diamond_outlined", "color": "deepBlue"},
-                      {"text": "Trendy Updates", "subtitle": "Latest styles regularly", "value": "trendy", "icon": "trending_up_outlined", "color": "accentRed"},
+                      {"text": "Quality Investment", "subtitle": "Fewer, better pieces", "value": "quality", "icon": "diamond_outlined", "color": "deepGreen"},
+                      {"text": "Trendy Updates", "subtitle": "Latest styles regularly", "value": "trendy", "icon": "trending_up_outlined", "color": "accentOrange"},
                       {"text": "Vintage & Unique", "subtitle": "One-of-a-kind finds", "value": "vintage", "icon": "auto_awesome_outlined", "color": "accentPurple"},
-                      {"text": "Practical Basics", "subtitle": "Versatile essentials", "value": "practical", "icon": "checkroom_outlined", "color": "primaryBlue"}
+                      {"text": "Practical Basics", "subtitle": "Versatile essentials", "value": "practical", "icon": "checkroom_outlined", "color": "primaryGreen"}
                     ]
                   },
                   {
@@ -324,9 +331,9 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     "icon": "lightbulb_outline_rounded",
                     "options": [
                       {"text": "Social Media", "subtitle": "Instagram & TikTok", "value": "social", "icon": "photo_camera_outlined", "color": "accentPurple"},
-                      {"text": "Street Style", "subtitle": "Real people, real looks", "value": "street", "icon": "directions_walk_outlined", "color": "primaryBlue"},
-                      {"text": "Fashion Icons", "subtitle": "Celebrities & influencers", "value": "icons", "icon": "star_outline", "color": "accentYellow"},
-                      {"text": "My Own Creativity", "subtitle": "Original style", "value": "creative", "icon": "psychology_outlined", "color": "accentRed"}
+                      {"text": "Street Style", "subtitle": "Real people, real looks", "value": "street", "icon": "directions_walk_outlined", "color": "primaryGreen"},
+                      {"text": "Fashion Icons", "subtitle": "Celebrities & influencers", "value": "icons", "icon": "star_outline", "color": "accentBeige"},
+                      {"text": "My Own Creativity", "subtitle": "Original style", "value": "creative", "icon": "psychology_outlined", "color": "accentOrange"}
                     ]
                   }
                 ]
@@ -452,20 +459,20 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
   Color _parseColor(String colorName) {
     switch (colorName) {
-      case 'primaryBlue':
-        return primaryBlue;
-      case 'accentYellow':
-        return accentYellow;
-      case 'accentRed':
-        return accentRed;
+      case 'primaryGreen':
+        return primaryGreen;
+      case 'accentBeige':
+        return accentBeige;
+      case 'accentOrange':
+        return accentOrange;
       case 'accentPurple':
         return accentPurple;
-      case 'deepBlue':
-        return deepBlue;
+      case 'deepGreen':
+        return deepGreen;
       case 'mediumGray':
         return mediumGray;
       default:
-        return primaryBlue;
+        return primaryGreen;
     }
   }
 
@@ -475,12 +482,12 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     final previousQuizCount = prefs.getInt('quiz_count') ?? 0;
 
     List<Map<String, dynamic>> contextualQuestions = [
-      _getSundayMorningQuestion(),
-      _getSummerVibesQuestion(),
-      _getPersonalityQuestion(),
-      _getComfortQuestion(),
-      _getInspirationQuestion(),
-      _getLifestyleQuestion(),
+      _getBudgetMindsetQuestion(),
+      _getShoppingHabitsQuestion(), 
+      _getSpendingTriggersQuestion(),
+      _getValuePerceptionQuestion(),
+      _getDealSeekingQuestion(),
+      _getBudgetPlanningQuestion(),
     ];
 
     setState(() {
@@ -492,241 +499,241 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     _startQuiz();
   }
 
-  Map<String, dynamic> _getSundayMorningQuestion() {
+  Map<String, dynamic> _getBudgetMindsetQuestion() {
     return {
       'id': 1,
-      'category': 'Sunday Vibes',
-      'question': 'How do you want to feel this Sunday morning, $_currentUser?',
-      'subtitle': 'Weekend energy check',
-      'icon': Icons.wb_sunny_outlined,
-      'options': [
-        {
-          'text': 'Effortlessly Chic',
-          'subtitle': 'Put-together ease',
-          'value': 'effortless',
-          'icon': Icons.star_outline,
-          'color': primaryBlue,
-        },
-        {
-          'text': 'Cozy & Relaxed',
-          'subtitle': 'Comfort first',
-          'value': 'cozy',
-          'icon': Icons.home_outlined,
-          'color': accentYellow,
-        },
-        {
-          'text': 'Bold & Confident',
-          'subtitle': 'Make a statement',
-          'value': 'bold',
-          'icon': Icons.flash_on_outlined,
-          'color': accentRed,
-        },
-        {
-          'text': 'Classic & Timeless',
-          'subtitle': 'Elegant simplicity',
-          'value': 'classic',
-          'icon': Icons.diamond_outlined,
-          'color': deepBlue,
-        },
-      ],
-    };
-  }
-
-  Map<String, dynamic> _getSummerVibesQuestion() {
-    return {
-      'id': 2,
-      'category': 'Summer Colors',
-      'question': 'What summer palette speaks to your soul?',
-      'subtitle': 'Late June inspiration',
-      'icon': Icons.color_lens_outlined,
-      'options': [
-        {
-          'text': 'Ocean Blues',
-          'subtitle': 'Cool & calming',
-          'value': 'blues',
-          'icon': Icons.waves_outlined,
-          'color': primaryBlue,
-        },
-        {
-          'text': 'Sunset Warmth',
-          'subtitle': 'Golden & vibrant',
-          'value': 'warmth',
-          'icon': Icons.wb_sunny_outlined,
-          'color': accentYellow,
-        },
-        {
-          'text': 'Fresh Neutrals',
-          'subtitle': 'Clean & crisp',
-          'value': 'neutrals',
-          'icon': Icons.circle_outlined,
-          'color': mediumGray,
-        },
-        {
-          'text': 'Bold Brights',
-          'subtitle': 'Eye-catching pop',
-          'value': 'brights',
-          'icon': Icons.local_fire_department_outlined,
-          'color': accentRed,
-        },
-      ],
-    };
-  }
-
-  Map<String, dynamic> _getPersonalityQuestion() {
-    return {
-      'id': 3,
-      'category': 'Style Identity',
-      'question': 'Which style personality resonates with you, $_currentUser?',
-      'subtitle': 'Your fashion essence',
+      'category': 'Budget Mindset',
+      'question': 'When shopping for clothes, what drives your decisions, $_currentUser?',
+      'subtitle': 'Your money mindset',
       'icon': Icons.psychology_outlined,
       'options': [
         {
-          'text': 'Minimalist Maven',
-          'subtitle': 'Less is more',
-          'value': 'minimalist',
-          'icon': Icons.architecture_outlined,
-          'color': primaryBlue,
+          'text': 'Value for Money',
+          'subtitle': 'Quality that lasts',
+          'value': 'quality_investment',
+          'icon': Icons.star_outline,
+          'color': savingsGreen,
         },
         {
-          'text': 'Bohemian Spirit',
-          'subtitle': 'Free & artistic',
-          'value': 'bohemian',
-          'icon': Icons.nature_people_outlined,
-          'color': accentYellow,
-        },
-        {
-          'text': 'Trendy Innovator',
-          'subtitle': 'Always ahead',
-          'value': 'trendy',
+          'text': 'Latest Trends',
+          'subtitle': 'Must-have styles',
+          'value': 'latest_trends',
           'icon': Icons.trending_up_outlined,
-          'color': accentRed,
+          'color': spendingRed,
         },
         {
-          'text': 'Classic Icon',
-          'subtitle': 'Timeless elegance',
-          'value': 'classic',
-          'icon': Icons.diamond_outlined,
-          'color': deepBlue,
+          'text': 'Great Deals',
+          'subtitle': 'Sales & discounts',
+          'value': 'sales_only',
+          'icon': Icons.local_offer_outlined,
+          'color': dealGold,
+        },
+        {
+          'text': 'Mood & Feelings',
+          'subtitle': 'Depends how I feel',
+          'value': 'mood_dependent',
+          'icon': Icons.mood_outlined,
+          'color': impulseBlue,
         },
       ],
     };
   }
 
-  Map<String, dynamic> _getComfortQuestion() {
+  Map<String, dynamic> _getShoppingHabitsQuestion() {
+    return {
+      'id': 2,
+      'category': 'Shopping Habits',
+      'question': 'How often do you typically buy new clothes?',
+      'subtitle': 'Frequency patterns',
+      'icon': Icons.shopping_bag_outlined,
+      'options': [
+        {
+          'text': 'Monthly or Less',
+          'subtitle': 'Planned purchases',
+          'value': 'plan_purchases',
+          'icon': Icons.schedule_outlined,
+          'color': savingsGreen,
+        },
+        {
+          'text': 'Weekly Shopping',
+          'subtitle': 'Regular updates',
+          'value': 'frequent_shopping',
+          'icon': Icons.repeat_outlined,
+          'color': spendingRed,
+        },
+        {
+          'text': 'Only During Sales',
+          'subtitle': 'Strategic timing',
+          'value': 'sales_only',
+          'icon': Icons.access_time_outlined,
+          'color': dealGold,
+        },
+        {
+          'text': 'When I Feel Like It',
+          'subtitle': 'Spontaneous buys',
+          'value': 'impulse_buyer',
+          'icon': Icons.flash_on_outlined,
+          'color': impulseBlue,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getSpendingTriggersQuestion() {
+    return {
+      'id': 3,
+      'category': 'Spending Triggers',
+      'question': 'What usually makes you buy clothes, $_currentUser?',
+      'subtitle': 'Your purchase motivators',
+      'icon': Icons.psychology_outlined,
+      'options': [
+        {
+          'text': 'Need Something Specific',
+          'subtitle': 'Gap in wardrobe',
+          'value': 'budget_conscious',
+          'icon': Icons.checklist_outlined,
+          'color': savingsGreen,
+        },
+        {
+          'text': 'See Something I Love',
+          'subtitle': 'Instant attraction',
+          'value': 'impulse_buyer',
+          'icon': Icons.favorite_outlined,
+          'color': spendingRed,
+        },
+        {
+          'text': 'Amazing Deal/Sale',
+          'subtitle': 'Can\'t miss opportunity',
+          'value': 'discount_finder',
+          'icon': Icons.local_offer_outlined,
+          'color': dealGold,
+        },
+        {
+          'text': 'Feeling Down/Celebrating',
+          'subtitle': 'Emotional purchases',
+          'value': 'mood_dependent',
+          'icon': Icons.sentiment_satisfied_outlined,
+          'color': impulseBlue,
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _getValuePerceptionQuestion() {
     return {
       'id': 4,
-      'category': 'Comfort Zone',
-      'question': 'How do you prefer your clothes to fit?',
-      'subtitle': 'Your comfort priority',
-      'icon': Icons.checkroom_outlined,
+      'category': 'Value Perception',
+      'question': 'What defines \'worth it\' when buying clothes?',
+      'subtitle': 'Your value definition',
+      'icon': Icons.balance_outlined,
       'options': [
         {
-          'text': 'Perfectly Tailored',
-          'subtitle': 'Sharp & structured',
-          'value': 'tailored',
-          'icon': Icons.straighten_outlined,
-          'color': primaryBlue,
+          'text': 'Cost Per Wear',
+          'subtitle': 'Price ÷ times worn',
+          'value': 'practical',
+          'icon': Icons.calculate_outlined,
+          'color': savingsGreen,
         },
         {
-          'text': 'Relaxed & Flowy',
-          'subtitle': 'Comfortable ease',
-          'value': 'relaxed',
-          'icon': Icons.air_outlined,
-          'color': accentYellow,
+          'text': 'How It Makes Me Feel',
+          'subtitle': 'Confidence boost',
+          'value': 'expensive_taste',
+          'icon': Icons.favorite_outlined,
+          'color': spendingRed,
         },
         {
-          'text': 'Mix of Both',
-          'subtitle': 'Balanced approach',
-          'value': 'mixed',
-          'icon': Icons.balance_outlined,
-          'color': accentPurple,
+          'text': 'Percentage Saved',
+          'subtitle': 'Original vs sale price',
+          'value': 'bargain_lover',
+          'icon': Icons.trending_down_outlined,
+          'color': dealGold,
         },
         {
-          'text': 'Figure-Hugging',
-          'subtitle': 'Show your silhouette',
-          'value': 'fitted',
-          'icon': Icons.fitness_center_outlined,
-          'color': accentRed,
+          'text': 'Depends on the Item',
+          'subtitle': 'Situational value',
+          'value': 'mixed_shopping',
+          'icon': Icons.shuffle_outlined,
+          'color': impulseBlue,
         },
       ],
     };
   }
 
-  Map<String, dynamic> _getInspirationQuestion() {
+  Map<String, dynamic> _getDealSeekingQuestion() {
     return {
       'id': 5,
-      'category': 'Style Inspiration',
-      'question': 'Where do you find your fashion inspiration?',
-      'subtitle': 'Your creative source',
-      'icon': Icons.lightbulb_outline_rounded,
+      'category': 'Deal Seeking',
+      'question': 'How do you approach sales and discounts?',
+      'subtitle': 'Your bargain hunting style',
+      'icon': Icons.local_offer_outlined,
       'options': [
         {
-          'text': 'Social Media',
-          'subtitle': 'Instagram & TikTok',
-          'value': 'social',
-          'icon': Icons.photo_camera_outlined,
-          'color': accentPurple,
+          'text': 'Plan Around Sales',
+          'subtitle': 'Wait for right timing',
+          'value': 'save_money',
+          'icon': Icons.event_outlined,
+          'color': savingsGreen,
         },
         {
-          'text': 'Street Style',
-          'subtitle': 'Real people, real looks',
-          'value': 'street',
-          'icon': Icons.directions_walk_outlined,
-          'color': primaryBlue,
+          'text': 'Buy When I Want It',
+          'subtitle': 'Price doesn\'t matter',
+          'value': 'brand_lover',
+          'icon': Icons.shopping_cart_outlined,
+          'color': spendingRed,
         },
         {
-          'text': 'Magazines & Runway',
-          'subtitle': 'High fashion influence',
-          'value': 'runway',
-          'icon': Icons.auto_awesome_outlined,
-          'color': accentRed,
+          'text': 'Never Buy Full Price',
+          'subtitle': 'Sale hunter mentality',
+          'value': 'coupon_hunter',
+          'icon': Icons.search_outlined,
+          'color': dealGold,
         },
         {
-          'text': 'My Own Creativity',
-          'subtitle': 'Original style',
-          'value': 'creative',
-          'icon': Icons.palette_outlined,
-          'color': accentYellow,
+          'text': 'Sometimes Both',
+          'subtitle': 'Depends on the item',
+          'value': 'sometimes_splurge',
+          'icon': Icons.balance_outlined,
+          'color': impulseBlue,
         },
       ],
     };
   }
 
-  Map<String, dynamic> _getLifestyleQuestion() {
+  Map<String, dynamic> _getBudgetPlanningQuestion() {
     return {
       'id': 6,
-      'category': 'Lifestyle Match',
-      'question': 'What best describes your lifestyle?',
-      'subtitle': 'Fashion meets function',
-      'icon': Icons.line_style_outlined,
+      'category': 'Budget Planning',
+      'question': 'How do you manage your fashion budget?',
+      'subtitle': 'Financial fashion planning',
+      'icon': Icons.account_balance_wallet_outlined,
       'options': [
         {
-          'text': 'Always On-The-Go',
-          'subtitle': 'Active & dynamic',
-          'value': 'active',
-          'icon': Icons.directions_run_outlined,
-          'color': accentRed,
+          'text': 'Set Monthly Limit',
+          'subtitle': 'Strict budget tracking',
+          'value': 'budget_conscious',
+          'icon': Icons.timeline_outlined,
+          'color': savingsGreen,
         },
         {
-          'text': 'Work-Focused',
-          'subtitle': 'Professional first',
-          'value': 'professional',
-          'icon': Icons.business_center_outlined,
-          'color': primaryBlue,
+          'text': 'No Set Budget',
+          'subtitle': 'Buy what I want',
+          'value': 'frequent_shopping',
+          'icon': Icons.all_inclusive_outlined,
+          'color': spendingRed,
         },
         {
-          'text': 'Social Butterfly',
-          'subtitle': 'Events & gatherings',
-          'value': 'social',
-          'icon': Icons.celebration_outlined,
-          'color': accentYellow,
+          'text': 'Only Buy on Sale',
+          'subtitle': 'Discount-driven',
+          'value': 'promotional',
+          'icon': Icons.percent_outlined,
+          'color': dealGold,
         },
         {
-          'text': 'Balanced Living',
-          'subtitle': 'Mix of everything',
+          'text': 'Varies Each Month',
+          'subtitle': 'Flexible approach',
           'value': 'balanced',
-          'icon': Icons.spa_outlined,
-          'color': accentPurple,
+          'icon': Icons.trending_flat_outlined,
+          'color': impulseBlue,
         },
       ],
     };
@@ -744,15 +751,15 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
     try {
       // Send answers to AI for personalized analysis
-      final aiResult = await _getAIStyleAnalysis();
+      final aiResult = await _getAIBudgetAnalysis();
 
       await Future.delayed(const Duration(seconds: 2));
 
       setState(() {
-        _styleResult = aiResult['style'] ?? 'Unique Style Personality';
-        _styleDescription =
+        _budgetResult = aiResult['style'] ?? 'Unique Budget Personality';
+        _budgetDescription =
             aiResult['description'] ??
-            'Your style is uniquely yours and perfectly reflects your personality!';
+            'Your budget approach is uniquely yours and perfectly reflects your financial style!';
         _personalizedTips = List<String>.from(
           aiResult['tips'] ?? _generateFallbackTips(),
         );
@@ -774,7 +781,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     }
   }
 
-  Future<Map<String, dynamic>> _getAIStyleAnalysis() async {
+  Future<Map<String, dynamic>> _getAIBudgetAnalysis() async {
     try {
       if (OPENAI_API_KEY != 'sk-your-openai-api-key-here') {
         return await _getOpenAIAnalysis();
@@ -807,31 +814,31 @@ class _StyleQuizPageState extends State<StyleQuizPage>
           {
             'role': 'system',
             'content':
-                '''You are FitYr's AI fashion stylist analyzing $_currentUser's style quiz results from Sunday morning, June 29, 2025 at $timeOfDay UTC.
+                '''You are FitOutfit's AI budget fashion advisor analyzing $_currentUser's budget behavior quiz results from Sunday morning, June 29, 2025 at $timeOfDay UTC.
             
-            Create a personalized style profile for $_currentUser that feels authentic and actionable. Consider:
-            - Current trends (late 2025)
+            Create a personalized budget personality profile for $_currentUser that feels authentic and actionable. Consider:
+            - Current economic trends (late 2025)
             - Early Sunday morning context ($timeOfDay)
-            - Personal expression needs for $_currentUser
-            - Practical styling advice
+            - Personal financial wellness for $_currentUser
+            - Practical money-saving fashion advice
             
             Return ONLY valid JSON:
             {
-              "style": "Personalized Style Name (like 'Sunday Minimalist' or 'Morning Trendsetter')",
-              "description": "Warm, personal description of $_currentUser's unique style (2-3 sentences that feel genuine)",
+              "style": "Personalized Budget Type (like 'Smart Saver' or 'Deal Hunter')",
+              "description": "Warm, personal description of $_currentUser's unique budget approach (2-3 sentences that feel genuine)",
               "tips": [
-                "Specific, actionable tip 1 for $_currentUser",
-                "Specific, actionable tip 2 for $_currentUser", 
-                "Specific, actionable tip 3 for $_currentUser",
-                "Specific, actionable tip 4 for $_currentUser",
-                "Specific, actionable tip 5 for $_currentUser"
+                "Specific, actionable budget tip 1 for $_currentUser",
+                "Specific, actionable budget tip 2 for $_currentUser", 
+                "Specific, actionable budget tip 3 for $_currentUser",
+                "Specific, actionable budget tip 4 for $_currentUser",
+                "Specific, actionable budget tip 5 for $_currentUser"
               ]
             }''',
           },
           {
             'role': 'user',
             'content':
-                'Analyze $_currentUser\'s Sunday morning style quiz answers for personalized results: $answersText',
+                'Analyze $_currentUser\'s Sunday morning budget fashion quiz answers for personalized results: $answersText',
           },
         ],
         'max_tokens': 1000,
@@ -853,61 +860,70 @@ class _StyleQuizPageState extends State<StyleQuizPage>
   Map<String, dynamic> _generateEnhancedResult() {
     final answers = _answers.values.toList();
 
-    Map<String, int> styleScores = {
-      'minimalist': 0,
-      'bohemian': 0,
-      'classic': 0,
-      'trendy': 0,
-      'casual': 0,
-      'professional': 0,
+    Map<String, int> budgetScores = {
+      'smart_saver': 0,      // 🧾 Smart Saver - frugal & thoughtful
+      'overbudget': 0,       // 💳 Overbudget Fashionista - stylish but wasteful
+      'impulse_switcher': 0, // 🔄 Impulse Switcher - sometimes frugal, sometimes splurging
+      'deal_hunter': 0,      // 📦 Deal Hunter - always looking for promotions & discounts
     };
 
-    // Enhanced scoring algorithm
+    // Enhanced budget behavior scoring algorithm
     for (String answer in answers) {
       switch (answer) {
-        case 'effortless':
-        case 'minimalist':
-        case 'neutrals':
-        case 'tailored':
-          styleScores['minimalist'] = styleScores['minimalist']! + 3;
-          styleScores['classic'] = styleScores['classic']! + 1;
+        // Budget-conscious answers → Smart Saver
+        case 'budget_conscious':
+        case 'thrift_shopping':
+        case 'plan_purchases':
+        case 'quality_investment':
+        case 'save_money':
+          budgetScores['smart_saver'] = budgetScores['smart_saver']! + 3;
           break;
-        case 'cozy':
-        case 'relaxed':
-        case 'creative':
+        // Impulse/mixed behavior → Impulse Switcher  
+        case 'sometimes_splurge':
         case 'balanced':
-          styleScores['casual'] = styleScores['casual']! + 3;
-          styleScores['bohemian'] = styleScores['bohemian']! + 2;
+        case 'mood_dependent':
+        case 'mixed_shopping':
+          budgetScores['impulse_switcher'] = budgetScores['impulse_switcher']! + 3;
           break;
-        case 'bohemian':
-        case 'warmth':
-        case 'street':
-        case 'social':
-          styleScores['bohemian'] = styleScores['bohemian']! + 3;
-          styleScores['trendy'] = styleScores['trendy']! + 1;
+        // Deal-focused answers → Deal Hunter
+        case 'sales_only':
+        case 'coupon_hunter':
+        case 'discount_finder':
+        case 'promotional':
+        case 'bargain_lover':
+          budgetScores['deal_hunter'] = budgetScores['deal_hunter']! + 3;
           break;
-        case 'classic':
-        case 'blues':
-        case 'professional':
-          styleScores['classic'] = styleScores['classic']! + 3;
-          styleScores['professional'] = styleScores['professional']! + 2;
+        // High spending/trend-focused → Overbudget Fashionista
+        case 'latest_trends':
+        case 'brand_lover':
+        case 'frequent_shopping':
+        case 'expensive_taste':
+        case 'impulse_buyer':
+          budgetScores['overbudget'] = budgetScores['overbudget']! + 3;
           break;
-        case 'bold':
+        // Default scoring based on typical answers
+        case 'effortless':
+        case 'practical':
+          budgetScores['smart_saver'] = budgetScores['smart_saver']! + 2;
+          break;
         case 'trendy':
-        case 'brights':
-        case 'runway':
-        case 'active':
-          styleScores['trendy'] = styleScores['trendy']! + 3;
-          styleScores['professional'] = styleScores['professional']! + 1;
+        case 'bold':
+          budgetScores['overbudget'] = budgetScores['overbudget']! + 2;
           break;
       }
     }
 
-    String topStyle =
-        styleScores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+    String topBudgetType =
+        budgetScores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
 
-    final profiles = _getEnhancedStyleProfiles();
-    final profile = profiles[topStyle] ?? profiles['minimalist']!;
+    final profiles = _getBudgetPersonalityProfiles();
+    final profile = profiles[topBudgetType] ?? profiles['smart_saver']!;
+
+    return {
+      'style': profile['title'],
+      'description': profile['description'],
+      'tips': profile['tips'],
+      'profile': profile,
 
     return {
       'style': profile['title'],
@@ -917,78 +933,54 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     };
   }
 
-  Map<String, Map<String, dynamic>> _getEnhancedStyleProfiles() {
+  Map<String, Map<String, dynamic>> _getBudgetPersonalityProfiles() {
     return {
-      'minimalist': {
-        'title': 'Sunday Minimalist',
+      'smart_saver': {
+        'title': '🧾 Smart Saver',
         'description':
-            'You believe in the power of simplicity, $_currentUser. Your style is intentional and effortless, focusing on quality pieces that make you feel confident without trying too hard.',
+            'You are a thoughtful spender, $_currentUser! You make intentional fashion choices that align with your financial goals. Your approach to style is strategic - you invest in quality pieces that offer long-term value and versatility.',
         'tips': [
-          'Invest in premium basics in neutral colors that mix and match effortlessly',
-          'Choose one statement piece per outfit to add personality',
-          'Focus on perfect fit - well-tailored pieces always look expensive',
-          'Build around a curated color palette of 3-5 colors max',
-          'Quality over quantity - fewer pieces, better materials',
+          'Build a capsule wardrobe with 20-30 versatile pieces that mix and match',
+          'Invest in quality basics that last - better to buy one good piece than three cheap ones',
+          'Shop your closet first before buying anything new',
+          'Use the cost-per-wear calculation: divide price by expected wears',
+          'Set a monthly fashion budget and stick to it using apps or spreadsheets',
         ],
       },
-      'bohemian': {
-        'title': 'Free Spirit Dreamer',
+      'overbudget': {
+        'title': '💳 Overbudget Fashionista',
         'description':
-            'Your style tells stories, $_currentUser. You mix textures, patterns, and eras to create looks that are uniquely yours and inspire others to embrace their creativity.',
+            'Style is your passion, $_currentUser! You love staying on-trend and looking amazing, but sometimes your fashion desires outpace your budget. Your eye for style is impeccable - now let\'s align it with smarter spending.',
         'tips': [
-          'Layer different textures like denim, silk, and knits for depth',
-          'Mix patterns confidently - start with one bold, one subtle',
-          'Embrace earthy tones and natural fabrics like cotton and linen',
-          'Use accessories to express your artistic side - scarves, jewelry, bags',
-          'Vintage pieces add character - mix them with modern basics',
+          'Set up automatic savings for fashion purchases to avoid credit card debt',
+          'Use the 24-hour rule: wait a day before buying anything over \$50',
+          'Follow fashion bloggers who focus on affordable styling',
+          'Rent special occasion pieces instead of buying them',
+          'Create outfit photos to remind yourself of what you already own',
         ],
       },
-      'classic': {
-        'title': 'Timeless Icon',
+      'impulse_switcher': {
+        'title': '🔄 Impulse Switcher',
         'description':
-            'Your style embodies elegance and sophistication, $_currentUser. You understand that true style transcends trends, choosing pieces that will look as good today as they will in decades.',
+            'Your fashion spending is like the weather, $_currentUser - sometimes sunny savings, sometimes stormy splurges! You have great taste but your spending patterns vary with your mood and circumstances.',
         'tips': [
-          'Invest in classic pieces like blazers, white shirts, and well-fitted jeans',
-          'Master the art of tailoring - fit makes all the difference',
-          'Choose refined color combinations like navy & white, black & cream',
-          'Add subtle luxury through quality fabrics and craftsmanship',
-          'Maintain your pieces properly to keep them looking fresh',
+          'Track your spending patterns to identify your splurge triggers',
+          'Create a wish list and review it monthly instead of buying immediately',
+          'Shop with a specific list and budget to stay focused',
+          'Find alternative outlets for fashion excitement - try styling challenges',
+          'Set up automatic transfers to a fashion fund during your saving moods',
         ],
       },
-      'trendy': {
-        'title': 'Style Innovator',
+      'deal_hunter': {
+        'title': '📦 Deal Hunter',
         'description':
-            'You\'re fearlessly ahead of the curve, $_currentUser. Your style is dynamic and confident, constantly evolving while staying true to your bold personality.',
+            'You are the master of finding fashion bargains, $_currentUser! Your skills at sniffing out sales, coupons, and discounts are legendary. You know that looking great doesn\'t require breaking the bank.',
         'tips': [
-          'Stay updated with fashion weeks and emerging designers',
-          'Mix high-street with designer pieces for balance',
-          'Experiment with bold colors and unexpected combinations',
-          'Use accessories to update classic pieces with current trends',
-          'Take calculated fashion risks - not every trend needs to work for you',
-        ],
-      },
-      'casual': {
-        'title': 'Effortless Cool',
-        'description':
-            'Comfort meets style in your wardrobe, $_currentUser. You\'ve mastered the art of looking put-together while feeling relaxed and authentic.',
-        'tips': [
-          'Invest in elevated basics like soft knits and comfortable denim',
-          'Layer pieces for depth and visual interest',
-          'Choose comfortable shoes that still look stylish',
-          'Mix casual pieces with one polished element',
-          'Focus on fabrics that move with you throughout the day',
-        ],
-      },
-      'professional': {
-        'title': 'Power Player',
-        'description':
-            'Your style commands respect and confidence, $_currentUser. You understand the power of dressing for the role you want, creating looks that are both professional and personal.',
-        'tips': [
-          'Build a foundation of quality work staples in versatile colors',
-          'Master the blazer - it instantly elevates any outfit',
-          'Choose pieces that transition from day to evening',
-          'Pay attention to details like fit, grooming, and accessories',
-          'Express personality through color, texture, or subtle statement pieces',
+          'Use price tracking apps to monitor when items go on sale',
+          'Follow your favorite brands on social media for flash sale notifications',
+          'Shop end-of-season clearances for next year\'s wardrobe',
+          'Join loyalty programs and cashback apps for extra savings',
+          'But remember: it\'s only a deal if you actually need and will wear it!',
         ],
       },
     };
@@ -996,11 +988,11 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
   List<String> _generateFallbackTips() {
     return [
-      'Focus on fit - well-fitted clothes always look more expensive',
-      'Build around pieces that make you feel confident and comfortable',
+      'Focus on cost-per-wear - well-bought clothes offer better value long-term',
+      'Build around budget-friendly pieces that make you feel confident',
       'Use accessories to change up your looks without buying new clothes',
-      'Invest in quality basics that work with multiple outfits',
-      'Don\'t be afraid to express your personality through your style choices',
+      'Invest in quality basics during sales that work with multiple outfits',
+      'Don\'t be afraid to express your personality through budget-conscious choices',
     ];
   }
 
@@ -1009,7 +1001,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
     final timestamp = DateTime.now().toIso8601String();
 
     await prefs.setString(
-      'last_style_result',
+      'last_budget_result',
       jsonEncode({
         'result': result,
         'answers': _answers,
@@ -1077,7 +1069,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             ),
           ],
         ),
-        backgroundColor: primaryBlue,
+        backgroundColor: primaryGreen,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
@@ -1096,13 +1088,13 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Creating $_styleResult outfits for $_currentUser...',
+                'Creating $_budgetResult outfits for $_currentUser...',
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
             ),
           ],
         ),
-        backgroundColor: primaryBlue,
+        backgroundColor: primaryGreen,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
@@ -1132,7 +1124,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [softCream, lightBlue.withOpacity(0.2), softCream],
+            colors: [softCream, lightGreen.withOpacity(0.2), softCream],
           ),
         ),
         child: SafeArea(
@@ -1174,15 +1166,15 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          primaryBlue.withOpacity(0.2),
+                          primaryGreen.withOpacity(0.2),
                           accentPurple.withOpacity(0.2),
-                          accentYellow.withOpacity(0.2),
+                          accentBeige.withOpacity(0.2),
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: primaryBlue.withOpacity(0.3),
+                          color: primaryGreen.withOpacity(0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -1190,7 +1182,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     ),
                     child: Icon(
                       Icons.psychology_outlined,
-                      color: primaryBlue,
+                      color: primaryGreen,
                       size: isSmallScreen ? 48 : 64,
                     ),
                   ),
@@ -1207,7 +1199,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                 return ShaderMask(
                   shaderCallback: (bounds) {
                     return LinearGradient(
-                      colors: [primaryBlue, accentYellow, primaryBlue],
+                      colors: [primaryGreen, accentBeige, primaryGreen],
                       stops: [
                         _shimmerAnimation.value - 0.3,
                         _shimmerAnimation.value,
@@ -1216,7 +1208,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     ).createShader(bounds);
                   },
                   child: Text(
-                    'AI is Crafting Your Quiz...',
+                    'AI is Crafting Your Budget Quiz...',
                     style: GoogleFonts.poppins(
                       fontSize: isSmallScreen ? 20 : 24,
                       fontWeight: FontWeight.w800,
@@ -1231,7 +1223,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             SizedBox(height: screenSize.height * 0.02),
 
             Text(
-              'Creating personalized questions just for $_currentUser',
+              'Creating personalized budget questions just for $_currentUser',
               style: GoogleFonts.poppins(
                 fontSize: isSmallScreen ? 14 : 16,
                 color: mediumGray,
@@ -1261,7 +1253,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                         width: isSmallScreen ? 8 : 10,
                         height: isSmallScreen ? 8 : 10,
                         decoration: BoxDecoration(
-                          color: primaryBlue,
+                          color: primaryGreen,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -1334,14 +1326,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   ShaderMask(
                     shaderCallback:
                         (bounds) => LinearGradient(
-                          colors: [primaryBlue, accentPurple],
+                          colors: [primaryGreen, accentPurple],
                         ).createShader(bounds),
                     child: Row(
                       children: [
                         Text(
-                          'AI Style Quiz',
+                          'AI Budget Fashion Quiz',
                           style: GoogleFonts.poppins(
-                            fontSize: isSmallScreen ? 18 : 22,
+                            fontSize: isSmallScreen ? 16 : 20,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: -0.5,
@@ -1356,7 +1348,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                             ),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [accentYellow, accentRed],
+                                colors: [accentBeige, accentOrange],
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1404,15 +1396,15 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     gradient: LinearGradient(
                       colors:
                           _isGeneratingQuestions
-                              ? [accentYellow, accentRed]
-                              : [primaryBlue, accentPurple],
+                              ? [accentBeige, accentOrange]
+                              : [primaryGreen, accentPurple],
                     ),
                     borderRadius: BorderRadius.circular(
                       isSmallScreen ? 14 : 16,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryBlue.withOpacity(0.3),
+                        color: primaryGreen.withOpacity(0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -1495,7 +1487,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     children: [
                       Icon(
                         question['icon'],
-                        color: primaryBlue,
+                        color: primaryGreen,
                         size: isSmallScreen ? 14 : 16,
                       ),
                       SizedBox(width: isSmallScreen ? 4 : 6),
@@ -1521,11 +1513,11 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   vertical: isSmallScreen ? 6 : 8,
                 ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [primaryBlue, accentPurple]),
+                  gradient: LinearGradient(colors: [primaryGreen, accentPurple]),
                   borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
                   boxShadow: [
                     BoxShadow(
-                      color: primaryBlue.withOpacity(0.3),
+                      color: primaryGreen.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -1560,7 +1552,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   return LinearProgressIndicator(
                     value: progress * _progressAnimation.value,
                     backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(primaryBlue),
+                    valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
                   );
                 },
               ),
@@ -1622,22 +1614,22 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            primaryBlue.withOpacity(0.1),
-                            accentYellow.withOpacity(0.1),
+                            primaryGreen.withOpacity(0.1),
+                            accentBeige.withOpacity(0.1),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(
                           isSmallScreen ? 14 : 16,
                         ),
                         border: Border.all(
-                          color: primaryBlue.withOpacity(0.2),
+                          color: primaryGreen.withOpacity(0.2),
                           width: 1,
                         ),
                       ),
                       child: Icon(
                         question['icon'],
                         size: isSmallScreen ? 20 : 24,
-                        color: primaryBlue,
+                        color: primaryGreen,
                       ),
                     ),
 
@@ -1654,7 +1646,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                                 style: GoogleFonts.poppins(
                                   fontSize: isSmallScreen ? 11 : 12,
                                   fontWeight: FontWeight.w600,
-                                  color: primaryBlue,
+                                  color: primaryGreen,
                                 ),
                               ),
                               SizedBox(width: 6),
@@ -1664,7 +1656,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                                   vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: accentYellow.withOpacity(0.2),
+                                  color: accentBeige.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -1672,7 +1664,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                                   style: GoogleFonts.poppins(
                                     fontSize: 8,
                                     fontWeight: FontWeight.w700,
-                                    color: accentYellow,
+                                    color: accentBeige,
                                   ),
                                 ),
                               ),
@@ -1887,8 +1879,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: primaryBlue,
-                    side: BorderSide(color: primaryBlue, width: 1.5),
+                    foregroundColor: primaryGreen,
+                    side: BorderSide(color: primaryGreen, width: 1.5),
                     backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
@@ -1911,14 +1903,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                 borderRadius: BorderRadius.circular(isSmallScreen ? 18 : 20),
                 gradient:
                     hasAnswer
-                        ? LinearGradient(colors: [primaryBlue, accentPurple])
+                        ? LinearGradient(colors: [primaryGreen, accentPurple])
                         : null,
                 color: hasAnswer ? null : mediumGray.withOpacity(0.3),
                 boxShadow:
                     hasAnswer
                         ? [
                           BoxShadow(
-                            color: primaryBlue.withOpacity(0.3),
+                            color: primaryGreen.withOpacity(0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -2007,7 +1999,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
               borderRadius: BorderRadius.circular(isSmallScreen ? 24 : 28),
               boxShadow: [
                 BoxShadow(
-                  color: primaryBlue.withOpacity(0.3),
+                  color: primaryGreen.withOpacity(0.3),
                   blurRadius: 25,
                   offset: const Offset(0, 12),
                 ),
@@ -2023,7 +2015,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [primaryBlue, accentPurple],
+                    colors: [primaryGreen, accentPurple],
                   ),
                   borderRadius: BorderRadius.circular(isSmallScreen ? 24 : 28),
                 ),
@@ -2103,7 +2095,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
 
                     // Style Title
                     Text(
-                      _styleResult ?? 'Sunday Style Icon',
+                      _budgetResult ?? 'Sunday Style Icon',
                       style: GoogleFonts.poppins(
                         fontSize: isSmallScreen ? 22 : 26,
                         fontWeight: FontWeight.w800,
@@ -2129,7 +2121,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                         ),
                       ),
                       child: Text(
-                        _styleDescription ??
+                        _budgetDescription ??
                             'Your unique style perfectly balances comfort and sophistication, $_currentUser. You have an innate ability to look effortlessly put-together.',
                         style: GoogleFonts.poppins(
                           fontSize: isSmallScreen ? 12 : 13,
@@ -2181,8 +2173,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        accentYellow.withOpacity(0.2),
-                        accentYellow.withOpacity(0.1),
+                        accentBeige.withOpacity(0.2),
+                        accentBeige.withOpacity(0.1),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(
@@ -2191,7 +2183,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                   ),
                   child: Icon(
                     Icons.lightbulb_outline_rounded,
-                    color: accentYellow,
+                    color: accentBeige,
                     size: isSmallScreen ? 20 : 24,
                   ),
                 ),
@@ -2201,7 +2193,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'AI Style Tips',
+                        'AI Budget Tips',
                         style: GoogleFonts.poppins(
                           fontSize: isSmallScreen ? 16 : 18,
                           fontWeight: FontWeight.w700,
@@ -2249,7 +2241,7 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             width: isSmallScreen ? 24 : 28,
             height: isSmallScreen ? 24 : 28,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [primaryBlue, accentPurple]),
+              gradient: LinearGradient(colors: [primaryGreen, accentPurple]),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -2271,10 +2263,10 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             child: Container(
               padding: EdgeInsets.all(screenSize.width * 0.04),
               decoration: BoxDecoration(
-                color: lightBlue.withOpacity(0.3),
+                color: lightGreen.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 14),
                 border: Border.all(
-                  color: primaryBlue.withOpacity(0.1),
+                  color: primaryGreen.withOpacity(0.1),
                   width: 1,
                 ),
               ),
@@ -2303,11 +2295,11 @@ class _StyleQuizPageState extends State<StyleQuizPage>
           width: double.infinity,
           height: isSmallScreen ? 48 : 52,
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [primaryBlue, accentPurple]),
+            gradient: LinearGradient(colors: [primaryGreen, accentPurple]),
             borderRadius: BorderRadius.circular(isSmallScreen ? 20 : 22),
             boxShadow: [
               BoxShadow(
-                color: primaryBlue.withOpacity(0.4),
+                color: primaryGreen.withOpacity(0.4),
                 blurRadius: 15,
                 offset: const Offset(0, 6),
               ),
@@ -2355,8 +2347,8 @@ class _StyleQuizPageState extends State<StyleQuizPage>
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: primaryBlue,
-                    side: BorderSide(color: primaryBlue, width: 1.5),
+                    foregroundColor: primaryGreen,
+                    side: BorderSide(color: primaryGreen, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
                         isSmallScreen ? 18 : 20,
@@ -2412,13 +2404,13 @@ class _StyleQuizPageState extends State<StyleQuizPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Sharing $_currentUser\'s $_styleResult profile...',
+                'Sharing $_currentUser\'s $_budgetResult profile...',
                 style: GoogleFonts.poppins(fontSize: 14),
               ),
             ),
           ],
         ),
-        backgroundColor: accentYellow,
+        backgroundColor: accentBeige,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
@@ -2432,14 +2424,14 @@ class _StyleQuizPageState extends State<StyleQuizPage>
       _currentQuestion = 0;
       _answers.clear();
       _showResult = false;
-      _styleResult = null;
-      _styleDescription = null;
+      _budgetResult = null;
+      _budgetDescription = null;
       _personalizedTips.clear();
       _isGeneratingQuestions = true;
     });
 
     _generateUniqueSession();
-    _generateAIQuestions();
+    _generateAIBudgetQuestions();
 
     _slideController.reset();
     _scaleController.reset();

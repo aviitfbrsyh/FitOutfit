@@ -12,6 +12,10 @@ import '../community/community_selection_popup.dart';
 import '../outfit_planner/outfit_planner_page.dart';
 import '../style_quiz/style_quiz_page.dart';
 import '../news/news_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:math';
+import 'package:csv/csv.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -41,14 +45,294 @@ class _HomePageState extends State<HomePage>
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
-  @override
-  bool get wantKeepAlive => true;
+  // ...existing code...
+  // Tambahan untuk AI Outfit Picks
+  List<Map<String, dynamic>> _todayOutfitPicks = [];
+  List<String?> _todayOutfitImages = [];
+  bool _loadingOutfitPicks = false;
+  Map<String, dynamic>? _userPersonalization;
+  List<Map<String, dynamic>>? _outfitDataset;
+
+  final List<Map<String, dynamic>> _sampleOutfitPicksFemale = [
+    {
+      'title': 'Casual Chic',
+      'destination': 'Casual Outing',
+      'weather': 'Mild & Pleasant',
+      'imageUrl':
+          'assets/images/sample_female_1.png', // ganti sesuai gambar kamu
+      'isAsset': true,
+    },
+    {
+      'title': 'Business Ready',
+      'destination': 'Job Interview',
+      'weather': 'Rainy & Cool',
+      'imageUrl': 'assets/images/sample_female_2.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Weekend Vibes',
+      'destination': 'Hangout',
+      'weather': 'Sunny & Warm',
+      'imageUrl': 'assets/images/sample_female_3.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Date Night',
+      'destination': 'Wedding Invitation',
+      'weather': 'Hot & Humid',
+      'imageUrl': 'assets/images/sample_female_4.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Gym Session',
+      'destination': 'Travel',
+      'weather': 'Sunny & Warm',
+      'imageUrl': 'assets/images/sample_female_5.png',
+      'isAsset': true,
+    },
+  ];
+
+  final List<Map<String, dynamic>> _sampleOutfitPicksMale = [
+    {
+      'title': 'Casual Chic',
+      'destination': 'Casual Outing',
+      'weather': 'Mild & Pleasant',
+      'imageUrl': 'assets/images/sample_male_1.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Business Ready',
+      'destination': 'Job Interview',
+      'weather': 'Rainy & Cool',
+      'imageUrl': 'assets/images/sample_male_2.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Weekend Vibes',
+      'destination': 'Hangout',
+      'weather': 'Sunny & Warm',
+      'imageUrl': 'assets/images/sample_male_3.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Date Night',
+      'destination': 'Wedding Invitation',
+      'weather': 'Hot & Humid',
+      'imageUrl': 'assets/images/sample_male_4.png',
+      'isAsset': true,
+    },
+    {
+      'title': 'Gym Session',
+      'destination': 'Travel',
+      'weather': 'Sunny & Warm',
+      'imageUrl': 'assets/images/sample_male_5.png',
+      'isAsset': true,
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    _loadUserPersonalization().then((_) {
+      _showSampleOutfitPicks();
+    });
+    _loadDataset();
   }
+
+  void _showSampleOutfitPicks() {
+    // Default female jika belum ada data
+    String gender =
+        _userPersonalization?['selectedGender']?.toString().toLowerCase() ??
+        'female';
+    final sample =
+        gender == 'male' ? _sampleOutfitPicksMale : _sampleOutfitPicksFemale;
+    setState(() {
+      _todayOutfitPicks = List<Map<String, dynamic>>.from(sample);
+      _todayOutfitImages = sample.map((e) => e['imageUrl'] as String?).toList();
+      _loadingOutfitPicks = false;
+    });
+  }
+
+  Future<void> _loadUserPersonalization() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('personalisasi')
+                .doc(user.uid)
+                .get();
+        if (doc.exists) {
+          setState(() {
+            _userPersonalization = doc.data();
+          });
+        }
+      } catch (e) {}
+    }
+  }
+
+  Future<void> _loadDataset() async {
+    if (_outfitDataset != null) return;
+    final raw = await rootBundle.loadString('assets/virtual_tryon_dataset.csv');
+    final rows = const CsvToListConverter(eol: '\n').convert(raw);
+    final headers = rows.first.cast<String>();
+    _outfitDataset =
+        rows.skip(1).map((row) {
+          return Map<String, dynamic>.fromIterables(headers, row);
+        }).toList();
+  }
+
+  Future<void> _generateTodayOutfitPicks() async {
+    setState(() {
+      _loadingOutfitPicks = true;
+      _todayOutfitPicks = [];
+      _todayOutfitImages = [];
+    });
+
+    final categories = [
+      {
+        'title': 'Casual Chic',
+        'destination': 'Casual Outing',
+        'weather': 'Mild & Pleasant',
+      },
+      {
+        'title': 'Business Ready',
+        'destination': 'Job Interview',
+        'weather': 'Rainy & Cool',
+      },
+      {
+        'title': 'Weekend Vibes',
+        'destination': 'Hangout',
+        'weather': 'Sunny & Warm',
+      },
+      {
+        'title': 'Date Night',
+        'destination': 'Wedding Invitation',
+        'weather': 'Hot & Humid',
+      },
+      {
+        'title': 'Gym Session',
+        'destination': 'Travel',
+        'weather': 'Sunny & Warm',
+      },
+    ];
+
+    List<Map<String, dynamic>> picks = [];
+    List<String?> images = [];
+
+    for (final cat in categories) {
+      final outfit = await _generateOutfitForCategory(
+        cat['destination']!,
+        cat['weather']!,
+      );
+      picks.add({...cat, ...?outfit});
+      images.add(outfit?['imageUrl']);
+    }
+
+    setState(() {
+      _todayOutfitPicks = picks;
+      _todayOutfitImages = images;
+      _loadingOutfitPicks = false;
+    });
+  }
+
+  Future<Map<String, dynamic>?> _generateOutfitForCategory(
+    String destination,
+    String weather,
+  ) async {
+    await _loadDataset();
+    final dataset = _outfitDataset!;
+    String? userGender =
+        _userPersonalization?['selectedGender']?.toString().toLowerCase();
+
+    List<Map<String, dynamic>> filtered =
+        dataset.where((outfit) {
+          bool matchDestination = outfit['destination'] == destination;
+          bool matchWeather = outfit['weather'] == weather;
+          bool matchGender =
+              userGender == null
+                  ? true
+                  : (outfit['gender']?.toString().toLowerCase() == userGender);
+          return matchDestination && matchWeather && matchGender;
+        }).toList();
+
+    if (_userPersonalization != null && filtered.isNotEmpty) {
+      List<Map<String, dynamic>> personalized =
+          filtered.where((outfit) {
+            bool match = true;
+            if (_userPersonalization!['selectedBodyShape'] != null) {
+              match =
+                  match &&
+                  outfit['body_shape'].toString().toLowerCase() ==
+                      _userPersonalization!['selectedBodyShape']
+                          .toString()
+                          .toLowerCase();
+            }
+            if (_userPersonalization!['selectedStyles'] != null) {
+              List<String> userStyles = List<String>.from(
+                _userPersonalization!['selectedStyles'],
+              );
+              if (userStyles.isNotEmpty) {
+                bool styleMatch = userStyles.any(
+                  (userStyle) =>
+                      outfit['style'].toString().toLowerCase().contains(
+                        userStyle.toLowerCase(),
+                      ) ||
+                      userStyle.toLowerCase().contains(
+                        outfit['style'].toString().toLowerCase(),
+                      ),
+                );
+                match = match && styleMatch;
+              }
+            }
+            return match;
+          }).toList();
+      if (personalized.isNotEmpty) {
+        filtered = personalized;
+      }
+    }
+
+    if (filtered.isEmpty) return null;
+
+    final selected = filtered[Random().nextInt(filtered.length)];
+    final imageUrl = await _generateOutfitImage(selected);
+
+    return {...selected, 'imageUrl': imageUrl};
+  }
+
+  Future<String?> _generateOutfitImage(Map<String, dynamic> outfit) async {
+    //APINYA TARUH DISINI YA BOSKU
+    const apiKey =  ("OPENAI_API_KEY");
+    final prompt =
+        "Fashion flat lay, ${outfit['style']} ${outfit['gender']} outfit for ${outfit['destination']} in ${outfit['weather']}. "
+        "Includes: ${outfit['outfit_top']}, ${outfit['outfit_bottom']}, ${outfit['outfit_shoes']}, ${outfit['outfit_accessories']}. "
+        "White background, high quality, realistic, no people.";
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.openai.com/v1/images/generations'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          "model": "dall-e-3",
+          "prompt": prompt,
+          "n": 1,
+          "size": "1024x1024",
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final imageUrl = data['data'][0]['url'];
+        return imageUrl;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _initializeAnimations() {
     _pulseController = AnimationController(
@@ -471,14 +755,30 @@ class _HomePageState extends State<HomePage>
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: () => _navigateToAllRecommendations(),
-                child: Text(
-                  'See All',
+              ElevatedButton.icon(
+                onPressed:
+                    _loadingOutfitPicks ? null : _generateTodayOutfitPicks,
+                icon: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                label: Text(
+                  _loadingOutfitPicks ? 'Generating...' : 'Generate Outfit',
                   style: GoogleFonts.poppins(
-                    color: primaryBlue,
+                    color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: _getResponsiveFontSize(14),
+                    fontSize: _getResponsiveFontSize(13),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
                   ),
                 ),
               ),
@@ -488,57 +788,26 @@ class _HomePageState extends State<HomePage>
         SizedBox(height: _getResponsiveHeight(16)),
         SizedBox(
           height: _getResponsiveHeight(280),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-            itemCount: 5,
-            itemBuilder: (context, index) => _buildOutfitCard(index),
-          ),
+          child:
+              _loadingOutfitPicks
+                  ? Center(child: CircularProgressIndicator(color: primaryBlue))
+                  : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _getHorizontalPadding(),
+                    ),
+                    itemCount: _todayOutfitPicks.length,
+                    itemBuilder:
+                        (context, index) => _buildOutfitPickCard(index),
+                  ),
         ),
       ],
     );
   }
 
-  Widget _buildOutfitCard(int index) {
-    final outfits = [
-      {
-        'title': 'Casual Chic',
-        'occasion': 'Coffee Date',
-        'weather': '22°C',
-        'image': 'assets/images/outfit_1.png',
-        'colors': [primaryBlue, accentYellow],
-      },
-      {
-        'title': 'Business Ready',
-        'occasion': 'Work Meeting',
-        'weather': '18°C',
-        'image': 'assets/images/outfit_2.png',
-        'colors': [darkGray, primaryBlue],
-      },
-      {
-        'title': 'Weekend Vibes',
-        'occasion': 'Shopping',
-        'weather': '25°C',
-        'image': 'assets/images/outfit_3.png',
-        'colors': [accentRed, accentYellow],
-      },
-      {
-        'title': 'Date Night',
-        'occasion': 'Dinner',
-        'weather': '20°C',
-        'image': 'assets/images/outfit_4.png',
-        'colors': [primaryBlue, accentRed],
-      },
-      {
-        'title': 'Gym Session',
-        'occasion': 'Workout',
-        'weather': '23°C',
-        'image': 'assets/images/outfit_5.png',
-        'colors': [accentYellow, primaryBlue],
-      },
-    ];
-
-    final outfit = outfits[index];
+  Widget _buildOutfitPickCard(int index) {
+    final outfit = _todayOutfitPicks[index];
+    final imageUrl = _todayOutfitImages[index];
     final cardWidth = _isSmallScreen() ? 180.0 : 200.0;
 
     return Container(
@@ -548,7 +817,7 @@ class _HomePageState extends State<HomePage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (outfit['colors'] as List<Color>)[0].withValues(alpha: 0.2),
+            color: primaryBlue.withOpacity(0.15),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -558,117 +827,70 @@ class _HomePageState extends State<HomePage>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: outfit['colors'] as List<Color>,
+            // Background image or placeholder
+            imageUrl != null
+                ? (outfit['isAsset'] == true
+                    ? Image.asset(
+                      imageUrl,
+                      height: 200,
+                      width: cardWidth,
+                      fit: BoxFit.cover,
+                    )
+                    : Image.network(
+                      'http://localhost:3000/proxy-image?url=${Uri.encodeComponent(imageUrl)}',
+                      height: 200,
+                      width: cardWidth,
+                      fit: BoxFit.cover,
+                    ))
+                : Container(
+                  color: Colors.white,
+                  height: 200,
+                  width: cardWidth,
+                  child: Center(
+                    child: Icon(Icons.image, size: 48, color: mediumGray),
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(_getHorizontalPadding() * 0.8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            outfit['weather'] as String,
-                            style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(10),
-                              fontWeight: FontWeight.w600,
-                              color: darkGray,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.favorite_border_rounded,
-                          color: Colors.white,
-                          size: _isSmallScreen() ? 16 : 18,
-                        ),
-                      ),
-                    ],
+            // Info overlay
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.85),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
                   ),
-                  const Spacer(),
-                  Text(
-                    outfit['title'] as String,
-                    style: GoogleFonts.poppins(
-                      fontSize: _getResponsiveFontSize(16),
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      outfit['title'] ?? '',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(15),
+                        fontWeight: FontWeight.w700,
+                        color: darkGray,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    outfit['occasion'] as String,
-                    style: GoogleFonts.poppins(
-                      fontSize: _getResponsiveFontSize(12),
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: FontWeight.w500,
+                    Text(
+                      outfit['destination'] ?? '',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(11),
+                        color: mediumGray,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: _getResponsiveHeight(12)),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            vertical: _getResponsiveHeight(8),
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Try On',
-                            style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(12),
-                              fontWeight: FontWeight.w600,
-                              color: darkGray,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                    Text(
+                      outfit['weather'] ?? '',
+                      style: GoogleFonts.poppins(
+                        fontSize: _getResponsiveFontSize(11),
+                        color: mediumGray,
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.bookmark_border_rounded,
-                          color: Colors.white,
-                          size: _isSmallScreen() ? 14 : 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -724,10 +946,10 @@ class _HomePageState extends State<HomePage>
                     () => _navigateToWardrobe(),
                   ),
                   _buildQuickAccessCard(
-                    'Style Quiz',
+                    'Budget Personality',
                     Icons.psychology_rounded,
                     accentRed,
-                    'Discover your fashion DNA',
+                    'Find out your budget type',
                     () => _navigateToStyleQuiz(),
                   ),
                   _buildQuickAccessCard(
@@ -827,205 +1049,214 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFashionNewsSection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Fashion News',
-              style: GoogleFonts.poppins(
-                fontSize: _getResponsiveFontSize(20),
-                fontWeight: FontWeight.w700,
-                color: darkGray,
-              ),
-            ),
-            TextButton(
-              onPressed: () => _navigateToNews(),
-              child: Text(
-                'Read More',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Fashion News',
                 style: GoogleFonts.poppins(
-                  color: primaryBlue,
-                  fontWeight: FontWeight.w600,
-                  fontSize: _getResponsiveFontSize(14),
+                  fontSize: _getResponsiveFontSize(20),
+                  fontWeight: FontWeight.w700,
+                  color: darkGray,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _navigateToNews(),
+                child: Text(
+                  'Read More',
+                  style: GoogleFonts.poppins(
+                    color: primaryBlue,
+                    fontWeight: FontWeight.w600,
+                    fontSize: _getResponsiveFontSize(14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: _getResponsiveHeight(16)),
+        SizedBox(
+          height: _getResponsiveHeight(160),
+          child: StreamBuilder<QuerySnapshot>(
+            stream:
+                FirebaseFirestore.instance
+                    .collection('fashion_news')
+                    .orderBy('createdAt', descending: true)
+                    .limit(10)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No news yet.',
+                    style: GoogleFonts.poppins(color: mediumGray),
+                  ),
+                );
+              }
+              final docs = snapshot.data!.docs;
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(
+                  horizontal: _getHorizontalPadding(),
+                ),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  return _buildNewsCardFromFirestore(data, docs[index].id);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewsCardFromFirestore(Map<String, dynamic> data, String docId) {
+    final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
+    final likedBy = List<String>.from(data['likedBy'] ?? []);
+    final isLiked = likedBy.contains(userId);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => NewsDetailPage(docId: docId)),
+        );
+      },
+      child: Container(
+        width: cardWidth,
+        margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if ((data['imageUrl'] ?? '').isNotEmpty)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: Image.network(
+                      data['imageUrl'],
+                      height: _getResponsiveHeight(80),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            height: _getResponsiveHeight(80),
+                            color: Colors.grey[200],
+                            child: const Icon(
+                              Icons.broken_image,
+                              color: Colors.grey,
+                            ),
+                          ),
+                    ),
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            data['title'] ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: _getResponsiveFontSize(13),
+                              fontWeight: FontWeight.w600,
+                              color: darkGray,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(height: _getResponsiveHeight(8)),
+                        Expanded(
+                          child: Text(
+                            data['content'] ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: _getResponsiveFontSize(10),
+                              color: mediumGray,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Love button di pojok kanan atas
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () async {
+                  final ref = FirebaseFirestore.instance
+                      .collection('fashion_news')
+                      .doc(docId);
+                  if (isLiked) {
+                    await ref.update({
+                      'likedBy': FieldValue.arrayRemove([userId]),
+                    });
+                  } else {
+                    await ref.update({
+                      'likedBy': FieldValue.arrayUnion([userId]),
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isLiked
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: isLiked ? Colors.red : Colors.grey,
+                    size: 22,
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-      SizedBox(height: _getResponsiveHeight(16)),
-      SizedBox(
-        height: _getResponsiveHeight(160),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('fashion_news')
-              .orderBy('createdAt', descending: true)
-              .limit(10)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return Center(
-                child: Text(
-                  'No news yet.',
-                  style: GoogleFonts.poppins(color: mediumGray),
-                ),
-              );
-            }
-            final docs = snapshot.data!.docs;
-            return ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final data = docs[index].data() as Map<String, dynamic>;
-                return _buildNewsCardFromFirestore(data, docs[index].id);
-              },
-            );
-          },
-        ),
-      ),
-    ],
-  );
-}
-
-  Widget _buildNewsCardFromFirestore(Map<String, dynamic> data, String docId) {
-  final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
-  final user = FirebaseAuth.instance.currentUser;
-  final userId = user?.uid ?? '';
-  final likedBy = List<String>.from(data['likedBy'] ?? []);
-  final isLiked = likedBy.contains(userId);
-
-  return GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => NewsDetailPage(docId: docId),
-        ),
-      );
-    },
-    child: Container(
-      width: cardWidth,
-      margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if ((data['imageUrl'] ?? '').isNotEmpty)
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  child: Image.network(
-                    data['imageUrl'],
-                    height: _getResponsiveHeight(80),
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: _getResponsiveHeight(80),
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          data['title'] ?? '',
-                          style: GoogleFonts.poppins(
-                            fontSize: _getResponsiveFontSize(13),
-                            fontWeight: FontWeight.w600,
-                            color: darkGray,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      SizedBox(height: _getResponsiveHeight(8)),
-                      Expanded(
-                        child: Text(
-                          data['content'] ?? '',
-                          style: GoogleFonts.poppins(
-                            fontSize: _getResponsiveFontSize(10),
-                            color: mediumGray,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // Love button di pojok kanan atas
-          Positioned(
-            top: 8,
-            right: 8,
-            child: GestureDetector(
-              onTap: () async {
-                final ref = FirebaseFirestore.instance.collection('fashion_news').doc(docId);
-                if (isLiked) {
-                  await ref.update({
-                    'likedBy': FieldValue.arrayRemove([userId])
-                  });
-                } else {
-                  await ref.update({
-                    'likedBy': FieldValue.arrayUnion([userId])
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: isLiked ? Colors.red : Colors.grey,
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildMyFavoritesSection() {
     return Padding(
@@ -2323,10 +2554,6 @@ class _HomePageState extends State<HomePage>
     ).push(MaterialPageRoute(builder: (context) => const ProfilePage()));
   }
 
-  void _navigateToAllRecommendations() {
-    // Navigate to all recommendations
-  }
-
   void _navigateToAllFavorites() {
     Navigator.push(
       context,
@@ -2346,15 +2573,12 @@ class _HomePageState extends State<HomePage>
     ).push(MaterialPageRoute(builder: (context) => const WardrobePage()));
   }
 
-
-void _navigateToStyleQuiz() {
-  HapticFeedback.mediumImpact();
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => const StyleQuizPage(),
-    ),
-  );
-}
+  void _navigateToStyleQuiz() {
+    HapticFeedback.mediumImpact();
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const StyleQuizPage()));
+  }
 
   void _navigateToPlanner() {
     Navigator.of(
@@ -2363,9 +2587,9 @@ void _navigateToStyleQuiz() {
   }
 
   void _navigateToNews() {
-    Navigator.of(context).push(
-    MaterialPageRoute(builder: (context) => const NewsPage()),
-  );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const NewsPage()));
   }
 
   void _navigateToJoinCommunity() {

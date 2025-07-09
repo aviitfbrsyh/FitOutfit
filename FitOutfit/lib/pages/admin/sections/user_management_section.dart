@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ✅ Add this import
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/admin_data_service.dart';
 
 class EnhancedUserManagement extends StatefulWidget {
@@ -28,7 +28,10 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
           const SizedBox(height: 20),
           _buildUserStats(),
           const SizedBox(height: 20),
+          // ✅ UPDATED: Charts Column (atas-bawah) instead of Row (sebelahan)
           _buildAgeChart(),
+          const SizedBox(height: 20),
+          _buildGenderChart(),
           const SizedBox(height: 20),
           _buildSearchBar(),
           const SizedBox(height: 20),
@@ -360,9 +363,10 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
     );
   }
 
+  // ✅ UPDATED: Age Chart - Mobile Optimized
   Widget _buildAgeChart() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20), // ✅ Reduced padding for mobile
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -382,27 +386,29 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
               Icon(
                 Icons.bar_chart_rounded,
                 color: darkPurple,
-                size: 24,
+                size: 22, // ✅ Slightly smaller for mobile
               ),
               const SizedBox(width: 8),
-              Text(
-                'User Age Distribution',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: darkPurple,
+              Expanded( // ✅ Make text responsive
+                child: Text(
+                  'User Age Distribution',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18, // ✅ Smaller font for mobile
+                    fontWeight: FontWeight.w700,
+                    color: darkPurple,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16), // ✅ Reduced spacing
           FutureBuilder<Map<String, int>>(
             future: _dataService.getAgeDistribution(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: Padding(
-                    padding: EdgeInsets.all(40),
+                    padding: EdgeInsets.all(30), // ✅ Reduced padding
                     child: CircularProgressIndicator(color: darkPurple),
                   ),
                 );
@@ -411,11 +417,12 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
               if (snapshot.hasError || !snapshot.hasData) {
                 return Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(40),
+                    padding: const EdgeInsets.all(30),
                     child: Text(
                       'Unable to load age data',
                       style: GoogleFonts.poppins(
                         color: Colors.grey[600],
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -431,113 +438,121 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
     );
   }
 
+  // ✅ UPDATED: Age Chart - Mobile Layout
   Widget _buildChart(Map<String, int> ageData) {
     final maxValue = ageData.values.isNotEmpty 
         ? ageData.values.reduce((a, b) => a > b ? a : b) 
         : 1;
 
-    return SizedBox(
-      height: 300,
-      child: Row(
-        children: [
-          // Age ranges and counts
-          Expanded(
-            flex: 3,
-            child: BarChart(
-              BarChartData(
-                maxY: maxValue.toDouble() + 2,
-                barGroups: _createBarGroups(ageData),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
+    return Column( // ✅ Changed from Row to Column for mobile
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ✅ Bar Chart
+        SizedBox(
+          height: 250, // ✅ Reduced height for mobile
+          child: BarChart(
+            BarChartData(
+              maxY: maxValue.toDouble() + 2,
+              barGroups: _createBarGroups(ageData),
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 35, // ✅ Reduced for mobile
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toInt().toString(),
+                        style: GoogleFonts.poppins(
+                          fontSize: 9, // ✅ Smaller font
+                          color: Colors.grey[600],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 25, // ✅ Reduced for mobile
+                    getTitlesWidget: (value, meta) {
+                      final ageRanges = ageData.keys.toList();
+                      if (value.toInt() < ageRanges.length) {
                         return Text(
-                          value.toInt().toString(),
+                          ageRanges[value.toInt()],
                           style: GoogleFonts.poppins(
-                            fontSize: 10,
+                            fontSize: 9, // ✅ Smaller font
                             color: Colors.grey[600],
                           ),
                         );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      getTitlesWidget: (value, meta) {
-                        final ageRanges = ageData.keys.toList();
-                        if (value.toInt() < ageRanges.length) {
-                          return Text(
-                            ageRanges[value.toInt()],
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              color: Colors.grey[600],
-                            ),
-                          );
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                      }
+                      return const Text('');
+                    },
                   ),
                 ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
-                    color: Colors.grey[300]!,
-                    width: 1,
-                  ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
                 ),
-                gridData: FlGridData(
-                  show: true,
-                  horizontalInterval: 1,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: Colors.grey[200]!,
-                      strokeWidth: 1,
-                    );
-                  },
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
                 ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 1,
+                ),
+              ),
+              gridData: FlGridData(
+                show: true,
+                horizontalInterval: 1,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey[200]!,
+                    strokeWidth: 1,
+                  );
+                },
               ),
             ),
           ),
-          const SizedBox(width: 20),
-          // Legend
-          Expanded(
-            flex: 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Age Groups',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: darkPurple,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...ageData.entries.map((entry) => _buildLegendItem(
-                  entry.key,
-                  entry.value,
-                  _getColorForAgeGroup(entry.key),
-                )),
-              ],
+        ),
+        const SizedBox(height: 16), // ✅ Spacing between chart and legend
+        // ✅ Legend - Below chart for mobile
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Age Groups',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: darkPurple,
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 8),
+            // ✅ Horizontal scrollable legend for mobile
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ageData.entries.map((entry) => 
+                  Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    child: _buildLegendItem(
+                      entry.key,
+                      entry.value,
+                      _getColorForAgeGroup(entry.key),
+                    ),
+                  ),
+                ).toList(),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
+  // ✅ ADD MISSING: Create bar groups for age chart
   List<BarChartGroupData> _createBarGroups(Map<String, int> ageData) {
     return ageData.entries.map((entry) {
       final index = ageData.keys.toList().indexOf(entry.key);
@@ -558,47 +573,7 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
     }).toList();
   }
 
-  Widget _buildLegendItem(String ageGroup, int count, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ageGroup,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                Text(
-                  '$count users',
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ✅ ADD MISSING: Get color for age group
   Color _getColorForAgeGroup(String ageGroup) {
     switch (ageGroup) {
       case '13-17':
@@ -616,183 +591,74 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
     }
   }
 
-  // ✅ Helper untuk mengambil usia dari field 'tanggal_lahir'
-  int _getUserAge(Map<String, dynamic> user) {
-    final tanggalLahir = user['tanggal_lahir'];
-    if (tanggalLahir != null) {
-      DateTime? birthDate;
+  // ✅ ADD MISSING: Create pie chart sections for gender
+  // ✅ UPDATE: Update pie chart sections to only show Male, Female, Not Specified
+  // ✅ FIX: Update pie chart sections - remove "Not Specified" handling
+  List<PieChartSectionData> _createPieSections(Map<String, int> genderData, int totalUsers) {
+    return genderData.entries.map((entry) {
+      final percentage = totalUsers > 0 ? (entry.value / totalUsers) * 100 : 0;
+      final color = _getColorForGender(entry.key);
       
-      // Handle different date formats
-      if (tanggalLahir is Timestamp) {
-        birthDate = tanggalLahir.toDate();
-      } else if (tanggalLahir is String) {
-        // Try to parse string date
-        try {
-          if (tanggalLahir.contains('/')) {
-            // Format: DD/MM/YYYY
-            final parts = tanggalLahir.split('/');
-            if (parts.length == 3) {
-              birthDate = DateTime(
-                int.parse(parts[2]), // year
-                int.parse(parts[1]), // month
-                int.parse(parts[0]), // day
-              );
-            }
-          } else if (tanggalLahir.contains('-')) {
-            // Format: YYYY-MM-DD
-            birthDate = DateTime.parse(tanggalLahir);
-          }
-        } catch (e) {
-          print('Error parsing birth date: $tanggalLahir');
-          return 0;
-        }
-      }
-      
-      if (birthDate != null) {
-        return _calculateAge(birthDate);
-      }
-    }
-    return 0;
-  }
-
-  // ✅ Method untuk menghitung usia
-  int _calculateAge(DateTime birthDate) {
-    final now = DateTime.now();
-    int age = now.year - birthDate.year;
-    if (now.month < birthDate.month || 
-        (now.month == birthDate.month && now.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
-
-  // ✅ NEW: Helper untuk mendapatkan key age range untuk color coding
-  String _getAgeRangeKey(int age) {
-    if (age >= 13 && age <= 17) return '13-17';
-    if (age >= 18 && age <= 24) return '18-24';
-    if (age >= 25 && age <= 34) return '25-34';
-    if (age >= 35 && age <= 44) return '35-44';
-    if (age >= 45) return '45+';
-    return '13-17'; // default
-  }
-
-  // ✅ Method _getAgeGroup
-  String _getAgeGroup(int age) {
-    if (age >= 13 && age <= 17) return 'Teen (13-17)';
-    if (age >= 18 && age <= 24) return 'Young Adult (18-24)';
-    if (age >= 25 && age <= 34) return 'Adult (25-34)';
-    if (age >= 35 && age <= 44) return 'Mid Adult (35-44)';
-    if (age >= 45) return 'Senior (45+)';
-    return 'Unknown';
-  }
-
-  // ✅ Method _formatDate
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  // ✅ NEW: Helper untuk format tanggal lahir
-  String _getBirthDateString(dynamic tanggalLahir) {
-    if (tanggalLahir == null) return '';
-    
-    try {
-      if (tanggalLahir is Timestamp) {
-        final date = tanggalLahir.toDate();
-        return '${date.day}/${date.month}/${date.year}';
-      } else if (tanggalLahir is String) {
-        // Return as is if it's already a string
-        return tanggalLahir;
-      }
-    } catch (e) {
-      print('Error formatting birth date: $e');
-    }
-    
-    return '';
-  }
-
-  // ✅ Method _handleUserAction
-  void _handleUserAction(String action, Map<String, dynamic> user) async {
-    final userId = user['id'];
-    if (userId == null) return;
-
-    try {
-      switch (action) {
-        case 'toggle_status':
-          final currentStatus = user['isActive'] ?? true;
-          await _dataService.updateUserStatus(userId, !currentStatus);
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'User ${!currentStatus ? 'activated' : 'deactivated'} successfully',
-                  style: GoogleFonts.poppins(),
-                ),
-                backgroundColor: !currentStatus ? Colors.green : Colors.orange,
+      return PieChartSectionData(
+        color: color,
+        value: entry.value.toDouble(),
+        title: '${percentage.toStringAsFixed(1)}%',
+        radius: 80,
+        titleStyle: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        badgeWidget: entry.value > 0 ? Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
               ),
-            );
-          }
-          break;
-
-        case 'delete':
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(
-                'Delete User',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              ),
-              content: Text(
-                'Are you sure you want to delete this user? This action cannot be undone.',
-                style: GoogleFonts.poppins(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('Delete'),
-                ),
-              ],
-            ),
-          );
-
-          if (confirm == true) {
-            await _dataService.deleteUser(userId);
-            
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'User deleted successfully',
-                    style: GoogleFonts.poppins(),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
-          break;
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to $action user: $e',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red,
+            ],
           ),
-        );
-      }
+          child: Icon(
+            _getGenderIcon(entry.key),
+            size: 16,
+            color: color,
+          ),
+        ) : null,
+        badgePositionPercentageOffset: 1.2,
+      );
+    }).where((section) => section.value > 0).toList(); // ✅ Filter out empty sections
+  }
+  // ✅ UPDATE: Update gender-related methods to work with Male/Female only
+// ✅ FIX: Update gender methods in user_management_section.dart
+  Color _getColorForGender(String gender) {
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return const Color(0xFF3B82F6); // Blue
+      case 'female':
+        return const Color(0xFFEC4899); // Pink
+      default:
+        return Colors.grey; // Fallback (seharusnya tidak pernah digunakan)
     }
   }
 
-  // ✅ SINGLE _buildUserCard method (removed duplicate)
+  IconData _getGenderIcon(String gender) {
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return Icons.male;
+      case 'female':
+        return Icons.female;
+      default:
+        return Icons.person; // Fallback (seharusnya tidak pernah digunakan)
+    }
+  }
+
+  // ✅ REMOVE DUPLICATE: Keep only one _buildGenderChart method
+  // (Remove the duplicate one that appears later in the file)
+
+  // ✅ UPDATED: User card with gender (merge changes from duplicates)
   Widget _buildUserCard(Map<String, dynamic> user, bool isLast) {
     final isActive = user['isActive'] ?? true;
     final joinDate = user['createdAt'] != null
@@ -804,6 +670,7 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
     final age = _getUserAge(user);
     final ageGroup = _getAgeGroup(age);
     final birthDate = _getBirthDateString(user['tanggal_lahir']);
+    final userId = user['id'];
 
     return Container(
       margin: EdgeInsets.only(left: 16, right: 16, bottom: isLast ? 16 : 8),
@@ -817,75 +684,54 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: primaryLavender,
-            child: Text(
-              (user['name']?.toString().isNotEmpty == true
-                  ? user['name'][0].toUpperCase()
-                  : 'U'),
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: darkPurple,
-              ),
-            ),
+          // ✅ UPDATED: Avatar with gender from personalisasi
+          FutureBuilder<String?>(
+            future: _getUserGenderFromPersonalisasi(userId),
+            builder: (context, genderSnapshot) {
+              final gender = genderSnapshot.data;
+              
+              // ✅ Default avatar if no gender data yet
+              return CircleAvatar(
+                radius: 24,
+                backgroundColor: gender != null
+                    ? _getColorForGender(gender).withOpacity(0.1)
+                    : primaryLavender,
+                child: Icon(
+                  gender != null ? _getGenderIcon(gender) : Icons.person,
+                  size: 24,
+                  color: gender != null
+                      ? _getColorForGender(gender)
+                      : darkPurple,
+                ),
+              );
+            },
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ✅ UPDATED: Name with status indicator
                 Row(
                   children: [
                     Expanded(
                       child: Text(
                         user['name']?.toString() ?? 'Unknown User',
                         style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          color: isActive ? Colors.black : Colors.grey[600],
+                          fontWeight: FontWeight.w600,
+                          color: darkPurple,
                         ),
                       ),
                     ),
-                    if (age > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getColorForAgeGroup(_getAgeRangeKey(age)).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$age tahun',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: _getColorForAgeGroup(_getAgeRangeKey(age)),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user['email']?.toString() ?? 'No email',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
+                        vertical: 4,
                         horizontal: 8,
-                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: isActive ? Colors.green[100] : Colors.red[100],
+                        color: isActive ? Colors.green[50] : Colors.red[50],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -893,61 +739,89 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: isActive ? Colors.green[800] : Colors.red[800],
+                          color: isActive ? Colors.green[700] : Colors.red[700],
                         ),
                       ),
                     ),
-                    if (age > 0) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          ageGroup,
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.blue[700],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // ✅ UPDATED: Email and join date
+                Text(
+                  user['email']?.toString() ?? 'No email',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Joined: ${_formatDate(joinDate)}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // ✅ UPDATED: Age and birth date
+                Row(
+                  children: [
+                    _buildInfoItem(
+                      Icons.cake,
+                      '${age > 0 ? age : '?'} years',
+                      Colors.amber[700]!,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildInfoItem(
+                      Icons.calendar_today,
+                      birthDate.isNotEmpty ? birthDate : 'No birth date',
+                      Colors.blue[700]!,
+                    ),
+                    const SizedBox(width: 16),
+                    // ✅ Show gender badge if available
+                    FutureBuilder<String?>(
+                      future: _getUserGenderFromPersonalisasi(userId),
+                      builder: (context, genderSnapshot) {
+                        final gender = genderSnapshot.data;
+                        if (gender == null) return const SizedBox.shrink();
+                        
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Joined ${_formatDate(joinDate)}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                          decoration: BoxDecoration(
+                            color: _getColorForGender(gender).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          if (birthDate.isNotEmpty)
-                            Text(
-                              'Born: $birthDate',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                color: Colors.grey[400],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getGenderIcon(gender),
+                                size: 12,
+                                color: _getColorForGender(gender),
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
+                              const SizedBox(width: 4),
+                              Text(
+                                gender,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: _getColorForGender(gender),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ],
             ),
           ),
+          // ✅ ADD: Action menu
           PopupMenuButton<String>(
             onSelected: (value) => _handleUserAction(value, user),
             itemBuilder: (context) => [
@@ -982,4 +856,389 @@ class _EnhancedUserManagementState extends State<EnhancedUserManagement> {
       ),
     );
   }
+
+  Widget _buildInfoItem(IconData icon, String text, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[800],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ ADD: Method to fetch gender from personalisasi collection
+Future<String?> _getUserGenderFromPersonalisasi(String? userId) async {
+  if (userId == null) return null;
+  
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('personalisasi')
+        .doc(userId)
+        .get();
+    
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['selectedGender']?.toString();
+    }
+  } catch (e) {
+    print('Error fetching gender from personalisasi: $e');
+  }
+  
+  return null;
+}
+
+// ✅ ADD: Missing _buildGenderChart method
+Widget _buildGenderChart() {
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 20,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.pie_chart_rounded,
+              color: darkPurple,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Gender Distribution',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: darkPurple,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder<Map<String, int>>(
+          future: _dataService.getGenderDistribution(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(30),
+                  child: CircularProgressIndicator(color: darkPurple),
+                ),
+              );
+            }
+
+            if (snapshot.hasError || !snapshot.hasData) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(30),
+                  child: Text(
+                    'Unable to load gender data',
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final genderData = snapshot.data!;
+            final totalUsers = genderData.values.fold(0, (sum, count) => sum + count);
+            
+            return Column(
+              children: [
+                SizedBox(
+                  height: 200,
+                  child: PieChart(
+                    PieChartData(
+                      sections: _createPieSections(genderData, totalUsers),
+                      centerSpaceRadius: 40,
+                      sectionsSpace: 2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildGenderLegend(genderData),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+// ✅ ADD: Missing _buildGenderLegend method
+Widget _buildGenderLegend(Map<String, int> genderData) {
+  return Column(
+    children: genderData.entries.map((entry) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: _getColorForGender(entry.key),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              _getGenderIcon(entry.key),
+              size: 16,
+              color: _getColorForGender(entry.key),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                entry.key,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              '${entry.value}',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: darkPurple,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList(),
+  );
+}
+
+// ✅ ADD: Missing _buildLegendItem method
+Widget _buildLegendItem(String label, int value, Color color) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      const SizedBox(width: 6),
+      Text(
+        '$label ($value)',
+        style: GoogleFonts.poppins(
+          fontSize: 12,
+          color: Colors.grey[700],
+        ),
+      ),
+    ],
+  );
+}
+
+// ✅ ADD: Missing helper methods
+int _getUserAge(Map<String, dynamic> user) {
+  final birthDate = user['tanggal_lahir'];
+  if (birthDate == null) return 0;
+  
+  try {
+    DateTime birth;
+    if (birthDate is Timestamp) {
+      birth = birthDate.toDate();
+    } else if (birthDate is String) {
+      birth = DateTime.parse(birthDate);
+    } else {
+      return 0;
+    }
+    
+    final now = DateTime.now();
+    int age = now.year - birth.year;
+    if (now.month < birth.month || 
+        (now.month == birth.month && now.day < birth.day)) {
+      age--;
+    }
+    return age;
+  } catch (e) {
+    print('Error calculating age: $e');
+    return 0;
+  }
+}
+
+String _getAgeGroup(int age) {
+  if (age >= 13 && age <= 17) return '13-17';
+  if (age >= 18 && age <= 24) return '18-24';
+  if (age >= 25 && age <= 34) return '25-34';
+  if (age >= 35 && age <= 44) return '35-44';
+  if (age >= 45) return '45+';
+  return 'Unknown';
+}
+
+String _getBirthDateString(dynamic birthDate) {
+  if (birthDate == null) return '';
+  
+  try {
+    DateTime date;
+    if (birthDate is Timestamp) {
+      date = birthDate.toDate();
+    } else if (birthDate is String) {
+      date = DateTime.parse(birthDate);
+    } else {
+      return '';
+    }
+    
+    return '${date.day}/${date.month}/${date.year}';
+  } catch (e) {
+    return '';
+  }
+}
+
+String _formatDate(DateTime date) {
+  final now = DateTime.now();
+  final difference = now.difference(date).inDays;
+  
+  if (difference < 1) {
+    return 'Today';
+  } else if (difference < 7) {
+    return '$difference days ago';
+  } else if (difference < 30) {
+    final weeks = (difference / 7).floor();
+    return '$weeks week${weeks > 1 ? 's' : ''} ago';
+  } else if (difference < 365) {
+    final months = (difference / 30).floor();
+    return '$months month${months > 1 ? 's' : ''} ago';
+  } else {
+    final years = (difference / 365).floor();
+    return '$years year${years > 1 ? 's' : ''} ago';
+  }
+}
+
+void _handleUserAction(String action, Map<String, dynamic> user) {
+  switch (action) {
+    case 'toggle_status':
+      _toggleUserStatus(user);
+      break;
+    case 'delete':
+      _deleteUser(user);
+      break;
+  }
+}
+
+Future<void> _toggleUserStatus(Map<String, dynamic> user) async {
+  try {
+    final userId = user['id'];
+    final currentStatus = user['isActive'] ?? true;
+    
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .update({'isActive': !currentStatus});
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          currentStatus ? 'User deactivated' : 'User activated',
+          style: GoogleFonts.poppins(),
+        ),
+        backgroundColor: currentStatus ? Colors.orange : Colors.green,
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error updating user status: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+Future<void> _deleteUser(Map<String, dynamic> user) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(
+        'Delete User',
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+      ),
+      content: Text(
+        'Are you sure you want to delete ${user['name']}? This action cannot be undone.',
+        style: GoogleFonts.poppins(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancel', style: GoogleFonts.poppins()),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(
+            'Delete',
+            style: GoogleFonts.poppins(
+              color: Colors.red,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    try {
+      final userId = user['id'];
+      
+      // Delete user document
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .delete();
+      
+      // Also delete personalisasi data if exists
+      await FirebaseFirestore.instance
+          .collection('personalisasi')
+          .doc(userId)
+          .delete();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'User deleted successfully',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting user: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
 }

@@ -55,6 +55,7 @@ dependencies:
   shared_preferences: ^2.2.2  # Untuk save user data & quiz results
   flutter_staggered_animations: ^1.1.1  # Untuk animasi yang smooth
   flutter_cache_manager: ^3.3.1  # ✅ TAMBAH INI
+  csv: ^5.0.2
   
 dev_dependencies:
   flutter_test:
@@ -82,6 +83,16 @@ flutter:
     - assets/
     - assets/google_icon.png 
     - assets/avatar.jpg
+    - assets/images/sample_female_1.png
+    - assets/images/sample_female_2.png
+    - assets/images/sample_female_3.png
+    - assets/images/sample_female_4.png
+    - assets/images/sample_female_5.png
+    - assets/images/sample_male_1.png
+    - assets/images/sample_male_2.png
+    - assets/images/sample_male_3.png
+    - assets/images/sample_male_4.png
+    - assets/images/sample_male_5.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

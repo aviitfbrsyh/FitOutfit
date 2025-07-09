@@ -321,4 +321,50 @@ class AdminDataService {
       throw Exception('Failed to delete user: $e');
     }
   }
+
+  // ✅ NEW: Method untuk mengambil distribusi gender
+  // ✅ FIX: Update getGenderDistribution method in admin_data_service.dart
+Future<Map<String, int>> getGenderDistribution() async {
+  try {
+    // Get all users first
+    final usersSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .get();
+    
+    final Map<String, int> genderCounts = {
+      'Male': 0,
+      'Female': 0,
+    };
+    
+    // For each user, fetch their gender from personalisasi
+    for (final userDoc in usersSnapshot.docs) {
+      try {
+        final personalisasiDoc = await FirebaseFirestore.instance
+            .collection('personalisasi')
+            .doc(userDoc.id)
+            .get();
+        
+        if (personalisasiDoc.exists) {
+          final data = personalisasiDoc.data() as Map<String, dynamic>;
+          final selectedGender = data['selectedGender']?.toString();
+          
+          if (selectedGender == 'Male') {
+            genderCounts['Male'] = genderCounts['Male']! + 1;
+          } else if (selectedGender == 'Female') {
+            genderCounts['Female'] = genderCounts['Female']! + 1;
+          }
+          // ✅ REMOVED: Tidak ada lagi "Not Specified" karena semua user pasti punya gender
+        }
+      } catch (e) {
+        print('Error fetching personalisasi for user ${userDoc.id}: $e');
+        // ✅ SKIP: Jika error, skip user ini daripada masuk ke "Not Specified"
+      }
+    }
+    
+    return genderCounts;
+  } catch (e) {
+    print('Error getting gender distribution: $e');
+    return {'Male': 0, 'Female': 0};
+  }
+}
 }

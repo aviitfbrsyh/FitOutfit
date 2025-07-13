@@ -7,6 +7,7 @@ import '../wardrobe/wardrobe_page.dart';
 import '../virtual_try_on/virtual_try_on_page.dart';
 import '../home/home_page.dart';
 import 'community_detail_page.dart';
+import '../profile/profile_page.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -834,30 +835,36 @@ Widget _buildStatsRow([int communityCount = 0]) {
       child: SafeArea(
         child: BottomNavigationBar(
           currentIndex: _selectedBottomNavIndex,
-          onTap: (index) {
-            if (index == _selectedBottomNavIndex) return;
-            HapticFeedback.lightImpact();
-            setState(() => _selectedBottomNavIndex = index);
+onTap: (index) {
+  if (index == _selectedBottomNavIndex) return;
+  HapticFeedback.lightImpact();
+  setState(() => _selectedBottomNavIndex = index);
 
-            if (index == 0) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const HomePage()),
-                (route) => false,
-              );
-            } else if (index == 1) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const WardrobePage()),
-                (route) => false,
-              );
-            } else if (index == 2) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const VirtualTryOnPage(),
-                ),
-                (route) => false,
-              );
-            }
-          },
+  if (index == 0) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const HomePage()),
+      (route) => false,
+    );
+  } else if (index == 1) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const WardrobePage()),
+      (route) => false,
+    );
+  } else if (index == 2) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const VirtualTryOnPage(),
+      ),
+      (route) => false,
+    );
+  } else if (index == 4) {
+Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (context) => const ProfilePage(),
+  ),
+);
+  }
+},
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
           elevation: 0,

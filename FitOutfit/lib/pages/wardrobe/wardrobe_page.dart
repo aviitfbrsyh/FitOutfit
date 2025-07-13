@@ -12,6 +12,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart'; // ✅ TAMBAH
 import '../../services/firebase_storage_service.dart';
 import '../../services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/favorites_service.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -1628,39 +1629,43 @@ Widget _buildEnhancedWardrobeItem(Map<String, dynamic> item) {
                       ),
                     ),
                     // Favorite button
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => _toggleFavorite(item['id'] ?? ''),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: pureWhite,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: shadowColor,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              isFavorite // ✅ Use safe boolean
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 14,
-                              color: isFavorite ? accentRed : mediumGray,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+Positioned(
+  top: 12,
+  right: 12,
+  child: Material(
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(12),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _toggleFavorite(item['id'] ?? ''),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: pureWhite,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: FutureBuilder<bool>(
+          future: FavoritesService.isInFavorites(item['id'] ?? ''),
+          builder: (context, snapshot) {
+            final isFavorite = snapshot.data ?? false;
+            return Icon(
+              isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              size: 14,
+              color: isFavorite ? accentRed : mediumGray,
+            );
+          },
+        ),
+      ),
+    ),
+  ),
+),
                     // Color indicator
                     Positioned(
                       top: 12,
@@ -3065,35 +3070,45 @@ void _showItemDetails(Map<String, dynamic> item) {
         : Colors.white;
   }
 
-// ✅ GANTI METHOD _toggleFavorite YANG ADA (lines 2910-2921)
 Future<void> _toggleFavorite(String itemId) async {
   try {
     final itemIndex = _wardrobeItems.indexWhere((item) => item['id'] == itemId);
     if (itemIndex == -1) return;
 
-    final currentFavorite = _wardrobeItems[itemIndex]['favorite'] ?? false;
-    final newFavorite = !currentFavorite;
+    final item = _wardrobeItems[itemIndex];
 
-    // Update locally first for immediate UI response
+    // Toggle favorite using FavoritesService
+    final isFavorite = await FavoritesService.toggleFavorite(
+      itemId: itemId,
+      title: item['name'] ?? 'Unnamed Item',
+      category: 'Wardrobe',
+      color: primaryBlue,
+      icon: Icons.checkroom_rounded,
+      subtitle: item['brand'] ?? '',
+      imageUrl: item['image'] ?? '',
+      stats: item['category'] ?? 'Other',
+      statsIcon: Icons.category_rounded,
+      count: 1,
+      tags: [item['category'] ?? 'Other', item['color'] ?? 'Gray'],
+      additionalData: {
+        'brand': item['brand'],
+        'lastWorn': item['lastWorn'],
+        'size': item['size'],
+        'material': item['material'],
+      },
+    );
+
+    // Tambahkan baris ini untuk update field favorite di Firestore
+    await FirestoreService.updateWardrobeFavorite(itemId, isFavorite);
+
+    // Update locally for immediate UI response
     setState(() {
-      _wardrobeItems[itemIndex]['favorite'] = newFavorite;
+      _wardrobeItems[itemIndex]['favorite'] = isFavorite;
     });
 
-    // Update in Firestore
-    await FirestoreService.toggleFavorite(itemId, newFavorite);
-    
     print('✅ Favorite toggled successfully');
   } catch (e) {
     print('❌ Error toggling favorite: $e');
-    
-    // Revert local change if Firestore update fails
-    final itemIndex = _wardrobeItems.indexWhere((item) => item['id'] == itemId);
-    if (itemIndex != -1) {
-      setState(() {
-        _wardrobeItems[itemIndex]['favorite'] = !_wardrobeItems[itemIndex]['favorite'];
-      });
-    }
-    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -3104,8 +3119,6 @@ Future<void> _toggleFavorite(String itemId) async {
     }
   }
 }
-
-// ...existing code...
 
 // ✅ PERBAIKI METHOD _deleteItem
 Future<void> _deleteItem(String itemId, String itemName) async {

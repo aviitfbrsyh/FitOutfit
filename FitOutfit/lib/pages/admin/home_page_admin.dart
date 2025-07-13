@@ -15,6 +15,7 @@ import 'sections/analytic_fb.dart';
 import 'sections/user_management_section.dart';
 import 'debug_firebase_page.dart';
 import '../../services/admin_data_service.dart';
+import 'sections/budget_personality_section.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -398,6 +399,11 @@ class _AdminHomePageState extends State<AdminHomePage>
         'title': 'Analytics & Feedback',
         'index': 4,
       },
+        {
+    'icon': Icons.pie_chart_rounded,
+    'title': 'Budget Personality',
+    'index': 5,
+  },
     ];
 
     return Column(
@@ -614,10 +620,12 @@ class _AdminHomePageState extends State<AdminHomePage>
         return CommunityModerationSection.buildCommunityModeration(context);
       case 4:
         return AnalyticsFeedbackSection.buildAnalyticsAndFeedback(context);
-      default:
-        return _buildDashboard();
-    }
+    case 5:
+      return const BudgetPersonalitySection();
+    default:
+      return _buildDashboard();
   }
+}
 
   Widget _buildDashboard() {
     return SingleChildScrollView(

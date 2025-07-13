@@ -39,6 +39,40 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserData();
   }
   
+Future<void> _deleteAccount(BuildContext context) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  try {
+    // Hapus data user di Firestore
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+
+    // Hapus akun dari Firebase Auth
+    await user.delete();
+
+    // Navigasi ke splash screen (atau login)
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => SplashScreenPage()),
+      (route) => false,
+    );
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'requires-recent-login') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please re-login before deleting your account.')),
+      );
+      // Optional: Redirect to login page for re-authentication
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete account: ${e.message}')),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to delete account.')),
+    );
+  }
+}
+
   Future<void> _loadUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -993,9 +1027,9 @@ class _SettingsModal extends StatelessWidget {
                     ],
                   ),
                 );
-                if (result == true) {
-                  // TODO: Implement account deletion logic
-                }
+if (result == true) {
+  await (_ProfilePageState()._deleteAccount(context));
+}
               },
               icon: const Icon(Icons.delete_forever_rounded, color: Colors.white),
               label: Text('Delete Account', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),

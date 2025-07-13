@@ -81,12 +81,18 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: Navigator.of(context).canPop()
+        ? IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () => Navigator.of(context).pop(),
+          )
+        : null,
         title: Text(
           'Profile',
           style: GoogleFonts.poppins(
-            color: darkGray,
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+        color: darkGray,
+        fontWeight: FontWeight.w700,
+        fontSize: 20,
           ),
         ),
         centerTitle: true,

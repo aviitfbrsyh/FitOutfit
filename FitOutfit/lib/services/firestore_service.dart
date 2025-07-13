@@ -174,6 +174,12 @@ class FirestoreService {
     }
   }
 
+static Future<void> updateWardrobeFavorite(String itemId, bool isFavorite) async {
+  await _wardrobeCollection
+      .doc(itemId)
+      .update({'favorite': isFavorite});
+}
+
   // ✅ TAMBAH METHOD BARU - BATCH DELETE (untuk mass delete)
   static Future<void> deleteMultipleItems(List<String> itemIds) async {
     try {

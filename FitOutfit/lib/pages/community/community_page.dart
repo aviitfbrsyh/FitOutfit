@@ -300,48 +300,57 @@ class _CommunityPageState extends State<CommunityPage>
     );
   }
 
-  Widget _buildStatsRow([int communityCount = 0]) {
-    return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: _getHorizontalPadding(),
-        vertical: 12,
-      ),
-      padding: EdgeInsets.all(_isSmallScreen() ? 16 : 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            primaryBlue.withValues(alpha: 0.1),
-            accentYellow.withValues(alpha: 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatItem(
-              'Communities',
-              '$communityCount',
-              Icons.groups_rounded,
-              primaryBlue,
-            ),
-          ),
-          _buildDivider(),
-          Expanded(
-            child: _buildStatItem(
-              'Active',
-              'Today',
-              Icons.trending_up_rounded,
-              accentYellow,
-            ),
-          ),
+Widget _buildStatsRow([int communityCount = 0]) {
+  return Container(
+    margin: EdgeInsets.symmetric(
+      horizontal: _getHorizontalPadding(),
+      vertical: 12,
+    ),
+    padding: EdgeInsets.all(_isSmallScreen() ? 16 : 20),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          primaryBlue.withValues(alpha: 0.1),
+          accentYellow.withValues(alpha: 0.05),
         ],
       ),
-    );
-  }
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: _buildStatItem(
+            'Communities',
+            '$communityCount',
+            Icons.groups_rounded,
+            primaryBlue,
+          ),
+        ),
+        _buildDivider(),
+        Expanded(
+          child: _buildStatItem(
+            'Inspiration',
+            'Today',
+            Icons.auto_awesome_rounded,
+            accentYellow,
+          ),
+        ),
+        _buildDivider(),
+        Expanded(
+          child: _buildStatItem(
+            'Tips Shared',
+            'Daily',
+            Icons.lightbulb_rounded,
+            accentYellow,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildStatItem(
     String label,

@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import 'package:csv/csv.dart';
+import '../../services/favorites_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -32,6 +33,8 @@ class _HomePageState extends State<HomePage>
   static const Color darkGray = Color(0xFF2C3E50);
   static const Color mediumGray = Color(0xFF6B7280);
   static const Color softCream = Color(0xFFFAF9F7);
+  static const Color lightGray = Color(0xFFF8F9FA);
+  
 
   late AnimationController _pulseController;
   late AnimationController _staggerController;
@@ -1120,253 +1123,620 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildNewsCardFromFirestore(Map<String, dynamic> data, String docId) {
-    final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
-    final user = FirebaseAuth.instance.currentUser;
-    final userId = user?.uid ?? '';
-    final likedBy = List<String>.from(data['likedBy'] ?? []);
-    final isLiked = likedBy.contains(userId);
+Widget _buildNewsCardFromFirestore(Map<String, dynamic> data, String docId) {
+  final cardWidth = _isSmallScreen() ? 220.0 : 240.0;
+  final user = FirebaseAuth.instance.currentUser;
+  final userId = user?.uid ?? '';
+  final likedBy = List<String>.from(data['likedBy'] ?? []);
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => NewsDetailPage(docId: docId)),
-        );
-      },
-      child: Container(
-        width: cardWidth,
-        margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if ((data['imageUrl'] ?? '').isNotEmpty)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                    child: Image.network(
-                      data['imageUrl'],
-                      height: _getResponsiveHeight(80),
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
-                            height: _getResponsiveHeight(80),
-                            color: Colors.grey[200],
-                            child: const Icon(
-                              Icons.broken_image,
-                              color: Colors.grey,
-                            ),
-                          ),
-                    ),
+  return GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => NewsDetailPage(docId: docId)),
+      );
+    },
+    child: Container(
+      width: cardWidth,
+      margin: EdgeInsets.only(right: _getHorizontalPadding() * 0.8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if ((data['imageUrl'] ?? '').isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            data['title'] ?? '',
-                            style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(13),
-                              fontWeight: FontWeight.w600,
-                              color: darkGray,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        SizedBox(height: _getResponsiveHeight(8)),
-                        Expanded(
-                          child: Text(
-                            data['content'] ?? '',
-                            style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(10),
-                              color: mediumGray,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                  child: Image.network(
+                    data['imageUrl'],
+                    height: _getResponsiveHeight(80),
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: _getResponsiveHeight(80),
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
-              ],
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(_getHorizontalPadding() * 0.6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          data['title'] ?? '',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(13),
+                            fontWeight: FontWeight.w600,
+                            color: darkGray,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(height: _getResponsiveHeight(8)),
+                      Expanded(
+                        child: Text(
+                          data['content'] ?? '',
+                          style: GoogleFonts.poppins(
+                            fontSize: _getResponsiveFontSize(10),
+                            color: mediumGray,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Love button di pojok kanan atas
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () async {
+                try {
+                  await FavoritesService.toggleFavorite(
+                    itemId: docId,
+                    title: data['title'] ?? '',
+                    category: 'Articles',
+                    color: primaryBlue,
+                    icon: Icons.article_rounded,
+                    subtitle: (data['content'] ?? '').length > 100
+                        ? '${(data['content'] ?? '').substring(0, 100)}...'
+                        : (data['content'] ?? ''),
+                    imageUrl: data['imageUrl'] ?? '',
+                    stats: '${likedBy.length} likes',
+                    statsIcon: Icons.favorite_rounded,
+                    count: likedBy.length,
+                    tags: ['fashion', 'news', 'article'],
+                    additionalData: {
+                      'content': data['content'],
+                      'createdAt': data['createdAt'],
+                    },
+                  );
+                  setState(() {});
+                } catch (e) {
+                  print('Error toggling favorite: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to update favorites'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: FutureBuilder<bool>(
+                  future: FavoritesService.isInFavorites(docId),
+                  builder: (context, snapshot) {
+                    final isFavorite = snapshot.data ?? false;
+                    return Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite ? accentRed : Colors.grey,
+                      size: 22,
+                    );
+                  },
+                ),
+              ),
             ),
-            // Love button di pojok kanan atas
-            Positioned(
-              top: 8,
-              right: 8,
-              child: GestureDetector(
-                onTap: () async {
-                  final ref = FirebaseFirestore.instance
-                      .collection('fashion_news')
-                      .doc(docId);
-                  if (isLiked) {
-                    await ref.update({
-                      'likedBy': FieldValue.arrayRemove([userId]),
-                    });
-                  } else {
-                    await ref.update({
-                      'likedBy': FieldValue.arrayUnion([userId]),
-                    });
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(6),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildMyFavoritesSection() {
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSimplifiedFavoritesHeader(),
+        SizedBox(height: _getResponsiveHeight(20)),
+        _buildFavoritesContentReal(),
+      ],
+    ),
+  );
+}
+
+Widget _buildSimplifiedFavoritesHeader() {
+  return StreamBuilder<List<Map<String, dynamic>>>(
+    stream: FavoritesService.getFavoritesStream().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    }),
+    builder: (context, snapshot) {
+      final favoritesCount = snapshot.data?.length ?? 0;
+      return Container(
+        padding: EdgeInsets.all(_getHorizontalPadding()),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, primaryBlue.withValues(alpha: 0.02)],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(_isSmallScreen() ? 12 : 16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [accentRed, accentRed.withValues(alpha: 0.8)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 6,
+                        color: accentRed.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Icon(
-                    isLiked
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: isLiked ? Colors.red : Colors.grey,
-                    size: 22,
+                    Icons.favorite_rounded,
+                    color: Colors.white,
+                    size: _isSmallScreen() ? 24 : 28,
                   ),
                 ),
-              ),
+                SizedBox(width: _getHorizontalPadding() * 0.8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'My Favorites',
+                              style: GoogleFonts.poppins(
+                                fontSize: _getResponsiveFontSize(18),
+                                fontWeight: FontWeight.w800,
+                                color: darkGray,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accentYellow,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$favoritesCount',
+                              style: GoogleFonts.poppins(
+                                fontSize: _getResponsiveFontSize(11),
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: _getResponsiveHeight(4)),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up_rounded,
+                            color: primaryBlue,
+                            size: _isSmallScreen() ? 14 : 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              favoritesCount == 0
+                                  ? 'Start building your collection'
+                                  : 'Your curated style collection',
+                              style: GoogleFonts.poppins(
+                                fontSize: _getResponsiveFontSize(12),
+                                color: mediumGray,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMyFavoritesSection() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _getHorizontalPadding()),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Simplified Header tanpa tombol Explore All
-          _buildSimplifiedFavoritesHeader(),
-          SizedBox(height: _getResponsiveHeight(20)),
-          // Content Grid
-          _buildFavoritesContent(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimplifiedFavoritesHeader() {
-    return Container(
-      padding: EdgeInsets.all(_getHorizontalPadding()),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, primaryBlue.withValues(alpha: 0.02)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryBlue.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(_isSmallScreen() ? 12 : 16),
+            SizedBox(height: _getResponsiveHeight(16)),
+            GestureDetector(
+              onTap: () => _navigateToAllFavorites(),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: _getResponsiveHeight(12)),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [accentRed, accentRed.withValues(alpha: 0.8)],
+                    colors: [primaryBlue, primaryBlue.withValues(alpha: 0.8)],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: accentRed.withValues(alpha: 0.3),
+                      color: primaryBlue.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: Colors.white,
-                  size: _isSmallScreen() ? 24 : 28,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.visibility_rounded,
+                      color: Colors.white,
+                      size: _isSmallScreen() ? 14 : 16,
+                    ),
+                    SizedBox(width: _getHorizontalPadding() * 0.4),
+                    Text(
+                      favoritesCount == 0 ? 'Start Adding' : 'See More',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: _getResponsiveFontSize(14),
+                      ),
+                    ),
+                    SizedBox(width: _getHorizontalPadding() * 0.4),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white,
+                      size: _isSmallScreen() ? 12 : 14,
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(width: _getHorizontalPadding() * 0.8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'My Favorites',
-                            style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(18),
-                              fontWeight: FontWeight.w800,
-                              color: darkGray,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildFavoritesContentReal() {
+  return StreamBuilder<List<Map<String, dynamic>>>(
+    stream: FavoritesService.getFavoritesStream().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        if (data['color'] is int) data['color'] = Color(data['color']);
+        if (data['icon'] is int) {
+          data['icon'] = IconData(data['icon'], fontFamily: 'MaterialIcons');
+        }
+        if (data['statsIcon'] is int) {
+          data['statsIcon'] = IconData(data['statsIcon'], fontFamily: 'MaterialIcons');
+        }
+        if (data['dateAdded'] is Timestamp) {
+          data['dateAdded'] = (data['dateAdded'] as Timestamp).toDate();
+        }
+        return data;
+      }).toList();
+    }),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return _buildFavoritesLoadingState();
+      }
+      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return _buildFavoritesEmptyState();
+      }
+      final favorites = snapshot.data!;
+      final recentFavorites = favorites.take(6).toList();
+      return Column(
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _isSmallScreen() ? 2 : 3,
+              crossAxisSpacing: _getHorizontalPadding() * 0.6,
+              mainAxisSpacing: _getResponsiveHeight(12),
+              childAspectRatio: 0.75,
+            ),
+            itemCount: recentFavorites.length,
+            itemBuilder: (context, index) {
+              return _buildFavoriteCard(recentFavorites[index]);
+            },
+          ),
+          if (favorites.length > 6) ...[
+            SizedBox(height: _getResponsiveHeight(16)),
+            _buildShowMoreFavoritesButton(favorites.length - 6),
+          ],
+        ],
+      );
+    },
+  );
+}
+
+Widget _buildFavoritesLoadingState() {
+  return Container(
+    height: _getResponsiveHeight(200),
+    child: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: primaryBlue,
+            strokeWidth: 2,
+          ),
+          SizedBox(height: _getResponsiveHeight(12)),
+          Text(
+            'Loading your favorites...',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(14),
+              color: mediumGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildFavoritesEmptyState() {
+  return Container(
+    height: _getResponsiveHeight(200),
+    child: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(_getHorizontalPadding()),
+            decoration: BoxDecoration(
+              color: lightGray,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.favorite_border_rounded,
+              size: _getResponsiveHeight(40),
+              color: mediumGray,
+            ),
+          ),
+          SizedBox(height: _getResponsiveHeight(12)),
+          Text(
+            'No favorites yet',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(16),
+              fontWeight: FontWeight.w600,
+              color: darkGray,
+            ),
+          ),
+          SizedBox(height: _getResponsiveHeight(4)),
+          Text(
+            'Start adding items to your favorites collection',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(12),
+              color: mediumGray,
+              fontWeight: FontWeight.w400,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _buildFavoriteCard(Map<String, dynamic> favorite) {
+  return GestureDetector(
+    onTap: () => _openFavoriteDetail(
+        favorite['category']?.toString().toLowerCase() ?? 'item',
+        favorite['id']),
+    child: Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    (favorite['color'] as Color).withOpacity(0.1),
+                    (favorite['color'] as Color).withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  if ((favorite['imageUrl'] ?? '').toString().isNotEmpty)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accentYellow,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '247',
-                            style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(11),
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
+                        child: Image.network(
+                          favorite['imageUrl'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox(),
                         ),
-                      ],
+                      ),
                     ),
+                  Center(
+                    child: Container(
+                      padding: EdgeInsets.all(_getHorizontalPadding() * 0.4),
+                      decoration: BoxDecoration(
+                        color: (favorite['color'] as Color).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (favorite['color'] as Color).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        favorite['icon'] is IconData
+                            ? favorite['icon']
+                            : Icons.favorite_rounded,
+                        color: Colors.white,
+                        size: _getResponsiveHeight(20),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (favorite['color'] as Color),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        (favorite['category'] ?? '').toString().toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          fontSize: _getResponsiveFontSize(8),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: EdgeInsets.all(_getHorizontalPadding() * 0.4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    favorite['title'] ?? 'Untitled',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(11),
+                      fontWeight: FontWeight.w600,
+                      color: darkGray,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: _getResponsiveHeight(2)),
+                  Text(
+                    favorite['subtitle'] ?? '',
+                    style: GoogleFonts.poppins(
+                      fontSize: _getResponsiveFontSize(9),
+                      color: mediumGray,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (favorite['stats'] != null) ...[
                     SizedBox(height: _getResponsiveHeight(4)),
                     Row(
                       children: [
                         Icon(
-                          Icons.trending_up_rounded,
-                          color: primaryBlue,
-                          size: _isSmallScreen() ? 14 : 16,
+                          favorite['statsIcon'] is IconData
+                              ? favorite['statsIcon']
+                              : Icons.favorite_rounded,
+                          size: _getResponsiveHeight(12),
+                          color: (favorite['color'] as Color),
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'Your curated style collection',
+                            favorite['stats'] ?? '',
                             style: GoogleFonts.poppins(
-                              fontSize: _getResponsiveFontSize(12),
+                              fontSize: _getResponsiveFontSize(8),
                               color: mediumGray,
-                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1375,62 +1745,49 @@ class _HomePageState extends State<HomePage>
                       ],
                     ),
                   ],
-                ),
-              ),
-            ],
-          ),
-
-          // See More Button
-          SizedBox(height: _getResponsiveHeight(16)),
-          GestureDetector(
-            onTap: () => _navigateToAllFavorites(),
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: _getResponsiveHeight(12)),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [primaryBlue, primaryBlue.withValues(alpha: 0.8)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryBlue.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.visibility_rounded,
-                    color: Colors.white,
-                    size: _isSmallScreen() ? 14 : 16,
-                  ),
-                  SizedBox(width: _getHorizontalPadding() * 0.4),
-                  Text(
-                    'See More',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: _getResponsiveFontSize(14),
-                    ),
-                  ),
-                  SizedBox(width: _getHorizontalPadding() * 0.4),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Colors.white,
-                    size: _isSmallScreen() ? 12 : 14,
-                  ),
                 ],
               ),
             ),
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+Widget _buildShowMoreFavoritesButton(int remainingCount) {
+  return Container(
+    width: double.infinity,
+    child: ElevatedButton(
+      onPressed: () => _navigateToAllFavorites(),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: primaryBlue,
+        elevation: 0,
+        padding: EdgeInsets.symmetric(vertical: _getResponsiveHeight(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: primaryBlue.withOpacity(0.3)),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_rounded, size: 16),
+          const SizedBox(width: 8),
+          Text(
+            'Show $remainingCount more favorites',
+            style: GoogleFonts.poppins(
+              fontSize: _getResponsiveFontSize(12),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
   Widget _buildFavoritesContent() {
     return LayoutBuilder(

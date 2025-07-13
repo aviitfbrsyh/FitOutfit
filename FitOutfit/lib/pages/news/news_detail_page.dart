@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/fashion_news_services.dart';
+import '../../services/favorites_service.dart';
 
 class NewsDetailPage extends StatefulWidget {
   final String docId; // Firestore document ID
@@ -18,6 +19,57 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   static const Color darkGray = Color(0xFF2C3E50);
   static const Color mediumGray = Color(0xFF6B7280);
   static const Color softCream = Color(0xFFFAF9F7);
+  static const Color accentRed = Color(0xFFD0021B);
+  
+  bool _isInFavorites = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final isFavorite = await FavoritesService.isInFavorites(widget.docId);
+    setState(() {
+      _isInFavorites = isFavorite;
+    });
+  }
+
+  Future<void> _toggleFavorite(Map<String, dynamic> newsData) async {
+    try {
+      final isFavorite = await FavoritesService.toggleFavorite(
+        itemId: widget.docId,
+        title: newsData['title'] ?? '',
+        category: 'Articles',
+        color: primaryBlue,
+        icon: Icons.article_rounded,
+        subtitle: FashionNewsServices.getPreviewContent(newsData['content'] ?? ''),
+        imageUrl: newsData['imageUrl'] ?? '',
+        stats: '${FashionNewsServices.getLikesCount(newsData)} likes',
+        statsIcon: Icons.favorite_rounded,
+        count: FashionNewsServices.getLikesCount(newsData),
+        tags: ['fashion', 'news', 'article'],
+        additionalData: {
+          'content': newsData['content'],
+          'createdAt': newsData['createdAt'],
+        },
+      );
+      
+      setState(() {
+        _isInFavorites = isFavorite;
+      });
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      // Show error message to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update favorites'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,18 +132,12 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                       // Love button
                       IconButton(
                         icon: Icon(
-                          isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          color: isLiked ? Colors.red : Colors.grey,
+                          _isInFavorites ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: _isInFavorites ? accentRed : Colors.grey,
                           size: 26,
                         ),
-                        tooltip: isLiked ? 'Unlike' : 'Like',
-                        onPressed: () async {
-                          if (isLiked) {
-                            await FashionNewsServices.unlikeNews(widget.docId, userId);
-                          } else {
-                            await FashionNewsServices.likeNews(widget.docId, userId);
-                          }
-                        },
+                        tooltip: _isInFavorites ? 'Remove from Favorites' : 'Add to Favorites',
+                        onPressed: () => _toggleFavorite(data),
                       ),
                     ],
                   ),

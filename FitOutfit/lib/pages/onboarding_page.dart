@@ -16,7 +16,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   late Animation<double> _fadeAnimation;
 
   int _currentIndex = 0;
-  final int _totalPages = 4;
+  final int _totalPages = 6;
 
   final List<OnboardingData> _onboardingData = [
     OnboardingData(
@@ -50,6 +50,23 @@ class _OnboardingPageState extends State<OnboardingPage>
           'Keep track of your favorite outfits, create lookbooks, and build your personal style portfolio.',
       icon: Icons.history_outlined,
       colors: [Color(0xFF7B68EE), Color(0xFF6A5ACD)],
+    ),
+    // --- Tambahan fitur baru ---
+    OnboardingData(
+      title: 'Budget AI Quiz',
+      subtitle: 'Personalized Fashion Budgeting',
+      description:
+          'Discover your shopping personality and get smart budget tips with our interactive AI-powered quiz. Shop smarter, stay stylish!',
+      icon: Icons.psychology_outlined,
+      colors: [Color(0xFF2ECC7A), Color(0xFFF5A623)],
+    ),
+    OnboardingData(
+      title: 'Outfit Planner',
+      subtitle: 'Plan Your Looks Ahead',
+      description:
+          'Schedule and organize your outfits for any day. Never run out of style ideas and always be prepared for every occasion!',
+      icon: Icons.event_note_outlined,
+      colors: [Color(0xFF4A90E2), Color(0xFFF5A623)],
     ),
   ];
 

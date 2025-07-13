@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/fashion_news_services.dart';
+import 'news_detail_page.dart';
 
 class NewsPage extends StatefulWidget {
   const NewsPage({Key? key}) : super(key: key);
@@ -77,15 +78,16 @@ class _NewsPageState extends State<NewsPage> {
                   fontSize: _getResponsiveFontSize(14),
                 ),
                 prefixIcon: Icon(Icons.search_rounded, color: primaryBlue),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear_rounded, color: mediumGray),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
+                suffixIcon:
+                    _searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: Icon(Icons.clear_rounded, color: mediumGray),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                        : null,
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: EdgeInsets.symmetric(
@@ -148,7 +150,11 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  Widget _buildNewsPreviewCard(BuildContext context, Map<String, dynamic> data, String docId) {
+  Widget _buildNewsPreviewCard(
+    BuildContext context,
+    Map<String, dynamic> data,
+    String docId,
+  ) {
     final cardRadius = 18.0;
     final imageUrl = data['imageUrl'] ?? '';
     final title = data['title'] ?? '';
@@ -158,9 +164,7 @@ class _NewsPageState extends State<NewsPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => NewsDetailPage(docId: docId),
-          ),
+          MaterialPageRoute(builder: (_) => NewsDetailPage(docId: docId)),
         );
       },
       child: Container(
@@ -189,11 +193,15 @@ class _NewsPageState extends State<NewsPage> {
                     height: _getResponsiveHeight(120),
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: _getResponsiveHeight(120),
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
+                    errorBuilder:
+                        (context, error, stackTrace) => Container(
+                          height: _getResponsiveHeight(120),
+                          color: Colors.grey[200],
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                          ),
+                        ),
                   ),
                 ),
               SizedBox(height: _getResponsiveHeight(12)),
@@ -240,7 +248,11 @@ class _NewsPageState extends State<NewsPage> {
                     },
                     child: Row(
                       children: [
-                        Icon(Icons.arrow_forward_rounded, color: primaryBlue, size: 18),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: primaryBlue,
+                          size: 18,
+                        ),
                         SizedBox(width: 4),
                       ],
                     ),
@@ -250,77 +262,6 @@ class _NewsPageState extends State<NewsPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class NewsDetailPage extends StatelessWidget {
-  final String docId;
-
-  const NewsDetailPage({Key? key, required this.docId}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('News Detail'),
-      ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('fashion_news').doc(docId).get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return Center(
-              child: Text('News not found.'),
-            );
-          }
-
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-
-          return SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data['title'] ?? '',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  if (data['imageUrl'] != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.network(
-                        data['imageUrl'],
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 200,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, color: Colors.grey),
-                        ),
-                      ),
-                    ),
-                  SizedBox(height: 12),
-                  Text(
-                    data['content'] ?? '',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }

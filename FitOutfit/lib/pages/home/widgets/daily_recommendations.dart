@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models/outfit_recommendation.dart';
+import '../../../services/favorites_service.dart';
 
 class DailyRecommendations extends StatelessWidget {
   final List<OutfitRecommendation> recommendations;
@@ -172,16 +173,42 @@ class DailyRecommendations extends StatelessWidget {
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => onLike(recommendation),
-                              child: Icon(
-                                recommendation.isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color:
-                                    recommendation.isLiked
-                                        ? const Color(0xFFD0021B)
-                                        : Colors.white,
-                                size: 20,
+                              onTap: () async {
+                                try {
+                                  final isFavorite = await FavoritesService.toggleFavorite(
+                                    itemId: recommendation.id,
+                                    title: recommendation.title,
+                                    category: 'Outfits',
+                                    color: const Color(0xFF4A90E2),
+                                    icon: Icons.checkroom_rounded,
+                                    subtitle: recommendation.occasion,
+                                    imageUrl: recommendation.imageUrls.isNotEmpty ? recommendation.imageUrls.first : '',
+                                    stats: recommendation.weather,
+                                    statsIcon: Icons.wb_sunny_rounded,
+                                    count: 1,
+                                    tags: [recommendation.occasion, recommendation.weather, 'outfit'],
+                                    additionalData: {
+                                      'imageUrls': recommendation.imageUrls,
+                                      'description': recommendation.description,
+                                    },
+                                  );
+                                  
+                                  // Call the original onLike callback for UI updates
+                                  onLike(recommendation);
+                                } catch (e) {
+                                  print('Error toggling favorite: $e');
+                                }
+                              },
+                              child: FutureBuilder<bool>(
+                                future: FavoritesService.isInFavorites(recommendation.id),
+                                builder: (context, snapshot) {
+                                  final isFavorite = snapshot.data ?? false;
+                                  return Icon(
+                                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                                    color: isFavorite ? const Color(0xFFD0021B) : Colors.white,
+                                    size: 20,
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(width: 8),
